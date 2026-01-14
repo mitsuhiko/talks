@@ -1,0 +1,150 @@
+name: Deploy Talks to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build all talks
+        run: |
+          mkdir -p _site
+          
+          # Build each talk in dynamic/
+          for talk_dir in dynamic/*/; do
+            if [ -d "$talk_dir" ]; then
+              talk_name=$(basename "$talk_dir")
+              echo "Building talk: $talk_name"
+              
+              cd "$talk_dir"
+              
+              # Find the markdown source file
+              md_file=$(ls *.md 2>/dev/null | head -1)
+              
+              if [ -n "$md_file" ]; then
+                base_name="${md_file%.md}"
+                
+                # Build HTML with marp
+                npx @marp-team/marp-cli --html "$md_file" -o "${base_name}.html"
+                
+                # Run inject script if present
+                if [ -f "inject-backdrop.js" ]; then
+                  node inject-backdrop.js "${base_name}.html"
+                fi
+                
+                # Create output directory
+                mkdir -p "../../_site/${talk_name}"
+                
+                # Copy HTML output
+                cp "${base_name}.html" "../../_site/${talk_name}/index.html"
+                
+                # Copy all assets (images, videos, etc.)
+                for ext in png jpg jpeg gif svg mp4 mov webm webp; do
+                  cp *.${ext} "../../_site/${talk_name}/" 2>/dev/null || true
+                done
+                
+                echo "Built: $talk_name"
+              fi
+              
+              cd - > /dev/null
+            fi
+          done
+
+      - name: Generate index page
+        run: |
+          cat > _site/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Talks</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background: #f5f5f5;
+                color: #333;
+              }
+              h1 {
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+              }
+              ul {
+                list-style: none;
+                padding: 0;
+              }
+              li {
+                margin: 15px 0;
+              }
+              a {
+                color: #0066cc;
+                text-decoration: none;
+                font-size: 1.2em;
+              }
+              a:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Talks</h1>
+            <ul>
+          HTMLEOF
+          
+          # List all talks
+          for talk_dir in _site/*/; do
+            if [ -d "$talk_dir" ]; then
+              talk_name=$(basename "$talk_dir")
+              # Convert dashes to spaces and title case for display
+              display_name=$(echo "$talk_name" | tr '-' ' ' | sed 's/\b\(.\)/\u\1/g')
+              echo "      <li><a href=\"${talk_name}/\">${display_name}</a></li>" >> _site/index.html
+            fi
+          done
+          
+          cat >> _site/index.html << 'HTMLEOF'
+            </ul>
+          </body>
+          </html>
+          HTMLEOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
