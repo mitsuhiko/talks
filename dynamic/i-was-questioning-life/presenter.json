@@ -1,0 +1,11 @@
+{
+  "title": "I Was Observing When My Agent Built Its Own Harness",
+  "keyboard": {
+    "next": ["ArrowRight", "Space", "PageDown", "l", "j"],
+    "prev": ["ArrowLeft", "PageUp", "h", "k"],
+    "first": ["Home"],
+    "last": ["End"]
+  },
+  "notes": { "source": "auto" },
+  "preview": { "relativeHash": true }
+}

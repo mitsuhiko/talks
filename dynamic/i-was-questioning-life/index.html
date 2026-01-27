@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>I Was Observing When My Agent Built Its Own Harness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Zalando+Sans+Expanded:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Zalando Sans Expanded", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #0a1214;
+        color: #f0f4f5;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      .deck {
+        width: 1920px;
+        height: 1080px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-origin: center center;
+        background: #0a1214;
+      }
+
+      .slide {
+        display: none;
+        box-sizing: border-box;
+        height: 1080px;
+        width: 1920px;
+        padding: 65px 154px;
+        align-content: center;
+      }
+
+      .slide.active {
+        display: grid;
+      }
+
+      h1 {
+        font-size: 90px;
+        margin: 0 0 16px;
+        font-weight: 700;
+      }
+
+      h2 {
+        font-size: 72px;
+        margin: 0 0 24px;
+        font-weight: 600;
+      }
+
+      p {
+        font-size: 51px;
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+
+      li {
+        font-size: 48px;
+        line-height: 1.8;
+      }
+
+      ul {
+        padding-left: 64px;
+        margin: 16px 0;
+      }
+
+      .subtitle {
+        font-size: 46px;
+        color: #a0b0b4;
+        margin-top: 16px;
+      }
+
+      .quote {
+        font-style: italic;
+        border-left: 6px solid #f0f4f5;
+        padding-left: 38px;
+        margin: 24px 0;
+        font-size: 45px;
+      }
+
+      .code {
+        font-family: "DM Mono", monospace;
+        background: #1a2a2e;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+
+      .big-text {
+        font-size: 77px;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+
+      .huge-text {
+        font-size: 102px;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+
+      .center {
+        text-align: center;
+      }
+
+      .steps {
+        margin-top: 16px;
+      }
+
+      .step.hidden {
+        visibility: hidden;
+      }
+
+      .comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        margin-top: 32px;
+      }
+
+      .comparison h3 {
+        font-size: 45px;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      .comparison ul {
+        margin: 0;
+      }
+
+      .comparison li {
+        font-size: 42px;
+      }
+
+
+    </style>
+  </head>
+  <body>
+    <div class="deck">
+    <!-- Slide 1: Title -->
+    <section class="slide" data-slide="1">
+      <div>
+        <h1>I Was Observing When My Agent Built Its Own Harness</h1>
+      </div>
+    </section>
+
+    <!-- Slide 2: Christmas project -->
+    <section class="slide" data-slide="2">
+      <div>
+        <p class="big-text">Over Christmas I had an agent build me a game from scratch.</p>
+      </div>
+    </section>
+
+    <!-- Slide 3: Tank Game -->
+    <section class="slide" data-slide="3">
+      <div style="height: 860px; display: flex; justify-content: center;">
+        <iframe data-src="https://mitsuhiko.github.io/tankgame/" style="width: 100%; height: 100%; border: none; border-radius: 8px;"></iframe>
+      </div>
+    </section>
+
+    <!-- Slide 4: My constraints -->
+    <section class="slide" data-slide="4">
+      <div>
+        <h2>My constraints</h2>
+        <ul class="steps">
+          <li class="step">Make it look like code I would write</li>
+          <li class="step">Don't look at any of the code</li>
+          <li class="step">Judge quality from the outside</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 5: The question -->
+    <section class="slide" data-slide="5">
+      <div>
+        <p class="big-text">If I can't look at the code, how do I know it's working?</p>
+      </div>
+    </section>
+
+    <!-- Slide 6: Agent needs it too -->
+    <section class="slide" data-slide="6">
+      <div>
+        <p class="big-text">If I need observability...</p>
+        <p class="big-text step">so does the agent.</p>
+      </div>
+    </section>
+
+    <!-- Slide 7: Visual code -->
+    <section class="slide" data-slide="7">
+      <div>
+        <p style="font-size: 46px;">It's writing visual code. Shaders, lighting, physics.</p>
+        <p style="font-size: 56px; margin-top: 2rem;">It can't just <span class="code">print()</span> its way through this.</p>
+      </div>
+    </section>
+
+    <!-- Slide 8: The question reframed -->
+    <section class="slide" data-slide="8">
+      <div class="center">
+        <p class="big-text">"How do I design the codebase so the agent can succeed?"</p>
+      </div>
+    </section>
+
+    <!-- Slide 9: What I gave it -->
+    <section class="slide" data-slide="9">
+      <div>
+        <h2>What I gave it</h2>
+        <ul class="steps">
+          <li class="step">Clear directory layout</li>
+          <li class="step">Specs that describe <em>what</em>, not <em>how</em></li>
+          <li class="step">Places to put things: <span class="code">debug-temp/</span>, <span class="code">scripts/</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 10: Back and forth -->
+    <section class="slide" data-slide="10">
+      <div>
+        <p style="font-size: 41px;">So we had a back-and-forth:</p>
+        <ul class="steps" style="margin-top: 1.5rem;">
+          <li class="step" style="font-size: 38px;">"The rendering looks wrong. How would you debug this?"</li>
+          <li class="step" style="font-size: 38px;">"I could add a screenshot command..."</li>
+          <li class="step" style="font-size: 38px;">"Do it. What else do you need?"</li>
+          <li class="step" style="font-size: 38px;">"Frame stepping, input simulation, state dumps..."</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 11: The agent designed its own tooling -->
+    <section class="slide" data-slide="11">
+      <div class="center">
+        <p class="big-text">The agent designed its own debugging system.</p>
+        <p class="big-text step">Then documented it in AGENTS.md for next time.</p>
+      </div>
+    </section>
+
+    <!-- Slide 12: Key insight -->
+    <section class="slide" data-slide="12">
+      <div class="center">
+        <p class="huge-text">Make room for solutions you didn't anticipate.</p>
+      </div>
+    </section>
+
+    <!-- Slide 13: What it had available -->
+    <section class="slide" data-slide="13">
+      <div>
+        <p style="font-size: 41px;">The agent needed visual feedback. I didn't build that.</p>
+        <p style="font-size: 41px; margin-top: 1.5rem;">But the codebase had:</p>
+        <ul class="steps">
+          <li class="step">An extensible build system</li>
+          <li class="step">Command-line args it could hook into</li>
+          <li class="step">A folder for debug artifacts</li>
+          <li class="step">Multimodal vision</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 14: What it built -->
+    <section class="slide" data-slide="14">
+      <div class="center">
+        <p style="font-size: 36px; margin-bottom: 2rem;">So it built:</p>
+        <p><span class="code" style="font-size: 46px;">--debug-script "frames 3; screenshot test.png; quit"</span></p>
+      </div>
+    </section>
+
+    <!-- Slide 15: Debug script example -->
+    <section class="slide" data-slide="15">
+      <div>
+        <pre style="font-family: 'DM Mono', monospace; font-size: 32px; line-height: 1.5; background: #1a2a2e; padding: 40px; border-radius: 8px; margin: 0;">
+<span style="color: #6a9a6a;"># Test jump pad mechanics</span>
+map assets/maps/fjord_jump.map
+god on
+frames 5
+
+<span style="color: #6a9a6a;"># Teleport near the jump pad</span>
+teleport 13.0 7.0
+screenshot debug-temp/near_pad.png
+
+<span style="color: #6a9a6a;"># Walk onto pad, wait for jump</span>
+input +right
+frames 20
+input stop
+frames 80
+screenshot debug-temp/landed.png
+
+quit</pre>
+      </div>
+    </section>
+
+    <!-- Slide 16: Temptation -->
+    <section class="slide" data-slide="16">
+      <div>
+        <p style="font-size: 41px;">It's tempting to write instructions like:</p>
+        <div class="quote" style="font-size: 38px; margin-top: 2rem;">
+          "When debugging visual code, use the screenshot command like this: [exact steps]"
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 17: You don't know -->
+    <section class="slide" data-slide="17">
+      <div class="center">
+        <p class="big-text">You don't know what solution the model will naturally gravitate toward.</p>
+      </div>
+    </section>
+
+    <!-- Slide 18: RL'd against something -->
+    <section class="slide" data-slide="18">
+      <div>
+        <p class="big-text">The model has been RL'd on... something.</p>
+        <ul class="steps" style="margin-top: 2rem;">
+          <li class="step" style="font-size: 41px;">We don't have the training data</li>
+          <li class="step" style="font-size: 41px;">We don't know what it's optimized for</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 19: Over-prescribe -->
+    <section class="slide" data-slide="19">
+      <div>
+        <h2>When you over-prescribe</h2>
+        <ul class="steps">
+          <li class="step">You fight the model's grain</li>
+          <li class="step">You close off better solutions</li>
+          <li class="step">The agent follows suboptimal instructions anyway</li>
+          <li class="step">You become the bottleneck</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 20: Under-prescribe -->
+    <section class="slide" data-slide="20">
+      <div>
+        <h2>When you under-prescribe</h2>
+        <ul class="steps">
+          <li class="step">The agent finds solutions that fit its capabilities</li>
+          <li class="step">Sometimes surprising, sometimes obvious</li>
+          <li class="step">Solutions it can actually execute</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 21: What I said -->
+    <section class="slide" data-slide="21">
+      <div>
+        <p style="font-size: 38px;">I didn't say "build a debug script system."</p>
+        <p style="font-size: 38px; margin-top: 1rem;">I said:</p>
+        <div class="quote" style="font-size: 51px; margin-top: 1.5rem;">
+          "Visual changes need validation. Figure it out."
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 22: 1200 lines -->
+    <section class="slide" data-slide="22">
+      <div>
+        <p style="font-size: 38px;">The agent built a 1200-line debug scripting system:</p>
+        <ul class="steps" style="margin-top: 1.5rem;">
+          <li class="step">Frame control</li>
+          <li class="step">Input simulation</li>
+          <li class="step">State dumps</li>
+          <li class="step">Screenshot capture</li>
+          <li class="step">Named pipe for live injection</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 23: Would I? -->
+    <section class="slide" data-slide="23">
+      <div class="center">
+        <p class="big-text">Would I have designed it that way?</p>
+        <p class="huge-text step">Maybe not.</p>
+      </div>
+    </section>
+
+    <!-- Slide 24: Does it work? -->
+    <section class="slide" data-slide="24">
+      <div class="center">
+        <p class="big-text">Does it work?</p>
+        <p class="huge-text step">Absolutely.</p>
+      </div>
+    </section>
+
+    <!-- Slide 25: Sometimes tools don't get used -->
+    <section class="slide" data-slide="25">
+      <div>
+        <p class="big-text">The agent builds tools.</p>
+        <p class="big-text step" style="margin-top: 1rem;">Sometimes it doesn't use them.</p>
+      </div>
+    </section>
+
+    <!-- Slide 26: Feed it back -->
+    <section class="slide" data-slide="26">
+      <div>
+        <p style="font-size: 38px;">When a session fails, feed it back:</p>
+        <div class="quote" style="font-size: 38px; margin-top: 2rem;">
+          "Here's a transcript where you tried to debug X but didn't use the screenshot tool you built. What went wrong? How should the tooling evolve?"
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 27: What happens -->
+    <section class="slide" data-slide="27">
+      <div>
+        <ul class="steps">
+          <li style="font-size: 46px;">Agent sees its own failure patterns</li>
+          <li class="step" style="font-size: 46px;">Proposes tool improvements</li>
+          <li class="step" style="font-size: 46px;">Updates AGENTS.md with better guidance</li>
+          <li class="step" style="font-size: 46px;">The tooling evolves</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 28: Three options -->
+    <section class="slide" data-slide="28">
+      <div>
+        <p style="font-size: 38px; margin-bottom: 1.5rem;">When the agent isn't using its tools:</p>
+        <ul class="steps">
+          <li class="step" style="font-size: 41px;"><strong>Prescribe harder</strong> — fights the grain</li>
+          <li class="step" style="font-size: 41px;"><strong>Fix it yourself</strong> — you become the bottleneck</li>
+          <li class="step" style="font-size: 41px;"><strong>Feed it back</strong> — the agent evolves its tools</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 29: Only one scales -->
+    <section class="slide" data-slide="29">
+      <div class="center">
+        <p class="huge-text">Only one of those scales.</p>
+      </div>
+    </section>
+
+    <!-- Slide 30: Three takeaways -->
+    <section class="slide" data-slide="30">
+      <div>
+        <ul class="steps">
+          <li style="font-size: 43px; margin-bottom: 1.5rem;"><strong>Design agent-first codebases</strong><br><span style="font-size: 33px;">Structure for discovery, not prescription</span></li>
+          <li class="step" style="font-size: 43px; margin-bottom: 1.5rem;"><strong>Stop over-prescribing</strong><br><span style="font-size: 33px;">Describe the problem, set constraints, let it find the approach</span></li>
+          <li class="step" style="font-size: 43px;"><strong>Feed failures back</strong><br><span style="font-size: 33px;">Let the agent evolve its own tools</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 31: Closing -->
+    <section class="slide" data-slide="31">
+      <div>
+        <p style="font-size: 41px;">The tank game was built with <strong>pi</strong> — a minimal, hackable coding agent.</p>
+        <p style="font-size: 41px; margin-top: 1.5rem;">My advice:</p>
+        <ul class="steps" style="margin-top: 1rem;">
+          <li style="font-size: 38px;">Start with the simplest agent loop that works</li>
+          <li style="font-size: 38px;">Extend it for your project's needs</li>
+          <li style="font-size: 38px;">Let the agent shape its own tooling</li>
+        </ul>
+        <p class="step" style="font-size: 36px; margin-top: 2rem; color: #7a9a9e;">github.com/badlogicgames/pi-mono</p>
+      </div>
+    </section>
+
+    <!-- Slide 32: Thanks -->
+    <section class="slide" data-slide="32">
+      <div class="center">
+        <h1>Thanks</h1>
+      </div>
+    </section>
+
+    <!-- Slide 33: Postscriptum -->
+    <section class="slide" data-slide="33">
+      <div>
+        <h2 style="font-size: 54px; color: #7a9a9e;">Postscriptum</h2>
+        <p style="font-size: 46px; margin-top: 1.5rem;">Code is free now. This changes everything.</p>
+        <p style="font-size: 38px; margin-top: 2rem; color: #a0b0b4;">This presentation was made fully by an agent — directly to HTML.<br>The presentation software was built from scratch by an agent.</p>
+        <p style="font-size: 32px; margin-top: 2rem; color: #7a9a9e;">github.com/mitsuhiko/mini-presenter</p>
+        <p class="step" style="font-size: 64px; font-weight: 600; margin-top: 2.5rem;">Rethink everything.</p>
+      </div>
+    </section>
+    </div>
+
+    <script>
+      const deck = document.querySelector(".deck");
+      const DECK_WIDTH = 1920;
+      const DECK_HEIGHT = 1080;
+
+      function scaleDeck() {
+        const scaleX = window.innerWidth / DECK_WIDTH;
+        const scaleY = window.innerHeight / DECK_HEIGHT;
+        const scale = Math.min(scaleX, scaleY);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+
+      window.addEventListener("resize", scaleDeck);
+      scaleDeck();
+
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      let slideIndex = 0;
+      let stepIndex = 0;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function applySteps(slide) {
+        const steps = Array.from(slide.querySelectorAll(".step"));
+        steps.forEach((step, index) => {
+          step.classList.toggle("hidden", index >= stepIndex);
+        });
+        return steps.length;
+      }
+
+      function updateHash() {
+        const slideNumber = slides[slideIndex].dataset.slide;
+        const stepSuffix = stepIndex > 0 ? `.${stepIndex}` : "";
+        history.replaceState(null, "", `#${slideNumber}${stepSuffix}`);
+      }
+
+      function manageLazyIframes(activeSlide) {
+        slides.forEach((slide) => {
+          const iframe = slide.querySelector("iframe[data-src]");
+          if (!iframe) return;
+          
+          if (slide === activeSlide) {
+            if (!iframe.dataset.loaded) {
+              iframe.src = iframe.dataset.src;
+              iframe.dataset.loaded = "true";
+            }
+          } else {
+            if (iframe.dataset.loaded) {
+              iframe.src = "about:blank";
+              delete iframe.dataset.loaded;
+            }
+          }
+        });
+      }
+
+      function showSlide(index, { updateHash: shouldUpdateHash = true } = {}) {
+        slideIndex = clamp(index, 0, slides.length - 1);
+        slides.forEach((slide, idx) => {
+          slide.classList.toggle("active", idx === slideIndex);
+        });
+        const stepCount = applySteps(slides[slideIndex]);
+        stepIndex = clamp(stepIndex, 0, stepCount);
+        applySteps(slides[slideIndex]);
+        manageLazyIframes(slides[slideIndex]);
+
+        if (shouldUpdateHash) {
+          updateHash();
+        }
+      }
+
+      function parseHash(rawValue) {
+        const [slideValue, stepValue] = rawValue.split(".");
+        const slideNumber = Number.parseInt(slideValue, 10);
+        const index = Number.isNaN(slideNumber)
+          ? 0
+          : slides.findIndex((slide) => Number(slide.dataset.slide) === slideNumber);
+        const parsedStep = Number.parseInt(stepValue, 10);
+        return {
+          index: index === -1 ? 0 : index,
+          step: Number.isNaN(parsedStep) ? 0 : parsedStep,
+        };
+      }
+
+      function resolveRelativeHash(rawValue) {
+        const match = rawValue.match(/^(.*)~(next|prev)$/);
+        if (!match) {
+          return false;
+        }
+        const [, baseValue, direction] = match;
+        const baseState = baseValue
+          ? parseHash(baseValue)
+          : { index: slideIndex, step: stepIndex };
+        slideIndex = clamp(baseState.index, 0, slides.length - 1);
+        stepIndex = Math.max(0, baseState.step);
+        showSlide(slideIndex, { updateHash: false });
+        if (direction === "next") {
+          next({ updateHash: true });
+        } else {
+          prev({ updateHash: true });
+        }
+        return true;
+      }
+
+      function syncFromHash() {
+        const rawValue = window.location.hash.replace("#", "");
+        if (resolveRelativeHash(rawValue)) {
+          return;
+        }
+        const parsed = parseHash(rawValue);
+        stepIndex = parsed.step;
+        showSlide(parsed.index, { updateHash: false });
+      }
+
+      function next({ updateHash: shouldUpdateHash = true } = {}) {
+        const steps = Array.from(slides[slideIndex].querySelectorAll(".step"));
+        if (stepIndex < steps.length) {
+          stepIndex += 1;
+          applySteps(slides[slideIndex]);
+          if (shouldUpdateHash) {
+            updateHash();
+          }
+          return;
+        }
+        stepIndex = 0;
+        showSlide(slideIndex + 1, { updateHash: shouldUpdateHash });
+      }
+
+      function prev({ updateHash: shouldUpdateHash = true } = {}) {
+        if (stepIndex > 0) {
+          stepIndex -= 1;
+          applySteps(slides[slideIndex]);
+          if (shouldUpdateHash) {
+            updateHash();
+          }
+          return;
+        }
+        const nextIndex = clamp(slideIndex - 1, 0, slides.length - 1);
+        slideIndex = nextIndex;
+        const steps = Array.from(slides[slideIndex].querySelectorAll(".step"));
+        stepIndex = steps.length;
+        showSlide(slideIndex, { updateHash: shouldUpdateHash });
+      }
+
+      function first() {
+        stepIndex = 0;
+        showSlide(0);
+      }
+
+      function last() {
+        stepIndex = 0;
+        showSlide(slides.length - 1);
+      }
+
+      function goto(hash) {
+        const parsed = parseHash(hash.replace("#", ""));
+        stepIndex = parsed.step;
+        showSlide(parsed.index);
+      }
+
+      window.addEventListener("hashchange", syncFromHash);
+      window.addEventListener("keydown", (event) => {
+        if (["ArrowRight", " ", "PageDown"].includes(event.key)) {
+          event.preventDefault();
+          next();
+        }
+        if (["ArrowLeft", "PageUp"].includes(event.key)) {
+          event.preventDefault();
+          prev();
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          first();
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          last();
+        }
+      });
+
+      window.miniPresenter = {
+        next,
+        prev,
+        first,
+        last,
+        goto,
+        getSlideList() {
+          return slides.map((slide) => `#${slide.dataset.slide}`);
+        },
+        getCurrentSlide() {
+          return window.location.hash || `#${slides[slideIndex].dataset.slide}`;
+        },
+        getNotes(slideId) {
+          return null;
+        }
+      };
+
+      syncFromHash();
+    </script>
+  </body>
+</html>
