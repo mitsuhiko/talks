@@ -44,7 +44,11 @@ jobs:
               # Find the markdown source file
               md_file=$(ls *.md 2>/dev/null | head -1)
               
+              # Create output directory
+              mkdir -p "../../_site/${talk_name}"
+              
               if [ -n "$md_file" ]; then
+                # Marp-based talk: build from markdown
                 base_name="${md_file%.md}"
                 
                 # Build HTML with marp
@@ -55,19 +59,32 @@ jobs:
                   node inject-backdrop.js "${base_name}.html"
                 fi
                 
-                # Create output directory
-                mkdir -p "../../_site/${talk_name}"
-                
                 # Copy HTML output
                 cp "${base_name}.html" "../../_site/${talk_name}/index.html"
                 
-                # Copy all assets (images, videos, etc.)
-                for ext in png jpg jpeg gif svg mp4 mov webm webp; do
-                  cp *.${ext} "../../_site/${talk_name}/" 2>/dev/null || true
-                done
+                echo "Built (marp): $talk_name"
+              elif [ -f "index.html" ]; then
+                # Pre-built HTML talk: just copy as-is
+                cp index.html "../../_site/${talk_name}/index.html"
                 
-                echo "Built: $talk_name"
+                # Copy subdirectories (e.g., notes/)
+                for subdir in */; do
+                  if [ -d "$subdir" ] && [ "$subdir" != ".pi/" ]; then
+                    cp -r "$subdir" "../../_site/${talk_name}/"
+                  fi
+                done 2>/dev/null || true
+                
+                echo "Copied (pre-built): $talk_name"
+              else
+                echo "Skipped (no source): $talk_name"
+                cd - > /dev/null
+                continue
               fi
+              
+              # Copy all assets (images, videos, etc.)
+              for ext in png jpg jpeg gif svg mp4 mov webm webp css js json; do
+                cp *.${ext} "../../_site/${talk_name}/" 2>/dev/null || true
+              done
               
               cd - > /dev/null
             fi
