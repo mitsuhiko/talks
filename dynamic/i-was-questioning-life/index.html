@@ -602,6 +602,9 @@ quit</pre>
           }
           return;
         }
+        if (slideIndex >= slides.length - 1) {
+          return;
+        }
         stepIndex = 0;
         showSlide(slideIndex + 1, { updateHash: shouldUpdateHash });
       }
