@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Leaning In to Find Out</title>
     <!link rel="preconnect" href="https://use.typekit.net" crossorigin />
     <!link rel="stylesheet" href="https://use.typekit.net/yqw6imd.css" />
@@ -40,6 +41,8 @@
         overflow: hidden;
         cursor: default;
         background: #020507;
+        overscroll-behavior: none;
+        touch-action: none;
       }
 
       body {
@@ -1111,6 +1114,11 @@
       const slides = Array.from(document.querySelectorAll(".slide"));
       let slideIndex = 0;
       let stepIndex = 0;
+      const touchState = {
+        id: null,
+        startX: 0,
+        startY: 0,
+      };
 
       function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
@@ -1236,6 +1244,36 @@
         showSlide(parsed.index);
       }
 
+      function resetTouchState() {
+        touchState.id = null;
+        touchState.startX = 0;
+        touchState.startY = 0;
+      }
+
+      function handleTouchNavigation(endX, endY) {
+        const deltaX = endX - touchState.startX;
+        const deltaY = endY - touchState.startY;
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+
+        if (absX >= 60 && absX > absY * 1.2) {
+          if (deltaX < 0) {
+            next();
+          } else {
+            prev();
+          }
+          return;
+        }
+
+        if (absX <= 12 && absY <= 12) {
+          if (endX < window.innerWidth / 2) {
+            prev();
+          } else {
+            next();
+          }
+        }
+      }
+
       window.addEventListener("hashchange", syncFromHash);
       window.addEventListener("keydown", (event) => {
         if (["ArrowRight", " ", "PageDown", "l", "j"].includes(event.key)) {
@@ -1255,6 +1293,34 @@
           last();
         }
       });
+
+      document.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) {
+          resetTouchState();
+          return;
+        }
+
+        const touch = event.changedTouches[0];
+        touchState.id = touch.identifier;
+        touchState.startX = touch.clientX;
+        touchState.startY = touch.clientY;
+      }, { passive: true });
+
+      document.addEventListener("touchend", (event) => {
+        if (touchState.id === null) {
+          return;
+        }
+
+        const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === touchState.id);
+        if (!touch) {
+          return;
+        }
+
+        handleTouchNavigation(touch.clientX, touch.clientY);
+        resetTouchState();
+      }, { passive: true });
+
+      document.addEventListener("touchcancel", resetTouchState, { passive: true });
 
       window.miniPresenter = {
         next,
