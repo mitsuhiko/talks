@@ -376,7 +376,7 @@
       </div>
 
       <!-- TITLE -->
-      <section class="slide title-slide" data-slide="1" data-notes="Set the tone: pragmatic, from experience, still learning. This is not a prescription.">
+      <section class="slide title-slide" data-slide="1" data-notes="@armin: Set the tone: pragmatic, from experience, still learning. This is not a prescription.&#10;@cristina: Add brief Bending Spoons callback and context.">
         <div class="frame title-slide">
           <p class="eyebrow">AI Engineer · June 2026 · London</p>
           <h1>The Friction Is Your Judgment</h1>
@@ -384,8 +384,32 @@
         </div>
       </section>
 
+      <!-- SPEAKER INTRO -->
+      <section class="slide" data-slide="2" data-notes="@armin: Quick intro: creator of Flask, founder at Earendil, 10 years at Sentry.&#10;@cristina: Quick intro: AI Engineer at Earendil, previously at Bending Spoons.">
+        <div class="frame frame-wide">
+          <h2>Who We Are</h2>
+          <div class="split">
+            <div class="panel">
+              <h3>Armin Ronacher</h3>
+              <ul>
+                <li>Creator of Flask</li>
+                <li>Founder at Earendil</li>
+                <li>10 years at Sentry</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>Cristina Poncela</h3>
+              <ul>
+                <li>AI Engineer at Earendil</li>
+                <li>Previously at Bending Spoons</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- OPENING -->
-      <section class="slide" data-slide="2" data-notes="We've been building with agents for over a year. Real ups, real mess. Two problems kept recurring.">
+      <section class="slide" data-slide="3" data-notes="@armin: We've been building with agents for over a year. Real ups, real mess.&#10;@cristina: Add tools used (Claude, Codex, pi) and what we built / path before Earendil.">
         <div class="frame frame-wide">
           <h2>From Practice, Not Theory</h2>
           <ul class="dense">
@@ -398,7 +422,7 @@
       </section>
 
       <!-- TWO PROBLEMS -->
-      <section class="slide" data-slide="3" data-notes="Frame the two halves of the talk. We start with psychology because it's less discussed and harder.">
+      <section class="slide" data-slide="4" data-notes="@cristina: Frame the two halves of the talk and tee up psychology first as the less-discussed root cause.">
         <div class="frame frame-wide">
           <h2>Two Problems</h2>
           <div class="split">
@@ -419,7 +443,7 @@
       </section>
 
       <!-- PART I DIVIDER -->
-      <section class="slide" data-slide="4" data-notes="Transition into the psychology section.">
+      <section class="slide" data-slide="5" data-notes="@armin: Transition into the psychology section and why it comes before engineering.">
         <div class="frame frame-narrow center">
           <p class="eyebrow">Part I</p>
           <p class="huge-text">The Psychology Problem</p>
@@ -427,7 +451,7 @@
       </section>
 
       <!-- THE SHIFT -->
-      <section class="slide" data-slide="5" data-notes="The personal experience: from secret unlock to collective pressure. The tools didn't buy us slack — they raised the baseline.">
+      <section class="slide" data-slide="6" data-notes="@cristina: The shift from secret unlock to collective pressure. AI amplifies ship-it culture and creates dependency.">
         <div class="frame frame-wide">
           <h2>The Shift</h2>
           <ul class="dense">
@@ -440,7 +464,7 @@
       </section>
 
       <!-- AMPLIFICATION -->
-      <section class="slide" data-slide="6" data-notes="The structural imbalance: agents amplify output but not responsibility. Review is the bottleneck.">
+      <section class="slide" data-slide="7" data-notes="@cristina: Structural imbalance: output is amplified, responsibility is not. Add concrete examples (large PRs/files, bundled refactors, hard review) and ~400-line guidance.">
         <div class="frame frame-wide">
           <h2>The Amplification Problem</h2>
           <ul class="dense">
@@ -454,7 +478,7 @@
       </section>
 
       <!-- THE TRAP -->
-      <section class="slide" data-slide="7" data-notes="The psychological trap: output feels like progress, so you stop questioning.">
+      <section class="slide" data-slide="8" data-notes="@armin: Psychological trap. Output feels like progress; emphasize missing backpressure signal.">
         <div class="frame frame-wide rule-block">
           <h2>The Trap</h2>
           <div class="quote quote-large">Agents produce output fast, and output feels like progress. So you stop questioning, stop designing, stop saying "wait."</div>
@@ -467,7 +491,7 @@
       </section>
 
       <!-- PSYCHOLOGY INSIGHT -->
-      <section class="slide" data-slide="8" data-notes="The core psychology insight. The urge to skip thinking is the signal, not the permission.">
+      <section class="slide" data-slide="9" data-notes="@armin: Core psychology insight. The urge to skip thinking is the signal, not permission. Add a relatable degradation example.">
         <div class="frame frame-narrow center">
           <p class="big-text">The moments where you want to skip thinking</p>
           <p class="huge-text">are exactly the moments where thinking matters most.</p>
@@ -475,7 +499,7 @@
       </section>
 
       <!-- PART II DIVIDER -->
-      <section class="slide" data-slide="9" data-notes="Transition to engineering.">
+      <section class="slide" data-slide="10" data-notes="@cristina: Transition to engineering via Herald Chat (48h onboarding push) and state complexity setup.">
         <div class="frame frame-narrow center">
           <p class="eyebrow">Part II</p>
           <p class="huge-text">The Engineering Problem</p>
@@ -483,7 +507,7 @@
       </section>
 
       <!-- WHY AGENT CODE DRIFTS -->
-      <section class="slide" data-slide="10" data-notes="Agents over-protect locally: broad catches, silent fallbacks. The opposite of good system design.">
+      <section class="slide" data-slide="11" data-notes="@armin: Why code drifts: local over-protection, broad catches, silent fallbacks. Add Halo/Herald state example.">
         <div class="frame frame-wide">
           <h2>Why Agent Code Drifts</h2>
           <ul class="dense">
@@ -497,7 +521,7 @@
       </section>
 
       <!-- ENTROPY LOOP -->
-      <section class="slide" data-slide="11" data-notes="The self-reinforcing loop: mess begets worse agent behavior begets more mess.">
+      <section class="slide" data-slide="12" data-notes="@cristina: Entropy loop plus weekly code volume/refactor economics. Introduce the two-path framing (careful prompting/review vs periodic refactor weeks).">
         <div class="frame frame-narrow center">
           <p class="big-text">Messier codebase → worse agent recall → more duplication → more mess</p>
           <p class="huge-text">Entropy is self-reinforcing.</p>
@@ -505,7 +529,7 @@
       </section>
 
       <!-- LIBRARIES VS PRODUCTS -->
-      <section class="slide" data-slide="12" data-notes="Concrete experience: infrastructure components went well, product was harder. Explain why.">
+      <section class="slide" data-slide="13" data-notes="@armin: Libraries side (Absurd, Gondolin, Mailhook) and why bounded systems work better.&#10;@cristina: Products side (Lefos) and state explosion / cross-cutting complexity.">
         <div class="frame frame-wide">
           <h2>Libraries vs. Products</h2>
           <div class="split">
@@ -532,7 +556,7 @@
       </section>
 
       <!-- ENGINEERING INSIGHT -->
-      <section class="slide" data-slide="13" data-notes="The core engineering insight: your codebase is infrastructure for the agent.">
+      <section class="slide" data-slide="14" data-notes="@cristina: Codebase as agent infrastructure. Link to Herald Chat refactor and boundary learning.">
         <div class="frame frame-narrow center">
           <p class="big-text">Your codebase is infrastructure for the agent.</p>
           <p class="huge-text">Design it that way.</p>
@@ -540,7 +564,7 @@
       </section>
 
       <!-- AGENT-LEGIBLE CODEBASE -->
-      <section class="slide" data-slide="14" data-notes="What an agent-legible codebase looks like in practice.">
+      <section class="slide" data-slide="15" data-notes="@armin: What an agent-legible codebase looks like in practice, including what worked vs didn't.">
         <div class="frame frame-wide">
           <h2>An Agent-Legible Codebase</h2>
           <ul class="dense">
@@ -553,7 +577,7 @@
       </section>
 
       <!-- PR REVIEW -->
-      <section class="slide" data-slide="15" data-notes="How we split PR review into actionable items for the agent and call-outs for human judgment.">
+      <section class="slide" data-slide="16" data-notes="@armin: Review split: actionable mechanical issues vs human judgment call-outs.&#10;@cristina: Fresh session + line-by-line + always inspect real files; share agent sessions in PRs.">
         <div class="frame frame-wide">
           <h2>Pull Request Review</h2>
           <div class="split">
@@ -580,7 +604,7 @@
       </section>
 
       <!-- MECHANICAL ENFORCEMENT -->
-      <section class="slide" data-slide="16" data-notes="Concrete lint rules that create friction at exactly the right moment.">
+      <section class="slide" data-slide="17" data-notes="@armin: Mechanical enforcement examples. Optionally merge this content into slide 15 or 17 if time is tight.">
         <div class="frame frame-wide">
           <h2>Example Mechanical Enforcement</h2>
           <ul class="dense">
@@ -594,7 +618,7 @@
       </section>
 
       <!-- TODO -->
-      <section class="slide" data-slide="17" data-notes="Placeholder for additional content.">
+      <section class="slide" data-slide="18" data-notes="@cristina: Slow down intentionally; speed helps PMF discovery but hurts reliability if unguided.&#10;@armin: External pressure evidence and steering thesis: without friction you can't steer.">
         <div class="frame frame-narrow center">
           <p class="eyebrow">TODO</p>
           <p class="huge-text">Add More</p>
@@ -602,7 +626,7 @@
       </section>
 
       <!-- FINAL -->
-      <section class="slide" data-slide="18" data-notes="End on the title thesis.">
+      <section class="slide" data-slide="19" data-notes="@armin: Close on the thesis. Include explicit line: friction is necessary for steering.">
         <div class="frame frame-narrow center">
           <p class="big-text">The friction isn't the enemy.</p>
           <p class="huge-text">The friction is your judgment.</p>
@@ -1023,8 +1047,17 @@
 
         const noiseScale = (window.devicePixelRatio || 1) < LOW_DPI_THRESHOLD ? LOW_DPI_NOISE_SCALE : 1.0;
         const start = performance.now();
+        const MAX_FPS = 30;
+        const FRAME_INTERVAL_MS = 1000 / MAX_FPS;
+        let lastRenderTime = -Infinity;
 
         function render(now) {
+          if (now - lastRenderTime < FRAME_INTERVAL_MS) {
+            requestAnimationFrame(render);
+            return;
+          }
+          lastRenderTime = now;
+
           const t = prefersReducedMotion ? 0 : (now - start) / 1000;
 
           gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
