@@ -617,16 +617,71 @@
         </div>
       </section>
 
-      <!-- TODO -->
-      <section class="slide" data-slide="18" data-notes="@cristina: Slow down intentionally; speed helps PMF discovery but hurts reliability if unguided.&#10;@armin: External pressure evidence and steering thesis: without friction you can't steer.">
+      <!-- WHERE SPEED HELPS -->
+      <section class="slide" data-slide="18" data-notes="@cristina: Speed is strongest where feedback loops are tight and success is concrete: PMF discovery, prototyping, debugging, CI fixing, and creating repro cases. The trap is assuming those gains transfer unchanged to long-lived systems.">
+        <div class="frame frame-wide">
+          <h2>Where Speed Actually Helps</h2>
+          <div class="split">
+            <div class="panel">
+              <h3>High leverage</h3>
+              <ul>
+                <li>Exploring product directions</li>
+                <li>Shipping prototypes and onboarding experiments quickly</li>
+                <li>Debugging concrete failures</li>
+                <li>Fixing CI and regressions</li>
+                <li>Creating reproduction cases</li>
+                <li>Reducing time to first draft</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>Lower leverage</h3>
+              <ul>
+                <li>Reliability, consistency, and shared understanding</li>
+                <li>Long-lived systems with many interacting states</li>
+                <li>Code you have not specified clearly yourself</li>
+                <li>Anything where cleanup cost arrives later</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLOW DOWN -->
+      <section class="slide" data-slide="19" data-notes="@cristina: This is the key warning: you have to stay slow enough to preserve understanding. Refactoring later only works if you planned for it and did not let the system become illegible too early.">
+        <div class="frame frame-wide">
+          <h2>You Still Have to Go Slow</h2>
+          <ul class="dense">
+            <li>Refactoring later only works if you planned for it and did not make too much mess too early</li>
+            <li>Once your understanding drops, cleanup gets harder too — not easier</li>
+            <li>With agents, you can accumulate in days the debt that used to take months</li>
+            <li>That makes it much harder to judge the actual state of the codebase</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- FRICTION ARGUMENT -->
+      <section class="slide" data-slide="20" data-notes="@armin: Make the case for friction explicitly. Friction matters because the human has to feel the cost and pressure the agent cannot feel. Remove mechanical friction; increase judgment friction.">
+        <div class="frame frame-wide">
+          <h2>Why Friction Matters</h2>
+          <ul class="dense">
+            <li>Friction makes you feel the pressure — and the agent cannot feel that pressure for you</li>
+            <li>That feeling is part of how you understand the cost of writing, changing, and owning the code</li>
+            <li>Some friction should be removed; some friction should be increased</li>
+            <li>Increase the friction around taste and decision-making so the developer is pulled back into the loop</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- STEERING -->
+      <section class="slide" data-slide="21" data-notes="@armin: Land the steering line as its own beat. Friction is not bureaucracy; it is what gives you control.">
         <div class="frame frame-narrow center">
-          <p class="eyebrow">TODO</p>
-          <p class="huge-text">Add More</p>
+          <p class="big-text">Some friction is waste.</p>
+          <p class="huge-text">Without friction, you can't steer.</p>
         </div>
       </section>
 
       <!-- FINAL -->
-      <section class="slide" data-slide="19" data-notes="@armin: Close on the thesis. Include explicit line: friction is necessary for steering.">
+      <section class="slide" data-slide="22" data-notes="@armin: Close on the thesis. Include explicit line: friction is necessary for steering.">
         <div class="frame frame-narrow center">
           <p class="big-text">The friction isn't the enemy.</p>
           <p class="huge-text">The friction is your judgment.</p>
@@ -646,65 +701,12 @@
         const prefersReducedMotion =
           window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const LOW_DPI_THRESHOLD = 1.5;
-        const LOW_DPI_NOISE_SCALE = 1.7;
         const renderScale = (window.devicePixelRatio || 1) < LOW_DPI_THRESHOLD ? 0.68 : 0.4;
 
         const oceanVertexShaderSource = `
           attribute vec2 position;
           void main() {
             gl_Position = vec4(position, 0.0, 1.0);
-          }
-        `;
-
-        const screenVertexShaderSource = `
-          attribute vec2 a_position;
-          attribute vec2 a_texCoord;
-          varying vec2 v_texCoord;
-
-          void main() {
-            gl_Position = vec4(a_position, 0.0, 1.0);
-            v_texCoord = a_texCoord;
-          }
-        `;
-
-        const ditherFragmentShaderSource = `
-          precision highp float;
-          uniform sampler2D u_image;
-          uniform vec2 u_resolution;
-          uniform float u_time;
-          uniform float u_night;
-          uniform float u_noiseScale;
-          varying vec2 v_texCoord;
-
-          #define INTENSITY_DAY 0.4
-          #define INTENSITY_NIGHT 0.065
-          #define SPEED 1.5
-          #define MEAN 0.0
-          #define VARIANCE_DAY 0.75
-          #define VARIANCE_NIGHT 0.6
-
-          float gaussian(float z, float u, float o) {
-            return (1.0 / (o * sqrt(2.0 * 3.1415))) * exp(-(((z - u) * (z - u)) / (2.0 * (o * o))));
-          }
-
-          void main() {
-            vec4 color = texture2D(u_image, v_texCoord);
-            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-
-            float t = u_time * SPEED;
-            vec2 uv = gl_FragCoord.xy * u_noiseScale / u_resolution;
-            float seed = dot(uv, vec2(12.9898, 78.233));
-            float noise = fract(sin(seed) * 43758.5453 + t);
-            float variance = mix(VARIANCE_DAY, VARIANCE_NIGHT, u_night);
-            noise = gaussian(noise, MEAN, variance * variance);
-
-            vec3 grain = vec3(noise) * (1.0 - vec3(gray));
-            float grainIntensity = mix(INTENSITY_DAY, INTENSITY_NIGHT, u_night);
-            gray = clamp(gray + grain.r * grainIntensity, 0.0, 1.0);
-
-            vec3 dark = mix(vec3(0.235), vec3(0.02), u_night);
-            vec3 light = mix(vec3(0.836), vec3(1.0), u_night);
-            gl_FragColor = vec4(mix(dark, light, gray), 1.0);
           }
         `;
 
@@ -956,8 +958,7 @@
         }
 
         const oceanProgram = createProgram(oceanVertexShaderSource, oceanFragmentShaderSource);
-        const ditherProgram = createProgram(screenVertexShaderSource, ditherFragmentShaderSource);
-        if (!oceanProgram || !ditherProgram) {
+        if (!oceanProgram) {
           return;
         }
 
@@ -969,66 +970,9 @@
           gl.STATIC_DRAW
         );
 
-        const quadBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-        gl.bufferData(
-          gl.ARRAY_BUFFER,
-          new Float32Array([
-            -1, -1, 0, 0,
-             1, -1, 1, 0,
-            -1,  1, 0, 1,
-            -1,  1, 0, 1,
-             1, -1, 1, 0,
-             1,  1, 1, 1,
-          ]),
-          gl.STATIC_DRAW
-        );
-
         const oceanPositionLocation = gl.getAttribLocation(oceanProgram, "position");
         const oceanResolutionLocation = gl.getUniformLocation(oceanProgram, "iResolution");
         const oceanTimeLocation = gl.getUniformLocation(oceanProgram, "iTime");
-
-        const ditherPositionLocation = gl.getAttribLocation(ditherProgram, "a_position");
-        const ditherTexCoordLocation = gl.getAttribLocation(ditherProgram, "a_texCoord");
-        const ditherImageLocation = gl.getUniformLocation(ditherProgram, "u_image");
-        const ditherResolutionLocation = gl.getUniformLocation(ditherProgram, "u_resolution");
-        const ditherTimeLocation = gl.getUniformLocation(ditherProgram, "u_time");
-        const ditherNightLocation = gl.getUniformLocation(ditherProgram, "u_night");
-        const ditherNoiseScaleLocation = gl.getUniformLocation(ditherProgram, "u_noiseScale");
-
-        let framebuffer = null;
-        let renderTexture = null;
-        let renderWidth = 0;
-        let renderHeight = 0;
-
-        function setupFramebuffer(width, height) {
-          if (framebuffer && renderWidth === width && renderHeight === height) {
-            return;
-          }
-
-          if (framebuffer) {
-            gl.deleteFramebuffer(framebuffer);
-          }
-          if (renderTexture) {
-            gl.deleteTexture(renderTexture);
-          }
-
-          renderWidth = width;
-          renderHeight = height;
-
-          renderTexture = gl.createTexture();
-          gl.bindTexture(gl.TEXTURE_2D, renderTexture);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-          framebuffer = gl.createFramebuffer();
-          gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderTexture, 0);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
 
         function resize() {
           const width = window.innerWidth;
@@ -1038,14 +982,12 @@
           canvas.height = Math.max(1, Math.floor(height * dpr * renderScale));
           canvas.style.width = width + "px";
           canvas.style.height = height + "px";
-          setupFramebuffer(canvas.width, canvas.height);
           gl.viewport(0, 0, canvas.width, canvas.height);
         }
 
         window.addEventListener("resize", resize);
         resize();
 
-        const noiseScale = (window.devicePixelRatio || 1) < LOW_DPI_THRESHOLD ? LOW_DPI_NOISE_SCALE : 1.0;
         const start = performance.now();
         const MAX_FPS = 30;
         const FRAME_INTERVAL_MS = 1000 / MAX_FPS;
@@ -1060,31 +1002,14 @@
 
           const t = prefersReducedMotion ? 0 : (now - start) / 1000;
 
-          gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-          gl.viewport(0, 0, renderWidth, renderHeight);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, canvas.width, canvas.height);
           gl.useProgram(oceanProgram);
           gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenBuffer);
           gl.enableVertexAttribArray(oceanPositionLocation);
           gl.vertexAttribPointer(oceanPositionLocation, 2, gl.FLOAT, false, 0, 0);
-          gl.uniform2f(oceanResolutionLocation, renderWidth, renderHeight);
+          gl.uniform2f(oceanResolutionLocation, canvas.width, canvas.height);
           gl.uniform1f(oceanTimeLocation, t);
-          gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          gl.viewport(0, 0, canvas.width, canvas.height);
-          gl.useProgram(ditherProgram);
-          gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-          gl.enableVertexAttribArray(ditherPositionLocation);
-          gl.vertexAttribPointer(ditherPositionLocation, 2, gl.FLOAT, false, 16, 0);
-          gl.enableVertexAttribArray(ditherTexCoordLocation);
-          gl.vertexAttribPointer(ditherTexCoordLocation, 2, gl.FLOAT, false, 16, 8);
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, renderTexture);
-          gl.uniform1i(ditherImageLocation, 0);
-          gl.uniform2f(ditherResolutionLocation, canvas.width, canvas.height);
-          gl.uniform1f(ditherTimeLocation, t);
-          gl.uniform1f(ditherNightLocation, 1.0);
-          gl.uniform1f(ditherNoiseScaleLocation, noiseScale);
           gl.drawArrays(gl.TRIANGLES, 0, 6);
 
           requestAnimationFrame(render);
@@ -1092,7 +1017,6 @@
 
         requestAnimationFrame(render);
       })();
-    </script>
     </script>
 
     <script>
