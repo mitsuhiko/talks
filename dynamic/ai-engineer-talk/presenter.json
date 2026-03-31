@@ -7,5 +7,9 @@
     "last": ["End"]
   },
   "notes": { "source": "auto" },
-  "preview": { "relativeHash": true }
+  "preview": { "relativeHash": true },
+  "timer": {
+    "mode": "countdown-slide",
+    "transitionSeconds": 2
+  }
 }
