@@ -101,7 +101,7 @@
         top: 18px;
         left: 128px;
         z-index: 3;
-        height: 79px;
+        height: 87px;
         width: auto;
         object-fit: contain;
         opacity: 0.55;
@@ -375,6 +375,36 @@
       .rule-block {
         max-width: 1480px;
       }
+
+      .title-insert-wrap {
+        padding: 14px 10px;
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(216, 233, 235, 0.12), rgba(216, 233, 235, 0.04));
+        border: 1px solid rgba(216, 233, 235, 0.25);
+        box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+
+      .title-insert-image {
+        display: block;
+        margin: 0 auto;
+        width: auto;
+        max-width: min(99%, 1700px);
+        height: auto;
+        max-height: clamp(620px, 75vh, 880px);
+        border-radius: 18px;
+        border: 1px solid rgba(216, 233, 235, 0.32);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+
+      .slide-content-image {
+        display: block;
+        width: auto;
+        max-width: min(100%, 1720px);
+        height: auto;
+        max-height: clamp(640px, 86vh, 940px);
+        border-radius: 14px;
+      }
     </style>
   </head>
   <body>
@@ -389,16 +419,24 @@
       <img class="deck-logo" src="./assets/logos/earendil-logo.svg" alt="Earendil logo" aria-hidden="true" />
 
       <!-- TITLE -->
-      <section class="slide title-slide" data-slide="1" data-slide-time="23" data-notes="@armin: Open with learnings from the last 12 months. Practical, evolving, not a finished playbook.&#10;@armin: Smooth handoff into who we are.">
+      <section class="slide title-slide" data-slide="1" data-slide-time="10" data-notes="@armin: Open with learnings from the last 12 months. Practical, evolving, not a finished playbook.&#10;@armin: Smooth handoff into who we are.">
         <div class="frame title-slide">
-          <p class="eyebrow">AI Engineer · June 2026 · London</p>
+          <p class="eyebrow">AI Engineer · April 2026 · London</p>
           <h1>The Friction Is Your Judgment</h1>
           <p class="subtitle">Armin Ronacher &amp; Cristina Poncela · Earendil</p>
         </div>
       </section>
 
+      <section class="slide" data-slide="25" data-slide-time="15" data-notes="@armin: today we want to promote the idea of shipping with friction">
+        <div class="frame frame-wide center">
+          <div class="title-insert-wrap">
+            <img src="assets/title-insert.png" alt="" class="title-insert-image" />
+          </div>
+        </div>
+      </section>
+
       <!-- SPEAKER INTRO -->
-      <section class="slide" data-slide="2" data-slide-time="46" data-notes="@armin: Brief bio and why this topic is from real operating experience.&#10;@cristina: AI-native engineer framing and prior experience at Bending Spoons.">
+      <section class="slide" data-slide="2" data-slide-time="36" data-notes="@armin: Brief bio and why this topic is from real operating experience.&#10;@cristina: AI-native engineer framing and prior experience at Bending Spoons.">
         <div class="frame frame-wide">
           <h2>Who We Are</h2>
           <div class="split">
@@ -607,7 +645,7 @@
       <!-- MECHANICAL ENFORCEMENT EXAMPLE -->
       <section class="slide" data-slide="17" data-slide-time="4" data-notes="@cristina: Spend four seconds on this screenshot only; no deep explanation.&#10;@cristina: Time was shifted from the prior mechanical enforcement slide.">
         <div class="frame frame-wide center">
-          <img src="assets/mechanical-enforcement-lint-example.png" alt="Mechanical enforcement lint screenshot" style="max-width: 100%; max-height: 78vh; border-radius: 14px;" />
+          <img src="assets/mechanical-enforcement-lint-example.png" alt="Mechanical enforcement lint screenshot" class="slide-content-image" />
         </div>
       </section>
 
@@ -641,7 +679,7 @@
       <!-- PR REVIEW EXAMPLE -->
       <section class="slide" data-slide="19" data-slide-time="4" data-notes="@armin: Spend four seconds on this screenshot only; no deep explanation.&#10;@armin: Time was shifted from the prior PR review slide.">
         <div class="frame frame-wide center">
-          <img src="assets/pr-review-callouts-example.png" alt="PR review callouts screenshot" style="max-width: 100%; max-height: 78vh; border-radius: 14px;" />
+          <img src="assets/pr-review-callouts-example.png" alt="PR review callouts screenshot" class="slide-content-image" />
         </div>
       </section>
 
