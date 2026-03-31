@@ -96,6 +96,18 @@
         color: var(--soft);
       }
 
+      .deck-logo {
+        position: absolute;
+        top: 18px;
+        left: 128px;
+        z-index: 3;
+        height: 79px;
+        width: auto;
+        object-fit: contain;
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
       .slide {
         display: none;
         width: 1920px;
@@ -374,6 +386,7 @@
         <span>Armin Ronacher &amp; Cristina Poncela</span>
         <span>Earendil Inc.</span>
       </div>
+      <img class="deck-logo" src="./assets/logos/earendil-logo.svg" alt="Earendil logo" aria-hidden="true" />
 
       <!-- TITLE -->
       <section class="slide title-slide" data-slide="1" data-slide-time="23" data-notes="@armin: Open with learnings from the last 12 months. Practical, evolving, not a finished playbook.&#10;@armin: Smooth handoff into who we are.">
@@ -577,7 +590,7 @@
       </section>
 
       <!-- MECHANICAL ENFORCEMENT -->
-      <section class="slide" data-slide="16" data-slide-time="66" data-notes="@cristina: Mechanical enforcement beats prompt-only rules.&#10;@cristina: No bare catch-alls, no raw SQL outside abstraction, no raw input boxes, no dynamic imports, unique function names.&#10;@cristina: Important callout: erasableSyntaxOnly TypeScript mode keeps code strippable, avoids transpile indirection, and improves agent error localization.&#10;@cristina: Action item from rehearsal: add a lint-failure screenshot (or one quick visual) demonstrating enforcement in practice.">
+      <section class="slide" data-slide="16" data-slide-time="62" data-notes="@cristina: Mechanical enforcement beats prompt-only rules.&#10;@cristina: No bare catch-alls, no raw SQL outside abstraction, no raw input boxes, no dynamic imports, unique function names.&#10;@cristina: Important callout: erasableSyntaxOnly TypeScript mode keeps code strippable, avoids transpile indirection, and improves agent error localization.&#10;@cristina: Action item from rehearsal: add a lint-failure screenshot (or one quick visual) demonstrating enforcement in practice.">
         <div class="frame frame-wide">
           <h2>Example Mechanical Enforcement</h2>
           <ul class="dense">
@@ -591,8 +604,15 @@
         </div>
       </section>
 
+      <!-- MECHANICAL ENFORCEMENT EXAMPLE -->
+      <section class="slide" data-slide="17" data-slide-time="4" data-notes="@cristina: Spend four seconds on this screenshot only; no deep explanation.&#10;@cristina: Time was shifted from the prior mechanical enforcement slide.">
+        <div class="frame frame-wide center">
+          <img src="assets/mechanical-enforcement-lint-example.png" alt="Mechanical enforcement lint screenshot" style="max-width: 100%; max-height: 78vh; border-radius: 14px;" />
+        </div>
+      </section>
+
       <!-- PR REVIEW -->
-      <section class="slide" data-slide="17" data-slide-time="82" data-notes="@armin: Split PR review into machine-fixable comments and human judgment callouts.&#10;@armin: Machine bucket: style, mechanical bugs, explicit rule violations.&#10;@armin: Human callouts: DB migrations, new dependencies, auth/permission shifts, destructive or irreversible changes.&#10;@armin: Action item from rehearsal: show a PR-review screenshot with explicit callouts vs actionable machine comments.">
+      <section class="slide" data-slide="18" data-slide-time="82" data-notes="@armin: Split PR review into machine-fixable comments and human judgment callouts.&#10;@armin: Machine bucket: style, mechanical bugs, explicit rule violations.&#10;@armin: Human callouts: DB migrations, new dependencies, auth/permission shifts, destructive or irreversible changes.&#10;@armin: Action item from rehearsal: show a PR-review screenshot with explicit callouts vs actionable machine comments.">
         <div class="frame frame-wide">
           <h2>Pull Request Review</h2>
           <div class="split">
@@ -619,14 +639,14 @@
       </section>
 
       <!-- PR REVIEW EXAMPLE -->
-      <section class="slide" data-slide="18" data-slide-time="4" data-notes="@armin: Spend four seconds on this screenshot only; no deep explanation.&#10;@armin: Time was shifted from the prior PR review slide.">
+      <section class="slide" data-slide="19" data-slide-time="4" data-notes="@armin: Spend four seconds on this screenshot only; no deep explanation.&#10;@armin: Time was shifted from the prior PR review slide.">
         <div class="frame frame-wide center">
-          <img src="assets/pr-review-callouts-example.png" alt="PR review callouts screenshot" style="max-width: 100%; max-height: 72vh; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" />
+          <img src="assets/pr-review-callouts-example.png" alt="PR review callouts screenshot" style="max-width: 100%; max-height: 78vh; border-radius: 14px;" />
         </div>
       </section>
 
       <!-- WHERE SPEED HELPS -->
-      <section class="slide" data-slide="19" data-slide-time="60" data-notes="@armin: High leverage uses: prototypes, onboarding experiments, CI/debugging, repro cases.&#10;@armin: Important explicit callout: brownfield with strong core beats greenfield generated core. Avoid slop on slop.">
+      <section class="slide" data-slide="20" data-slide-time="60" data-notes="@armin: High leverage uses: prototypes, onboarding experiments, CI/debugging, repro cases.&#10;@armin: Important explicit callout: brownfield with strong core beats greenfield generated core. Avoid slop on slop.">
         <div class="frame frame-wide">
           <h2>Where Speed Actually Helps</h2>
           <div class="split">
@@ -655,12 +675,12 @@
       </section>
 
       <!-- SLOW DOWN -->
-      <section class="slide" data-slide="20" data-slide-time="46" data-notes="@armin: Even if already in the mess, you still have to go slow.&#10;@armin: Refactoring only works if planned early and explicitly supported by product.">
+      <section class="slide" data-slide="21" data-slide-time="46" data-notes="@armin: Even if already in the mess, you still have to go slow.&#10;@armin: Refactoring only works if planned early and explicitly supported by product.">
         <div class="frame frame-wide">
           <h2>You Still Have to Go Slow</h2>
           <ul class="dense">
             <li>Refactoring later only works if you planned for it and did not make too much mess too early</li>
-            <li>Once your understanding drops, cleanup gets harder too — not easier</li>
+            <li>Once your understanding drops, cleanup gets harder too</li>
             <li>With agents, you can accumulate in days the debt that used to take months</li>
             <li>That makes it much harder to judge the actual state of the codebase</li>
           </ul>
@@ -668,7 +688,7 @@
       </section>
 
       <!-- FRICTION ARGUMENT -->
-      <section class="slide" data-slide="21" data-slide-time="53" data-notes="@armin: Friction is feedback the human must feel because the agent cannot feel ownership pressure.&#10;@armin: Remove mechanical friction; increase judgment friction around taste and irreversible decisions.">
+      <section class="slide" data-slide="22" data-slide-time="53" data-notes="@armin: Friction is feedback the human must feel because the agent cannot feel ownership pressure.&#10;@armin: Remove mechanical friction; increase judgment friction around taste and irreversible decisions.">
         <div class="frame frame-wide">
           <h2>Why Friction Matters</h2>
           <ul class="dense">
@@ -681,7 +701,7 @@
       </section>
 
       <!-- STEERING -->
-      <section class="slide" data-slide="22" data-slide-time="13" data-notes="@armin: Keep as a clean beat: friction is not bureaucracy, it is how you steer.">
+      <section class="slide" data-slide="23" data-slide-time="13" data-notes="@armin: Keep as a clean beat: friction is not bureaucracy, it is how you steer.">
         <div class="frame frame-narrow center">
           <p class="big-text">Some friction is waste.</p>
           <p class="huge-text">Without friction, you can't steer.</p>
@@ -689,7 +709,7 @@
       </section>
 
       <!-- FINAL -->
-      <section class="slide" data-slide="23" data-slide-time="11" data-notes="@armin: Final close: the friction is your judgment. Thank the audience.">
+      <section class="slide" data-slide="24" data-slide-time="11" data-notes="@armin: Final close: the friction is your judgment. Thank the audience.">
         <div class="frame frame-narrow center">
           <p class="big-text">The friction isn't the enemy.</p>
           <p class="huge-text">The friction is your judgment.</p>
