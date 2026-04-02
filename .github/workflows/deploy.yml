@@ -138,6 +138,10 @@ jobs:
           for talk_dir in _site/*/; do
             if [ -d "$talk_dir" ]; then
               talk_name=$(basename "$talk_dir")
+              if [ -f "dynamic/${talk_name}/.hidden" ]; then
+                echo "Skipping hidden talk: $talk_name"
+                continue
+              fi
               # Convert dashes to spaces and title case for display
               display_name=$(echo "$talk_name" | tr '-' ' ' | sed 's/\b\(.\)/\u\1/g')
               echo "      <li><a href=\"${talk_name}/\">${display_name}</a></li>" >> _site/index.html
