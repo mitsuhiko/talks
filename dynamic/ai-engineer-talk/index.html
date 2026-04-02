@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>The Friction Is Your Judgment</title>
-    <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.0/client/standalone.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.1/client/standalone.js"></script>
     <style>
       @font-face {
         font-family: "Departure Mono";
@@ -105,6 +105,24 @@
         object-fit: contain;
         opacity: 0.55;
         pointer-events: none;
+      }
+
+      .speaker-indicator {
+        position: absolute;
+        right: 128px;
+        bottom: 22px;
+        z-index: 4;
+        display: none;
+        pointer-events: none;
+        font-family: var(--mono-font);
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(223, 229, 231, 0.3);
+      }
+
+      .speaker-indicator.visible {
+        display: block;
       }
 
       .slide {
@@ -415,6 +433,7 @@
         <span>Armin Ronacher &amp; Cristina Poncela</span>
         <span>Earendil Inc.</span>
       </div>
+      <div class="speaker-indicator" id="speaker-indicator" aria-hidden="true"></div>
       <img class="deck-logo" src="./assets/logos/earendil-logo.svg" alt="Earendil logo" aria-hidden="true" />
 
       <!-- TITLE -->
@@ -1100,6 +1119,12 @@
       scaleDeck();
 
       const slides = Array.from(document.querySelectorAll(".slide"));
+      const speakerIndicator = document.getElementById("speaker-indicator");
+      const speakerInfoEnabled = new URLSearchParams(window.location.search).get("speakerinfo") === "1";
+      const speakerLabels = {
+        armin: "A",
+        cristina: "C",
+      };
       let slideIndex = 0;
       let stepIndex = 0;
       const touchState = {
@@ -1120,6 +1145,34 @@
         return steps.length;
       }
 
+      function parseSpeakerNotes(notes) {
+        return String(notes || "")
+          .split(/\r?\n+/)
+          .map((line) => line.trim())
+          .map((line) => {
+            const match = line.match(/^@([a-z0-9_-]+)\s*:/i);
+            return match ? match[1].toLowerCase() : null;
+          })
+          .filter(Boolean);
+      }
+
+      function getPrimarySpeaker(slide) {
+        return parseSpeakerNotes(slide?.dataset.notes)[0] || null;
+      }
+
+      function updateSpeakerIndicator() {
+        if (!speakerIndicator || !speakerInfoEnabled) {
+          return;
+        }
+
+        const currentSpeaker = getPrimarySpeaker(slides[slideIndex]);
+        const nextSpeaker = slideIndex < slides.length - 1 ? getPrimarySpeaker(slides[slideIndex + 1]) : null;
+        const shouldShow = Boolean(currentSpeaker && nextSpeaker && currentSpeaker !== nextSpeaker);
+
+        speakerIndicator.textContent = shouldShow ? `${speakerLabels[nextSpeaker] || nextSpeaker}->` : "";
+        speakerIndicator.classList.toggle("visible", shouldShow);
+      }
+
       function updateHash() {
         const slideNumber = slides[slideIndex].dataset.slide;
         const stepSuffix = stepIndex > 0 ? `.${stepIndex}` : "";
@@ -1134,6 +1187,7 @@
         const stepCount = applySteps(slides[slideIndex]);
         stepIndex = clamp(stepIndex, 0, stepCount);
         applySteps(slides[slideIndex]);
+        updateSpeakerIndicator();
 
         if (shouldUpdateHash) {
           updateHash();
