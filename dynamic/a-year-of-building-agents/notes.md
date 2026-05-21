@@ -79,32 +79,20 @@ Clarify the terminology discomfort: agency and responsibility should stay human.
 - Agency belongs to humans, not machines.
 - But “agent” is the word the industry uses.
 
-## 8. Write Code, Run Code
 
-**Backdrop:** Write. Run. Read.
+## 8. A Story in Three Parts
 
-The core capability: writing code and running code creates the feedback loop that makes these systems powerful.
+**Backdrop:** a story in three parts: agent psychosis, code and friction
 
-- The model can write a small program for the thing it wants to do.
-- The harness runs it and returns stdout, stderr, files, logs, screenshots, or test results.
-- The model reads that feedback and changes course.
-- That write-run-read loop is what makes a good agent.
-- Everything else in this talk unfolds from that loop.
+Set up the talk as three linked parts: agent psychosis, code, and friction.
 
-
-## 9. Change the Harness Demo
-
-**Backdrop:** Asciinema animation from pi.dev.
-
-Show the Pi demo from pi.dev: change the harness, not your workflow. The point is that the agent can customize its own tools and interaction surface, then you reload and keep working.
-
-## 10. Part I — Agent Psychosis
+## 9. Part I — Agent Psychosis
 
 **Backdrop:** Part I · Agent Psychosis
 
 Transition into the human and organizational effects.
 
-## 11. Pi Is Built in the Open
+## 10. Pi Is Built in the Open
 
 **Backdrop:** Built in the Open
 
@@ -117,19 +105,19 @@ Concrete example from Pi: because it is developed in the open, we see agent-gene
 - #1923: 70k lines added, 167 files, 58 commits.
 
 
-## 12. Pi PR Screenshot I
+## 11. Pi PR Screenshot I
 
 **Backdrop:** Screenshot of generated PR churn.
 
 Show the first screenshot as a concrete example of generated churn arriving in the open. Let the size and shape of the PR speak before explaining it.
 
-## 13. Pi PR Screenshot II
+## 12. Pi PR Screenshot II
 
 **Backdrop:** Second screenshot of generated PR churn.
 
 Show the second screenshot as another example of speed without local context. Use it to transition from raw volume into the psychology of output feeling like progress.
 
-## 14. Output Feels Like Progress
+## 13. Output Feels Like Progress
 
 **Backdrop:** Output Is Not Understanding
 
@@ -142,7 +130,7 @@ This is the psychological trap: output has become cheaper than understanding.
 - More code is not the same as more understanding.
 - The agent does not know when to stop; neither do you once you are in the flow.
 
-## 15. Expectations Changed Fast
+## 14. Expectations Changed Fast
 
 **Backdrop:** Expectations Move Overnight
 
@@ -153,7 +141,7 @@ Make this practical: the first visible change is often organizational pressure a
 - That is genuinely empowering.
 - It also turns engineering review into a painful bottleneck.
 
-## 16. The New Code Contributors
+## 15. The New Code Contributors
 
 **Backdrop:** New Contributors, New Gaps
 
@@ -164,7 +152,7 @@ Two risks: non-engineers can now produce code without seeing the gap to good eng
 - Juniors can feel senior-level leverage before they build senior-level judgment.
 - The clanker can produce arguments against a review, but not the institutional context behind it.
 
-## 17. Atrophy Is Real
+## 16. Atrophy Is Real
 
 **Backdrop:** Skills Atrophy Quietly
 
@@ -173,7 +161,7 @@ The muscle atrophy point: design, debugging, and review must remain active pract
 - If the agent always explains the code, your own understanding fades.
 - If review becomes rubber-stamping, the codebase starts drifting.
 
-## 18. The Review Asymmetry
+## 17. The Review Asymmetry
 
 **Backdrop:** Generation Is Cheap. Review Isn’t.
 
@@ -184,7 +172,7 @@ A generated change can be cheap to produce and expensive to review. This is the 
 - Large generated PRs create social pressure, not just tooling work.
 - Ask for small changes, clear intent, and the context that led to the code.
 
-## 19. Psychology Insight
+## 18. Psychology Insight
 
 **Backdrop:** Humans Must Keep Thinking
 
@@ -193,13 +181,13 @@ Land the section in one crisp sentence.
 - The danger is not that agents write code.
 - The danger is that humans stop thinking.
 
-## 20. Part II — Code Is All You Need
+## 19. Part II — Code Is All You Need
 
 **Backdrop:** Part II · Code Is All You Need
 
 Transition from psychology into the architecture of agents.
 
-## 21. Code Is the Glue
+## 20. Code Is the Glue
 
 **Backdrop:** Code Is the Glue
 
@@ -210,7 +198,33 @@ This is the key conceptual bridge: code is not only the output of coding agents,
 - They use scripts to drive browsers, debuggers, CLIs, APIs, and documents.
 - When you build an agent, you often wire together code execution, files, tools, and policy.
 
-## 22. Why Code Wins
+## 21. Write Code, Run Code
+
+**Backdrop:** Write. Run. Read.
+
+The core capability: writing code and running code creates the feedback loop that makes these systems powerful.
+
+- The model can write a small program for the thing it wants to do.
+- The harness runs it and returns stdout, stderr, files, logs, screenshots, or test results.
+- The model reads that feedback and changes course.
+- That write-run-read loop is what makes a good agent.
+- Everything else in this talk unfolds from that loop.
+
+
+
+## 22. Pi Intro
+
+**Backdrop:** Pi · pi.dev is the website
+
+Introduce Pi: pi.dev is the website.
+
+## 23. Change the Harness Demo
+
+**Backdrop:** Asciinema animation from pi.dev.
+
+Show the Pi demo from pi.dev: change the harness, not your workflow. The point is that the agent can customize its own tools and interaction surface, then you reload and keep working.
+
+## 24. Why Code Wins
 
 **Backdrop:** Determinism Beats Inference
 
@@ -221,7 +235,7 @@ Explain why code often beats many tool definitions or MCP-style interfaces for r
 - You can compose it with files, pipes, tests, logs, and existing tools.
 - Once written, most of the work becomes deterministic.
 
-## 23. Tiny Programmable Worlds
+## 25. Tiny Programmable Worlds
 
 **Backdrop:** Tiny Programmable Worlds
 
@@ -232,7 +246,7 @@ The practical pattern: give the agent a small world where it can act safely and 
 - Logs the agent can read without asking a human.
 - Enough constraints that failure is visible instead of dangerous.
 
-## 24. Gondolin
+## 26. Gondolin
 
 **Backdrop:** Gondolin: Disposable Worlds
 
@@ -246,13 +260,13 @@ Pitch Gondolin as the concrete sandbox we built for this style of agent architec
 - Fast enough to treat the VM as something you create, use, and throw away.
 
 
-## 25. Gondolin Demo
+## 27. Gondolin Demo
 
 **Backdrop:** Gondolin asciinema animation.
 
 Show the Gondolin asciinema demo. Use it as the concrete visual for disposable programmable worlds: create the sandbox, run work inside it, and throw it away.
 
-## 26. An Agent-Legible Codebase
+## 28. An Agent-Legible Codebase
 
 **Backdrop:** Codebase Is Your Infrastructure
 
@@ -264,13 +278,13 @@ Bring the codebase design lessons back in. These are also good human engineering
 - Fast tests and loud failures.
 - No hidden magic: if the agent cannot see it, it cannot respect it.
 
-## 27. Part III — Force Friction
+## 29. Part III — Force Friction
 
 **Backdrop:** Part III · Force Friction
 
 Transition to the operating discipline required to make this sustainable.
 
-## 28. Where Speed Actually Helps
+## 30. Where Speed Actually Helps
 
 **Backdrop:** Speed Kills
 
@@ -291,7 +305,7 @@ Separate high-leverage speed from places where speed creates future cleanup cost
 - Code you have not specified clearly yourself.
 - Anything where cleanup cost arrives later.
 
-## 29. Mechanical Enforcement Beats Prompts
+## 31. Mechanical Enforcement Beats Prompts
 
 **Backdrop:** Add Mechanical Guardrails
 
@@ -303,7 +317,7 @@ Mechanical enforcement beats hoping the prompt is obeyed.
 - Use component libraries and code generation where they preserve consistency.
 - Let tools reject the easy wrong answer before a human has to see it.
 
-## 30. Pull Request Review
+## 32. Pull Request Review
 
 **Backdrop:** Machines Fix. Humans Judge.
 
@@ -324,7 +338,7 @@ Split review into what the machine should fix and what the human must judge.
 - Backwards-incompatible API changes.
 - Irreversible destructive operations.
 
-## 31. Force Friction
+## 33. Force Friction
 
 **Backdrop:** Remove Toil. Add Judgment.
 
@@ -335,7 +349,7 @@ Define the final lesson: remove toil, add friction around judgment.
 - Keep generated changes small enough to understand.
 - Make the human feel the pressure where responsibility actually lives.
 
-## 32. Final
+## 34. Final
 
 **Backdrop:** Without Friction You Can't Steer
 
@@ -345,7 +359,7 @@ Close with the friction thesis and thank the audience.
 - Without friction, you cannot steer.
 - The friction is your judgment.
 
-## 33. Q&A
+## 35. Q&A
 
 **Backdrop:** Q&A
 
