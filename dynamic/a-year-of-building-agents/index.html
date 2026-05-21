@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>A Year of Building AI Agents</title>
+    <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.1/client/standalone.js"></script>
+    <style>
+      @font-face {
+        font-family: "Departure Mono";
+        src: url("./assets/fonts/DepartureMono-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: "EB Garamond";
+        src: url("./assets/fonts/EBGaramond-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: "EB Garamond";
+        src: url("./assets/fonts/EBGaramond-Italic.ttf") format("truetype");
+        font-weight: 400;
+        font-style: italic;
+        font-display: swap;
+      }
+
+      :root {
+        color-scheme: dark;
+        --mono-font: "Departure Mono", "SFMono-Regular", ui-monospace, monospace;
+        --serif-font: "EB Garamond", "Garamond", "Times New Roman", "Times", serif;
+        --text: rgba(244, 246, 247, 0.96);
+        --muted: rgba(226, 232, 234, 0.68);
+        --soft: rgba(223, 229, 231, 0.62);
+        --rule: rgba(210, 225, 229, 0.18);
+        --rule-strong: rgba(210, 225, 229, 0.32);
+        --accent: rgba(216, 233, 235, 0.84);
+        background: #020507;
+        color: var(--text);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        cursor: default;
+        background: #020507;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+
+      body {
+        font-family: var(--serif-font);
+      }
+
+      #backdrop {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        background: radial-gradient(circle at 50% 8%, rgba(24, 45, 48, 0.32), rgba(3, 7, 9, 0.96) 58%, #020507 100%);
+      }
+
+      .backdrop-scrim {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03), transparent 34%),
+          linear-gradient(180deg, rgba(2, 5, 7, 0.18), rgba(2, 5, 7, 0.22) 34%, rgba(2, 5, 7, 0.58) 100%),
+          radial-gradient(circle at center, transparent 52%, rgba(0, 0, 0, 0.38) 100%);
+        z-index: 1;
+      }
+
+      .deck {
+        width: 1920px;
+        height: 1080px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-origin: center center;
+        z-index: 2;
+      }
+
+      .deck-footer {
+        position: absolute;
+        left: 128px;
+        right: 128px;
+        bottom: 52px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: none;
+        z-index: 3;
+        font-family: var(--mono-font);
+        font-size: 18px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--soft);
+      }
+
+      .deck-logo {
+        position: absolute;
+        top: 18px;
+        left: 128px;
+        z-index: 3;
+        height: 87px;
+        width: auto;
+        object-fit: contain;
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
+      .speaker-indicator {
+        position: absolute;
+        right: 128px;
+        bottom: 22px;
+        z-index: 4;
+        display: none;
+        pointer-events: none;
+        font-family: var(--mono-font);
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(223, 229, 231, 0.3);
+      }
+
+      .speaker-indicator.visible {
+        display: block;
+      }
+
+      .slide {
+        display: none;
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        padding: 92px 128px 110px;
+        align-content: center;
+      }
+
+      .slide.active {
+        display: grid;
+      }
+
+      .frame {
+        width: 100%;
+        max-width: 1540px;
+      }
+
+      .frame-narrow {
+        width: 100%;
+        max-width: 1320px;
+      }
+
+      .frame-wide {
+        width: 100%;
+        max-width: 1660px;
+      }
+
+      .center {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        margin-inline: auto;
+      }
+
+      h1,
+      h2,
+      h3,
+      p,
+      ul,
+      li,
+      pre {
+        margin: 0;
+      }
+
+      h1 {
+        font-family: var(--serif-font);
+        font-size: 118px;
+        font-weight: 400;
+        line-height: 0.96;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      h2 {
+        font-family: var(--serif-font);
+        font-size: 84px;
+        font-weight: 400;
+        line-height: 1.02;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      p,
+      li {
+        font-family: var(--serif-font);
+        font-size: 49px;
+        font-weight: 400;
+        line-height: 1.28;
+        letter-spacing: -0.01em;
+      }
+
+      ul {
+        padding-left: 48px;
+        margin-top: 26px;
+      }
+
+      li {
+        margin: 14px 0;
+      }
+
+      .eyebrow,
+      .subtitle,
+      .prediction-label,
+      .code,
+      .caption {
+        font-family: var(--mono-font);
+        letter-spacing: 0.08em;
+      }
+
+      .eyebrow {
+        margin-bottom: 28px;
+        font-size: 25px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .title-slide .eyebrow {
+        margin-bottom: 34px;
+      }
+
+      .title-slide h1 {
+        max-width: 1100px;
+        font-style: italic;
+        font-weight: 400;
+      }
+
+      .subtitle {
+        margin-top: 30px;
+        font-size: 22px;
+        line-height: 1.5;
+        color: var(--soft);
+        text-transform: uppercase;
+      }
+
+      .big-text {
+        font-size: 80px;
+        line-height: 1.08;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      .huge-text {
+        font-size: 114px;
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+        text-wrap: balance;
+      }
+
+      .lead {
+        max-width: 1380px;
+      }
+
+      .quote {
+        margin-top: 30px;
+        font-style: italic;
+        color: rgba(244, 246, 247, 0.92);
+      }
+
+      .quote-large {
+        max-width: 1450px;
+        font-size: 58px;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
+      }
+
+      .code {
+        font-size: 0.7em;
+        padding: 0.2em 0.45em;
+        color: rgba(244, 246, 247, 0.98);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .steps {
+        margin-top: 18px;
+      }
+
+      .step.hidden {
+        visibility: hidden;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 72px;
+        align-items: start;
+        margin-top: 34px;
+      }
+
+      .panel {
+        position: relative;
+      }
+
+      .panel h3 {
+        font-family: var(--mono-font);
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1.5;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      .panel ul {
+        margin-top: 0;
+        padding-left: 34px;
+      }
+
+      .panel li {
+        font-size: 39px;
+        line-height: 1.28;
+        margin: 10px 0;
+      }
+
+      .dense li {
+        font-size: 43px;
+        line-height: 1.22;
+        margin: 12px 0;
+      }
+
+      .compact li {
+        font-size: 34px;
+        line-height: 1.25;
+        margin: 8px 0;
+      }
+
+      .prediction-slide h2 {
+        font-size: 92px;
+        margin-bottom: 50px;
+      }
+
+      .prediction-grid {
+        display: grid;
+        grid-template-columns: 1.14fr 0.86fr;
+        gap: 58px;
+        align-items: start;
+      }
+
+      .prediction-col {
+        position: relative;
+      }
+
+      .prediction-col--right {
+        padding-left: 42px;
+      }
+
+      .prediction-label {
+        margin-bottom: 18px;
+        font-size: 22px;
+        line-height: 1.5;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .prediction-col--right .prediction-label {
+        color: var(--soft);
+      }
+
+      .prediction-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .prediction-list li {
+        position: relative;
+        padding-left: 28px;
+        margin: 0 0 16px;
+        font-size: 39px;
+        line-height: 1.18;
+      }
+
+      .prediction-list li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+      }
+
+      .prediction-col--right .prediction-list li::before {
+        color: var(--soft);
+      }
+
+      .rule-block {
+        max-width: 1480px;
+      }
+
+      .title-insert-wrap {
+        padding: 14px 10px;
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(216, 233, 235, 0.12), rgba(216, 233, 235, 0.04));
+        border: 1px solid rgba(216, 233, 235, 0.25);
+        box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+
+      .title-insert-image {
+        display: block;
+        margin: 0 auto;
+        width: auto;
+        max-width: min(99%, 1700px);
+        height: auto;
+        max-height: clamp(620px, 75vh, 880px);
+        border-radius: 18px;
+        border: 1px solid rgba(216, 233, 235, 0.32);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+
+      .slide-content-image {
+        display: block;
+        width: auto;
+        max-width: min(100%, 1720px);
+        height: auto;
+        max-height: clamp(640px, 86vh, 940px);
+        border-radius: 14px;
+      }
+
+      .screenshot-image {
+        max-width: 1560px;
+        max-height: 830px;
+        border: 1px solid rgba(216, 233, 235, 0.25);
+        border-radius: 18px;
+        background: rgba(2, 5, 7, 0.62);
+        box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48);
+      }
+
+      .minimal-slide {
+        overflow: hidden;
+      }
+
+      .minimal-slide .frame {
+        position: relative;
+        z-index: 1;
+      }
+
+      .minimal-slide.mood-center {
+        justify-items: center;
+        text-align: center;
+      }
+
+      .minimal-slide.mood-right {
+        justify-items: end;
+        text-align: right;
+      }
+
+      .minimal-slide.mood-left {
+        justify-items: start;
+        text-align: left;
+      }
+
+      .kicker {
+        margin-bottom: 30px;
+        font-family: var(--mono-font);
+        font-size: 24px;
+        line-height: 1.4;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .speaker-name {
+        margin-bottom: 44px;
+        font-size: 54px;
+        letter-spacing: 0.08em;
+        color: rgba(244, 246, 247, 0.84);
+      }
+
+      .wordmark {
+        display: block;
+        max-width: 1520px;
+        font-family: var(--serif-font);
+        font-size: 158px;
+        font-weight: 400;
+        line-height: 0.9;
+        letter-spacing: -0.065em;
+        color: var(--text);
+        text-wrap: balance;
+      }
+
+      .wordmark .line {
+        display: block;
+      }
+
+      .wordmark--title {
+        max-width: 1180px;
+        font-size: 132px;
+        font-style: italic;
+        line-height: 0.94;
+      }
+
+      .wordmark--huge {
+        max-width: 1640px;
+        font-size: 220px;
+        line-height: 0.82;
+        letter-spacing: -0.085em;
+      }
+
+      .wordmark--giant {
+        max-width: 1660px;
+        font-size: 254px;
+        line-height: 0.78;
+        letter-spacing: -0.09em;
+      }
+
+      .wordmark--wide {
+        max-width: 1660px;
+        font-size: 180px;
+      }
+
+      .wordmark--small {
+        max-width: 1200px;
+        font-size: 122px;
+        line-height: 0.96;
+      }
+
+      .wordmark--mono {
+        font-family: var(--mono-font);
+        font-size: 92px;
+        line-height: 1.04;
+        letter-spacing: 0.015em;
+        text-transform: uppercase;
+        color: rgba(244, 246, 247, 0.9);
+      }
+
+      .wordmark--italic {
+        font-style: italic;
+      }
+
+      .tilt-left .wordmark {
+        transform: rotate(-1.6deg);
+        transform-origin: left center;
+      }
+
+      .tilt-right .wordmark {
+        transform: rotate(1.8deg);
+        transform-origin: right center;
+      }
+
+      .mood-center.tilt-left .wordmark,
+      .mood-center.tilt-right .wordmark {
+        transform-origin: center center;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="backdrop" aria-hidden="true"></canvas>
+    <div class="backdrop-scrim"></div>
+
+    <div class="deck">
+      <div class="deck-footer" aria-hidden="true">
+        <span>Armin Ronacher</span>
+        <span>Earendil Inc.</span>
+      </div>
+      <div class="speaker-indicator" id="speaker-indicator" aria-hidden="true"></div>
+      <img class="deck-logo" src="./assets/logos/earendil-logo.svg" alt="Earendil logo" aria-hidden="true" />
+
+      <!-- TITLE -->
+      <section class="slide minimal-slide mood-left tilt-left" data-slide="1" data-notes="Open with the year-long arc: practical learnings from building agents and building with agents.&#10;• Code Crafts · May 21, 2026 · Vienna&#10;• Armin Ronacher · Earendil">
+        <div class="frame frame-wide">
+          <h1 class="wordmark wordmark--title">A Year of Building AI Agents</h1>
+        </div>
+      </section>
+
+      <!-- SPEAKER INTRO -->
+      <section class="slide minimal-slide mood-center" data-slide="2" data-notes="Reuse the old intro, but make clear this talk comes from operating experience at Earendil and long experience maintaining software.&#10;• Armin Ronacher, founder at Earendil.&#10;• Created Flask, Jinja2, and a lot of Open Source software.&#10;• Spent 10 years helping build Sentry.&#10;• I write at lucumr.pocoo.org about agentic engineering.">
+        <div class="frame frame-narrow">
+          <p class="kicker speaker-name">Armin Ronacher</p>
+          <h2 class="wordmark wordmark--huge">Builder. Maintainer. Founder.</h2>
+        </div>
+      </section>
+
+      <!-- OPENING -->
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="3" data-notes="Set the framing: this is about the double exposure of building agents and using agents to build them.&#10;• This talk is about building agents — and building agents with agents.&#10;• At Earendil we build Pi and Lefos, two agents for different user groups.&#10;• Pi is for developers; Lefos is for people who want more thoughtful communication.&#10;• The learnings come from building these systems and using agents to build them.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--wide">Building Agents, With Agents</h2>
+        </div>
+      </section>
+
+      <!-- DOUBLE EXPOSURE -->
+      <section class="slide minimal-slide mood-left" data-slide="4" data-notes="The central framing: agents are both the product category and the way we now build the product.&#10;We build agents:&#10;• Long-running loops.&#10;• Tools, state, files, policy.&#10;• Generated code that acts.&#10;We build with agents:&#10;• Planning, coding, review.&#10;• Debugging and operations.&#10;• More contributors, more output.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--giant">Product and Process</h2>
+        </div>
+      </section>
+
+      <!-- AGENT DEFINITION -->
+      <section class="slide minimal-slide mood-center" data-slide="5" data-notes="Define agent concretely for this talk: Claude Code inspired systems, not vague autonomy.&#10;• A Claude Code inspired system: an LLM in a loop.&#10;• It is hooked up to tools that can observe or change the world.&#10;• The important tools are file system manipulation, code generation, and code execution.&#10;• Each action produces output that feeds the next turn.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--mono">Loop + Tools + World</h2>
+        </div>
+      </section>
+
+      <!-- AGENCY -->
+      <section class="slide minimal-slide mood-right tilt-left" data-slide="6" data-notes="Clarify the terminology discomfort: agency and responsibility should stay human.&#10;• I hate the word “agent.”&#10;• Agency belongs to humans, not machines.&#10;• But “agent” is the word the industry uses.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--huge wordmark--italic">Agency Is Human</h2>
+        </div>
+      </section>
+
+      <!-- WRITE CODE RUN CODE -->
+      <section class="slide minimal-slide mood-center" data-slide="7" data-notes="The core capability: writing code and running code creates the feedback loop that makes these systems powerful.&#10;• The model can write a small program for the thing it wants to do.&#10;• The harness runs it and returns stdout, stderr, files, logs, screenshots, or test results.&#10;• The model reads that feedback and changes course.&#10;• That write-run-read loop is what makes a good agent.&#10;• Everything else in this talk unfolds from that loop.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--giant">Write. Run. Read.</h2>
+        </div>
+      </section>
+
+      <!-- PART I DIVIDER -->
+      <section class="slide minimal-slide mood-left" data-slide="8" data-notes="Transition into the human and organizational effects.">
+        <div class="frame frame-narrow">
+          <p class="kicker">Part I</p>
+          <h2 class="wordmark wordmark--huge wordmark--italic">Agent Psychosis</h2>
+        </div>
+      </section>
+
+      <!-- PI OPEN SOURCE SLOP -->
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="9" data-notes="Concrete example from Pi: because it is developed in the open, we see agent-generated slop arrive as PRs. Mention the biggest PRs by churn and commits; do not frame this as bad intent. Frame it as speed without context and review capacity.&#10;• Pi is an agent, developed publicly on GitHub.&#10;• That means we see the new contribution pattern in the raw — and it is horrifying.&#10;• #2973 “Add pid …”: 671k lines of slop, 3,632 files, 450 commits.&#10;• #1284 “migrate to Vercel AI SDK”: 80k lines of slop over 423 files.&#10;• #1923: 70k lines added, 167 files, 58 commits.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--wide">Built in the Open</h2>
+        </div>
+      </section>
+
+      <!-- PI OPEN SOURCE SCREENSHOT I -->
+      <section class="slide minimal-slide mood-center" data-slide="10" data-notes="Show the first screenshot as a concrete example of generated churn arriving in the open. Let the size and shape of the PR speak before explaining it.">
+        <div class="frame frame-wide center">
+          <img src="./assets/pi-open-slop-1.png" alt="" class="slide-content-image screenshot-image" />
+        </div>
+      </section>
+
+      <!-- PI OPEN SOURCE SCREENSHOT II -->
+      <section class="slide minimal-slide mood-center" data-slide="11" data-notes="Show the second screenshot as another example of speed without local context. Use it to transition from raw volume into the psychology of output feeling like progress.">
+        <div class="frame frame-wide center">
+          <img src="./assets/pi-open-slop-2.png" alt="" class="slide-content-image screenshot-image" />
+        </div>
+      </section>
+
+      <!-- OUTPUT FEELS LIKE PROGRESS -->
+      <section class="slide minimal-slide mood-center" data-slide="12" data-notes="This is the psychological trap: output has become cheaper than understanding.&#10;Quote: Agents produce output fast, and output feels like progress.&#10;• Your brain rewards velocity.&#10;• The organization starts expecting velocity.&#10;• More code is not the same as more understanding.&#10;• The agent does not know when to stop; neither do you once you are in the flow.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--huge">Output Is Not Understanding</h2>
+        </div>
+      </section>
+
+      <!-- EXPECTATIONS CHANGED FAST -->
+      <section class="slide minimal-slide mood-left tilt-left" data-slide="13" data-notes="Make this practical: the first visible change is often organizational pressure and changed contributor behavior.&#10;• The baseline expectation moves from “can we build it?” to “why is it not built yet?”&#10;• Product, support, sales, and founders can now arrive with working prototypes.&#10;• That is genuinely empowering.&#10;• It also turns engineering review into a painful bottleneck.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--wide">Expectations Move Overnight</h2>
+        </div>
+      </section>
+
+      <!-- NEW CODE CONTRIBUTORS -->
+      <section class="slide minimal-slide mood-right" data-slide="14" data-notes="Two risks: non-engineers can now produce code without seeing the gap to good engineering, and juniors can feel senior leverage before developing senior judgment. Also call out the clanker-as-argument-generator pattern: it gives world knowledge, not necessarily the local context behind a senior review.&#10;• More people can now produce working code.&#10;• Non-engineers may not see the gap between “it runs” and “an engineer would own this.”&#10;• Juniors can feel senior-level leverage before they build senior-level judgment.&#10;• The clanker can produce arguments against a review, but not the institutional context behind it.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--wide">New Contributors, New Gaps</h2>
+        </div>
+      </section>
+
+      <!-- ATROPHY -->
+      <section class="slide minimal-slide mood-center tilt-right" data-slide="15" data-notes="The muscle atrophy point: design, debugging, and review must remain active practices.&#10;• If the agent always explains the code, your own understanding fades.&#10;• If review becomes rubber-stamping, the codebase starts drifting.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--huge wordmark--italic">Skills Atrophy Quietly</h2>
+        </div>
+      </section>
+
+      <!-- REVIEW ASYMMETRY -->
+      <section class="slide minimal-slide mood-left" data-slide="16" data-notes="A generated change can be cheap to produce and expensive to review. This is the maintainer burden.&#10;• A change can take minutes to generate and hours to understand.&#10;• Review capacity does not scale with generation capacity.&#10;• Large generated PRs create social pressure, not just tooling work.&#10;• Ask for small changes, clear intent, and the context that led to the code.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--small">Generation Is Cheap. Review Isn’t.</h2>
+        </div>
+      </section>
+
+      <!-- PSYCHOLOGY INSIGHT -->
+      <section class="slide minimal-slide mood-center" data-slide="17" data-notes="Land the section in one crisp sentence.&#10;• The danger is not that agents write code.&#10;• The danger is that humans stop thinking.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--huge">Humans Must Keep Thinking</h2>
+        </div>
+      </section>
+
+      <!-- PART II DIVIDER -->
+      <section class="slide minimal-slide mood-right" data-slide="18" data-notes="Transition from psychology into the architecture of agents.">
+        <div class="frame frame-wide">
+          <p class="kicker">Part II</p>
+          <h2 class="wordmark wordmark--wide wordmark--italic">Code Is All You Need</h2>
+        </div>
+      </section>
+
+      <!-- CODE IS THE GLUE -->
+      <section class="slide minimal-slide mood-left tilt-right" data-slide="19" data-notes="This is the key conceptual bridge: code is not only the output of coding agents, it is how custom agents do work.&#10;• Agents do not only generate product code.&#10;• They write throwaway code to parse, fetch, inspect, transform, and validate.&#10;• They use scripts to drive browsers, debuggers, CLIs, APIs, and documents.&#10;• When you build an agent, you often wire together code execution, files, tools, and policy.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--giant">Code Is the Glue</h2>
+        </div>
+      </section>
+
+      <!-- WHY CODE WINS -->
+      <section class="slide minimal-slide mood-center" data-slide="20" data-notes="Explain why code often beats many tool definitions or MCP-style interfaces for repeatable work.&#10;• You can inspect the approach instead of trusting each inference step.&#10;• You can rerun the script without another model call.&#10;• You can compose it with files, pipes, tests, logs, and existing tools.&#10;• Once written, most of the work becomes deterministic.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--mono">Determinism Beats Inference</h2>
+        </div>
+      </section>
+
+      <!-- PROGRAMMABLE WORLDS -->
+      <section class="slide minimal-slide mood-right tilt-left" data-slide="21" data-notes="The practical pattern: give the agent a small world where it can act safely and learn from failures.&#10;• Text files in, artifacts out.&#10;• Fast commands, deterministic outputs, useful errors.&#10;• Logs the agent can read without asking a human.&#10;• Enough constraints that failure is visible instead of dangerous.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--huge wordmark--italic">Tiny Programmable Worlds</h2>
+        </div>
+      </section>
+
+      <!-- GONDOLIN -->
+      <section class="slide minimal-slide mood-left" data-slide="22" data-notes="Pitch Gondolin as the concrete sandbox we built for this style of agent architecture.&#10;• https://github.com/earendil-works/gondolin&#10;• Local disposable Linux micro-VMs for agent turns and tasks.&#10;• Programmable filesystem mounts controlled from JavaScript.&#10;• Programmable HTTP/TLS egress policy and allowlists.&#10;• Secret injection through placeholders so the guest does not see the real secret.&#10;• Fast enough to treat the VM as something you create, use, and throw away.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--wide">Gondolin: Disposable Worlds</h2>
+        </div>
+      </section>
+
+      <!-- AGENT LEGIBLE CODEBASE -->
+      <section class="slide minimal-slide mood-center tilt-right" data-slide="23" data-notes="Bring the codebase design lessons back in. These are also good human engineering practices.&#10;• Clear module boundaries: agents can work in one place without corrupting another.&#10;• Known patterns and conventions: agents pattern-match; give them patterns worth matching.&#10;• Greppable names and boring imports.&#10;• Fast tests and loud failures.&#10;• No hidden magic: if the agent cannot see it, it cannot respect it.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--huge">Legible Codebases Win</h2>
+        </div>
+      </section>
+
+      <!-- PART III DIVIDER -->
+      <section class="slide minimal-slide mood-left" data-slide="24" data-notes="Transition to the operating discipline required to make this sustainable.">
+        <div class="frame frame-narrow">
+          <p class="kicker">Part III</p>
+          <h2 class="wordmark wordmark--huge wordmark--italic">Force Friction</h2>
+        </div>
+      </section>
+
+      <!-- WHERE SPEED HELPS -->
+      <section class="slide minimal-slide mood-right" data-slide="25" data-notes="Separate high-leverage speed from places where speed creates future cleanup cost.&#10;High leverage:&#10;• Exploring product directions.&#10;• Prototypes and onboarding experiments.&#10;• Debugging concrete failures.&#10;• Fixing CI and regressions.&#10;• Creating reproduction cases.&#10;Lower leverage:&#10;• Reliability and shared understanding.&#10;• Long-lived systems with many states.&#10;• Code you have not specified clearly yourself.&#10;• Anything where cleanup cost arrives later.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--giant">Speed Kills</h2>
+        </div>
+      </section>
+
+      <!-- MECHANICAL ENFORCEMENT -->
+      <section class="slide minimal-slide mood-left" data-slide="26" data-notes="Mechanical enforcement beats hoping the prompt is obeyed.&#10;• No bare catch-alls: force explicit error handling.&#10;• No new dependencies without a callout.&#10;• No raw access outside the agreed boundary.&#10;• Use component libraries and code generation where they preserve consistency.&#10;• Let tools reject the easy wrong answer before a human has to see it.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--mono">Add Mechanical Guardrails</h2>
+        </div>
+      </section>
+
+      <!-- PR REVIEW -->
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="27" data-notes="Split review into what the machine should fix and what the human must judge.&#10;Immediately actionable → Agent:&#10;• Style violations.&#10;• Mechanical bugs.&#10;• Clear engineering rule breaks.&#10;• Missing tests for explicit behavior.&#10;Call-outs → Human:&#10;• Database migrations added.&#10;• New dependencies introduced.&#10;• Auth / permissions changes.&#10;• Backwards-incompatible API changes.&#10;• Irreversible destructive operations.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--wide">Machines Fix. Humans Judge.</h2>
+        </div>
+      </section>
+
+      <!-- FORCE FRICTION -->
+      <section class="slide minimal-slide mood-center" data-slide="28" data-notes="Define the final lesson: remove toil, add friction around judgment.&#10;• Remove mechanical friction: formatting, boilerplate, setup, obvious fixes.&#10;• Add judgment friction: taste, architecture, security, data, trust.&#10;• Keep generated changes small enough to understand.&#10;• Make the human feel the pressure where responsibility actually lives.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--huge wordmark--italic">Remove Toil. Add Judgment.</h2>
+        </div>
+      </section>
+
+      <!-- FINAL -->
+      <section class="slide minimal-slide mood-left tilt-left" data-slide="29" data-notes="Close with the friction thesis and thank the audience.&#10;• Some friction is waste.&#10;• Without friction, you cannot steer.&#10;• The friction is your judgment.">
+        <div class="frame frame-narrow">
+          <h2 class="wordmark wordmark--giant">Without Friction You Can't Steer</h2>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById("backdrop");
+        const gl = canvas.getContext("webgl", { antialias: false, depth: false, stencil: false, alpha: false });
+
+        if (!gl) {
+          return;
+        }
+
+        const prefersReducedMotion =
+          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const LOW_DPI_THRESHOLD = 1.5;
+        const renderScale = (window.devicePixelRatio || 1) < LOW_DPI_THRESHOLD ? 0.68 : 0.4;
+
+        const oceanVertexShaderSource = `
+          attribute vec2 position;
+          void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `;
+
+        const oceanFragmentShaderSource = `
+          precision highp float;
+          uniform vec2 iResolution;
+          uniform float iTime;
+
+          #define PI 3.14159265359
+          #define DRAG_MULT 0.38
+          #define WATER_DEPTH 1.0
+          #define CAMERA_HEIGHT 1.5
+          #define ITERATIONS_RAYMARCH 8
+          #define ITERATIONS_NORMAL 16
+          #define RAYMARCH_STEPS 32
+
+          float hash21(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+          }
+
+          mat3 createRotationMatrixAxisAngle(vec3 axis, float angle) {
+            float s = sin(angle);
+            float c = cos(angle);
+            float oc = 1.0 - c;
+            return mat3(
+              oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
+              oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
+              oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
+            );
+          }
+
+          vec2 dirToScreenUV(vec3 dir) {
+            vec3 unrotated = createRotationMatrixAxisAngle(vec3(1.0, 0.0, 0.0), -0.14) * dir;
+            if (unrotated.z <= 0.0) return vec2(-1.0);
+            vec2 uv = (unrotated.xy / unrotated.z) * 1.5;
+            vec2 ndc = uv / vec2(iResolution.x / iResolution.y, 1.0);
+            return ndc * 0.5 + 0.5;
+          }
+
+          float star(vec2 screenUv, vec2 cellId, vec2 grid) {
+            float rnd = hash21(cellId);
+            if (rnd > 0.8) return 0.0;
+            vec2 starPos = vec2(hash21(cellId + 0.1), hash21(cellId + 0.2));
+            vec2 starUv = (cellId + starPos) / grid;
+            vec2 deltaPx = (screenUv - starUv) * iResolution.xy;
+            float sizePx = 0.25 + hash21(cellId + 0.3) * 0.45;
+            float d = length(deltaPx);
+            float core = smoothstep(sizePx, sizePx * 0.2, d);
+            float flickerPhase = hash21(cellId + 0.4) * 6.28318;
+            float flickerSpeed = 0.2 + hash21(cellId + 0.5) * 0.3;
+            float flickerAmount = mix(0.1, 0.35, hash21(cellId + 0.7));
+            float flicker = mix(1.0 - flickerAmount, 1.0 + flickerAmount, 0.5 + 0.5 * sin(iTime * flickerSpeed + flickerPhase));
+            float lumens = mix(1.0, 12.0, hash21(cellId + 0.6));
+            float brightness = mix(0.6, 1.4, lumens / 12.0);
+            return core * flicker * brightness;
+          }
+
+          vec2 wavedx(vec2 position, vec2 direction, float frequency, float timeshift) {
+            float x = dot(direction, position) * frequency + timeshift;
+            float wave = exp(sin(x) - 1.0);
+            float dx = wave * cos(x);
+            return vec2(wave, -dx);
+          }
+
+          float getwaves(vec2 position, int iterations) {
+            float wavePhaseShift = length(position) * 0.1;
+            vec2 swellDir = normalize(vec2(-0.25, 1.0));
+            float swellBias = 0.35;
+            float iter = 0.0;
+            float frequency = 1.0;
+            float timeMultiplier = 2.0;
+            float weight = 1.0;
+            float sumOfValues = 0.0;
+            float sumOfWeights = 0.0;
+            for (int i = 0; i < 16; i++) {
+              if (i >= iterations) break;
+              vec2 p = normalize(mix(vec2(sin(iter), cos(iter)), swellDir, swellBias));
+              vec2 res = wavedx(position, p, frequency, iTime * timeMultiplier + wavePhaseShift);
+              position += p * res.y * weight * DRAG_MULT;
+              sumOfValues += res.x * weight;
+              sumOfWeights += weight;
+              weight = mix(weight, 0.0, 0.2);
+              frequency *= 1.18;
+              timeMultiplier *= 1.07;
+              iter += 1232.399963;
+            }
+            float baseWaves = sumOfValues / sumOfWeights;
+
+            float swellPhase = dot(position, swellDir) * 0.18 - iTime * 0.08;
+            float swell = sin(swellPhase);
+            vec2 cameraPos = vec2(iTime * 0.2, 1.0);
+            float swellFade = smoothstep(28.0, 4.0, length(position - cameraPos));
+
+            return baseWaves + swell * swellFade * 0.35;
+          }
+
+          float raymarchwater(vec3 camera, vec3 start, vec3 end, float depth) {
+            vec3 pos = start;
+            vec3 dir = normalize(end - start);
+            for (int i = 0; i < RAYMARCH_STEPS; i++) {
+              float height = getwaves(pos.xz, ITERATIONS_RAYMARCH) * depth - depth;
+              if (height + 0.01 > pos.y) {
+                return distance(pos, camera);
+              }
+              pos += dir * (pos.y - height);
+            }
+            return distance(start, camera);
+          }
+
+          vec3 normal(vec2 pos, float e, float depth) {
+            vec2 ex = vec2(e, 0.0);
+            float H = getwaves(pos.xy, ITERATIONS_NORMAL) * depth;
+            vec3 a = vec3(pos.x, H, pos.y);
+            return normalize(cross(
+              a - vec3(pos.x - e, getwaves(pos.xy - ex.xy, ITERATIONS_NORMAL) * depth, pos.y),
+              a - vec3(pos.x, getwaves(pos.xy + ex.yx, ITERATIONS_NORMAL) * depth, pos.y + e)
+            ));
+          }
+
+          vec3 getRay(vec2 fragCoord) {
+            vec2 uv = ((fragCoord.xy / iResolution.xy) * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+            vec3 proj = normalize(vec3(uv.x, uv.y, 1.5));
+            return createRotationMatrixAxisAngle(vec3(1.0, 0.0, 0.0), 0.14) * proj;
+          }
+
+          float intersectPlane(vec3 origin, vec3 direction, vec3 point, vec3 normal) {
+            return clamp(dot(point - origin, normal) / dot(direction, normal), -1.0, 9991999.0);
+          }
+
+          vec3 skyUVToColor(vec2 uv) {
+            vec3 topColor = vec3(0.015, 0.02, 0.04);
+            vec3 bottomColor = vec3(0.03, 0.035, 0.05);
+            return mix(bottomColor, topColor, uv.y);
+          }
+
+          vec2 skyUV(vec3 dir) {
+            float u = atan(dir.z, dir.x) / (2.0 * PI) + 0.5;
+            float v = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
+            return vec2(u, v);
+          }
+
+          vec3 getNightSky(vec3 dir) {
+            vec2 uv = skyUV(dir);
+            vec3 color = skyUVToColor(uv);
+
+            vec2 screenUv = dirToScreenUV(dir);
+            if (screenUv.x >= 0.0 && screenUv.x <= 1.0 && screenUv.y >= 0.0 && screenUv.y <= 1.0 && screenUv.y > 0.35) {
+              vec2 grid = vec2(40.0, 30.0);
+              vec2 baseCell = floor(vec2(screenUv.x * grid.x, screenUv.y * grid.y));
+              float s = 0.0;
+              for (int yi = -1; yi <= 1; yi++) {
+                for (int xi = -1; xi <= 1; xi++) {
+                  vec2 cell = baseCell + vec2(float(xi), float(yi));
+                  if (cell.y < 0.0 || cell.y >= grid.y) continue;
+                  cell.x = mod(cell.x + grid.x, grid.x);
+                  s += star(screenUv, cell, grid);
+                }
+              }
+              float horizonFade = smoothstep(0.35, 0.55, screenUv.y);
+              color += vec3(1.0, 0.97, 0.9) * s * horizonFade;
+            }
+
+            return color;
+          }
+
+          vec3 aces_tonemap(vec3 color) {
+            mat3 m1 = mat3(
+              0.59719, 0.07600, 0.02840,
+              0.35458, 0.90834, 0.13383,
+              0.04823, 0.01566, 0.83777
+            );
+            mat3 m2 = mat3(
+              1.60475, -0.10208, -0.00327,
+              -0.53108, 1.10813, -0.07276,
+              -0.07367, -0.00605, 1.07602
+            );
+            vec3 v = m1 * color;
+            vec3 a = v * (v + 0.0245786) - 0.000090537;
+            vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+            return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+          }
+
+          void main() {
+            vec3 ray = getRay(gl_FragCoord.xy);
+
+            if (ray.y >= 0.0) {
+              vec3 sky = getNightSky(ray);
+              gl_FragColor = vec4(aces_tonemap(sky * 2.0), 1.0);
+              return;
+            }
+
+            vec3 waterPlaneHigh = vec3(0.0, 0.0, 0.0);
+            vec3 waterPlaneLow = vec3(0.0, -WATER_DEPTH, 0.0);
+            vec3 origin = vec3(iTime * 0.2, CAMERA_HEIGHT, 1.0);
+
+            float highPlaneHit = intersectPlane(origin, ray, waterPlaneHigh, vec3(0.0, 1.0, 0.0));
+            float lowPlaneHit = intersectPlane(origin, ray, waterPlaneLow, vec3(0.0, 1.0, 0.0));
+            vec3 highHitPos = origin + ray * highPlaneHit;
+            vec3 lowHitPos = origin + ray * lowPlaneHit;
+
+            float dist = raymarchwater(origin, highHitPos, lowHitPos, WATER_DEPTH);
+            vec3 waterHitPos = origin + ray * dist;
+            vec3 N = normal(waterHitPos.xz, 0.01, WATER_DEPTH);
+            N = mix(N, vec3(0.0, 1.0, 0.0), 0.8 * min(1.0, sqrt(dist * 0.01) * 1.1));
+
+            float fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - max(0.0, dot(-N, ray)), 5.0);
+            vec3 R = normalize(reflect(ray, N));
+            R.y = abs(R.y);
+
+            vec3 reflection = getNightSky(R);
+            vec3 scattering = vec3(0.02, 0.02, 0.03) * (0.2 + (waterHitPos.y + WATER_DEPTH) / WATER_DEPTH);
+            vec3 C = fresnel * reflection + scattering;
+
+            vec3 fogColor = vec3(0.03, 0.035, 0.05);
+            float fogAmount = 1.0 - exp(-dist * 0.02);
+            C = mix(C, fogColor, fogAmount);
+
+            gl_FragColor = vec4(aces_tonemap(C * 1.9), 1.0);
+          }
+        `;
+
+        function createShader(type, source) {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+          }
+          return shader;
+        }
+
+        function createProgram(vertexSource, fragmentSource) {
+          const vertexShader = createShader(gl.VERTEX_SHADER, vertexSource);
+          const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+          if (!vertexShader || !fragmentShader) {
+            return null;
+          }
+          const program = gl.createProgram();
+          gl.attachShader(program, vertexShader);
+          gl.attachShader(program, fragmentShader);
+          gl.linkProgram(program);
+          if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            return null;
+          }
+          return program;
+        }
+
+        const oceanProgram = createProgram(oceanVertexShaderSource, oceanFragmentShaderSource);
+        if (!oceanProgram) {
+          return;
+        }
+
+        const fullscreenBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenBuffer);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+          gl.STATIC_DRAW
+        );
+
+        const oceanPositionLocation = gl.getAttribLocation(oceanProgram, "position");
+        const oceanResolutionLocation = gl.getUniformLocation(oceanProgram, "iResolution");
+        const oceanTimeLocation = gl.getUniformLocation(oceanProgram, "iTime");
+
+        function resize() {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.max(1, Math.floor(width * dpr * renderScale));
+          canvas.height = Math.max(1, Math.floor(height * dpr * renderScale));
+          canvas.style.width = width + "px";
+          canvas.style.height = height + "px";
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener("resize", resize);
+        resize();
+
+        const start = performance.now();
+        const MAX_FPS = 30;
+        const FRAME_INTERVAL_MS = 1000 / MAX_FPS;
+        let lastRenderTime = -Infinity;
+
+        function render(now) {
+          if (now - lastRenderTime < FRAME_INTERVAL_MS) {
+            requestAnimationFrame(render);
+            return;
+          }
+          lastRenderTime = now;
+
+          const t = prefersReducedMotion ? 0 : (now - start) / 1000;
+
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, canvas.width, canvas.height);
+          gl.useProgram(oceanProgram);
+          gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenBuffer);
+          gl.enableVertexAttribArray(oceanPositionLocation);
+          gl.vertexAttribPointer(oceanPositionLocation, 2, gl.FLOAT, false, 0, 0);
+          gl.uniform2f(oceanResolutionLocation, canvas.width, canvas.height);
+          gl.uniform1f(oceanTimeLocation, t);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+          requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+      })();
+    </script>
+
+    <script>
+      const deck = document.querySelector(".deck");
+      const DECK_WIDTH = 1920;
+      const DECK_HEIGHT = 1080;
+
+      function scaleDeck() {
+        const scaleX = window.innerWidth / DECK_WIDTH;
+        const scaleY = window.innerHeight / DECK_HEIGHT;
+        const scale = Math.min(scaleX, scaleY);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+
+      window.addEventListener("resize", scaleDeck);
+      scaleDeck();
+
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const speakerIndicator = document.getElementById("speaker-indicator");
+      const speakerInfoEnabled = new URLSearchParams(window.location.search).get("speakerinfo") === "1";
+      const speakerLabels = {
+        armin: "A",
+      };
+      let slideIndex = 0;
+      let stepIndex = 0;
+      const touchState = {
+        id: null,
+        startX: 0,
+        startY: 0,
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function applySteps(slide) {
+        const steps = Array.from(slide.querySelectorAll(".step"));
+        steps.forEach((step, index) => {
+          step.classList.toggle("hidden", index >= stepIndex);
+        });
+        return steps.length;
+      }
+
+      function parseSpeakerNotes(notes) {
+        return String(notes || "")
+          .split(/\r?\n+/)
+          .map((line) => line.trim())
+          .map((line) => {
+            const match = line.match(/^@([a-z0-9_-]+)\s*:/i);
+            return match ? match[1].toLowerCase() : null;
+          })
+          .filter(Boolean);
+      }
+
+      function getPrimarySpeaker(slide) {
+        return parseSpeakerNotes(slide?.dataset.notes)[0] || null;
+      }
+
+      function updateSpeakerIndicator() {
+        if (!speakerIndicator || !speakerInfoEnabled) {
+          return;
+        }
+
+        const currentSpeaker = getPrimarySpeaker(slides[slideIndex]);
+        const nextSpeaker = slideIndex < slides.length - 1 ? getPrimarySpeaker(slides[slideIndex + 1]) : null;
+        const shouldShow = Boolean(currentSpeaker && nextSpeaker && currentSpeaker !== nextSpeaker);
+
+        speakerIndicator.textContent = shouldShow ? `${speakerLabels[nextSpeaker] || nextSpeaker}->` : "";
+        speakerIndicator.classList.toggle("visible", shouldShow);
+      }
+
+      function updateHash() {
+        const slideNumber = slides[slideIndex].dataset.slide;
+        const stepSuffix = stepIndex > 0 ? `.${stepIndex}` : "";
+        history.replaceState(null, "", `#${slideNumber}${stepSuffix}`);
+      }
+
+      function showSlide(index, { updateHash: shouldUpdateHash = true } = {}) {
+        slideIndex = clamp(index, 0, slides.length - 1);
+        slides.forEach((slide, idx) => {
+          slide.classList.toggle("active", idx === slideIndex);
+        });
+        const stepCount = applySteps(slides[slideIndex]);
+        stepIndex = clamp(stepIndex, 0, stepCount);
+        applySteps(slides[slideIndex]);
+        updateSpeakerIndicator();
+
+        if (shouldUpdateHash) {
+          updateHash();
+        }
+      }
+
+      function parseHash(rawValue) {
+        const [slideValue, stepValue] = rawValue.split(".");
+        const slideNumber = Number.parseInt(slideValue, 10);
+        const index = Number.isNaN(slideNumber)
+          ? 0
+          : slides.findIndex((slide) => Number(slide.dataset.slide) === slideNumber);
+        const parsedStep = Number.parseInt(stepValue, 10);
+        return {
+          index: index === -1 ? 0 : index,
+          step: Number.isNaN(parsedStep) ? 0 : parsedStep,
+        };
+      }
+
+      function resolveRelativeHash(rawValue) {
+        const match = rawValue.match(/^(.*)~(next|prev)$/);
+        if (!match) {
+          return false;
+        }
+        const [, baseValue, direction] = match;
+        const baseState = baseValue
+          ? parseHash(baseValue)
+          : { index: slideIndex, step: stepIndex };
+        slideIndex = clamp(baseState.index, 0, slides.length - 1);
+        stepIndex = Math.max(0, baseState.step);
+        showSlide(slideIndex, { updateHash: false });
+        if (direction === "next") {
+          next({ updateHash: true });
+        } else {
+          prev({ updateHash: true });
+        }
+        return true;
+      }
+
+      function syncFromHash() {
+        const rawValue = window.location.hash.replace("#", "");
+        if (resolveRelativeHash(rawValue)) {
+          return;
+        }
+        const parsed = parseHash(rawValue);
+        stepIndex = parsed.step;
+        showSlide(parsed.index, { updateHash: false });
+      }
+
+      function next({ updateHash: shouldUpdateHash = true } = {}) {
+        const steps = Array.from(slides[slideIndex].querySelectorAll(".step"));
+        if (stepIndex < steps.length) {
+          stepIndex += 1;
+          applySteps(slides[slideIndex]);
+          if (shouldUpdateHash) {
+            updateHash();
+          }
+          return;
+        }
+        if (slideIndex >= slides.length - 1) {
+          return;
+        }
+        stepIndex = 0;
+        showSlide(slideIndex + 1, { updateHash: shouldUpdateHash });
+      }
+
+      function prev({ updateHash: shouldUpdateHash = true } = {}) {
+        if (stepIndex > 0) {
+          stepIndex -= 1;
+          applySteps(slides[slideIndex]);
+          if (shouldUpdateHash) {
+            updateHash();
+          }
+          return;
+        }
+        const nextIndex = clamp(slideIndex - 1, 0, slides.length - 1);
+        slideIndex = nextIndex;
+        const steps = Array.from(slides[slideIndex].querySelectorAll(".step"));
+        stepIndex = steps.length;
+        showSlide(slideIndex, { updateHash: shouldUpdateHash });
+      }
+
+      function first() {
+        stepIndex = 0;
+        showSlide(0);
+      }
+
+      function last() {
+        stepIndex = 0;
+        showSlide(slides.length - 1);
+      }
+
+      function goto(hash) {
+        const parsed = parseHash(hash.replace("#", ""));
+        stepIndex = parsed.step;
+        showSlide(parsed.index);
+      }
+
+      function resetTouchState() {
+        touchState.id = null;
+        touchState.startX = 0;
+        touchState.startY = 0;
+      }
+
+      function handleTouchNavigation(endX, endY) {
+        const deltaX = endX - touchState.startX;
+        const deltaY = endY - touchState.startY;
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+
+        if (absX >= 60 && absX > absY * 1.2) {
+          if (deltaX < 0) {
+            next();
+          } else {
+            prev();
+          }
+          return;
+        }
+
+        if (absX <= 12 && absY <= 12) {
+          if (endX < window.innerWidth / 2) {
+            prev();
+          } else {
+            next();
+          }
+        }
+      }
+
+      window.addEventListener("hashchange", syncFromHash);
+      window.addEventListener("keydown", (event) => {
+        if (["ArrowRight", " ", "PageDown", "l", "j"].includes(event.key)) {
+          event.preventDefault();
+          next();
+        }
+        if (["ArrowLeft", "PageUp", "h", "k"].includes(event.key)) {
+          event.preventDefault();
+          prev();
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          first();
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          last();
+        }
+      });
+
+      document.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) {
+          resetTouchState();
+          return;
+        }
+
+        const touch = event.changedTouches[0];
+        touchState.id = touch.identifier;
+        touchState.startX = touch.clientX;
+        touchState.startY = touch.clientY;
+      }, { passive: true });
+
+      document.addEventListener("touchend", (event) => {
+        if (touchState.id === null) {
+          return;
+        }
+
+        const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === touchState.id);
+        if (!touch) {
+          return;
+        }
+
+        handleTouchNavigation(touch.clientX, touch.clientY);
+        resetTouchState();
+      }, { passive: true });
+
+      document.addEventListener("touchcancel", resetTouchState, { passive: true });
+
+      window.miniPresenter = {
+        next,
+        prev,
+        first,
+        last,
+        goto,
+        getSlideList() {
+          return slides.map((slide) => `#${slide.dataset.slide}`);
+        },
+        getCurrentSlide() {
+          return window.location.hash || `#${slides[slideIndex].dataset.slide}`;
+        },
+        getNotes(slideId) {
+          const target = typeof slideId === "string" && slideId ? slideId : (window.location.hash || `#${slides[slideIndex].dataset.slide}`);
+          const parsed = parseHash(target.replace("#", ""));
+          const slide = slides[clamp(parsed.index, 0, slides.length - 1)];
+          return slide?.dataset.notes || null;
+        }
+      };
+
+      syncFromHash();
+    </script>
+  </body>
+</html>

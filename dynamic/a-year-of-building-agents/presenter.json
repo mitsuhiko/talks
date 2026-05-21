@@ -1,0 +1,15 @@
+{
+  "title": "A Year of Building AI Agents",
+  "keyboard": {
+    "next": ["ArrowRight", "Space", "PageDown", "l", "j"],
+    "prev": ["ArrowLeft", "PageUp", "h", "k"],
+    "first": ["Home"],
+    "last": ["End"]
+  },
+  "notes": { "source": "auto" },
+  "preview": { "relativeHash": true },
+  "timer": {
+    "mode": "countdown-total",
+    "durationMinutes": 35
+  }
+}
