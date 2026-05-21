@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>A Year of Building AI Agents</title>
     <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.1/client/standalone.js"></script>
+    <link rel="stylesheet" href="./assets/asciinema/asciinema-player.css" />
+    <script src="./assets/asciinema/asciinema-player.min.js"></script>
     <style>
       @font-face {
         font-family: "Departure Mono";
@@ -449,6 +451,38 @@
         box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48);
       }
 
+      .asciinema-shell {
+        display: inline-block;
+        padding: 0;
+        overflow: hidden;
+        line-height: 0;
+        border: 1px solid rgba(216, 233, 235, 0.24);
+        border-radius: 24px;
+        background: #111e2a;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .asciinema-mount {
+        display: inline-block;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #111e2a;
+      }
+
+      .asciinema-mount div.ap-wrapper {
+        display: block;
+        height: auto;
+        overflow: hidden;
+      }
+
+      .asciinema-mount div.ap-player {
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        border-radius: 24px;
+        box-sizing: border-box;
+      }
+
       .minimal-slide {
         overflow: hidden;
       }
@@ -488,6 +522,25 @@
         font-size: 54px;
         letter-spacing: 0.08em;
         color: rgba(244, 246, 247, 0.84);
+      }
+
+      .intro-name {
+        font-size: 150px;
+      }
+
+      .contact-stack {
+        display: grid;
+        gap: 20px;
+        margin-top: 54px;
+      }
+
+      .contact-stack p {
+        font-family: var(--mono-font);
+        font-size: 38px;
+        line-height: 1.25;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+        color: rgba(226, 232, 234, 0.72);
       }
 
       .wordmark {
@@ -551,6 +604,23 @@
         font-style: italic;
       }
 
+      .qa-wordmark {
+        font-family: var(--serif-font);
+        font-size: 360px;
+        font-weight: 400;
+        line-height: 0.76;
+        letter-spacing: -0.09em;
+        color: rgba(244, 246, 247, 0.97);
+        text-shadow: 0 0 48px rgba(216, 233, 235, 0.16);
+      }
+
+      .qa-wordmark span {
+        display: inline-block;
+        margin-inline: -0.04em;
+        font-style: italic;
+        color: rgba(216, 233, 235, 0.78);
+      }
+
       .tilt-left .wordmark {
         transform: rotate(-1.6deg);
         transform-origin: left center;
@@ -594,43 +664,64 @@
         </div>
       </section>
 
+      <!-- CONTACT INTRO -->
+      <section class="slide minimal-slide mood-left" data-slide="3" data-notes="Introduce myself: Armin Ronacher. Blog at lucumr.pocoo.org, on X as x.com/mitsuhiko, and GitHub at github.com/mitsuhiko.">
+        <div class="frame frame-wide">
+          <h2 class="wordmark wordmark--small intro-name">Armin Ronacher</h2>
+          <div class="contact-stack">
+            <p>blog at lucumr.pocoo.org</p>
+            <p>on X as x.com/mitsuhiko</p>
+            <p>github.com/mitsuhiko</p>
+          </div>
+        </div>
+      </section>
+
       <!-- OPENING -->
-      <section class="slide minimal-slide mood-right tilt-right" data-slide="3" data-notes="Set the framing: this is about the double exposure of building agents and using agents to build them.&#10;• This talk is about building agents — and building agents with agents.&#10;• At Earendil we build Pi and Lefos, two agents for different user groups.&#10;• Pi is for developers; Lefos is for people who want more thoughtful communication.&#10;• The learnings come from building these systems and using agents to build them.">
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="4" data-notes="Set the framing: this is about the double exposure of building agents and using agents to build them.&#10;• This talk is about building agents — and building agents with agents.&#10;• At Earendil we build Pi and Lefos, two agents for different user groups.&#10;• Pi is for developers; Lefos is for people who want more thoughtful communication.&#10;• The learnings come from building these systems and using agents to build them.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--wide">Building Agents, With Agents</h2>
         </div>
       </section>
 
       <!-- DOUBLE EXPOSURE -->
-      <section class="slide minimal-slide mood-left" data-slide="4" data-notes="The central framing: agents are both the product category and the way we now build the product.&#10;We build agents:&#10;• Long-running loops.&#10;• Tools, state, files, policy.&#10;• Generated code that acts.&#10;We build with agents:&#10;• Planning, coding, review.&#10;• Debugging and operations.&#10;• More contributors, more output.">
+      <section class="slide minimal-slide mood-left" data-slide="5" data-notes="The central framing: agents are both the product category and the way we now build the product.&#10;We build agents:&#10;• Long-running loops.&#10;• Tools, state, files, policy.&#10;• Generated code that acts.&#10;We build with agents:&#10;• Planning, coding, review.&#10;• Debugging and operations.&#10;• More contributors, more output.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--giant">Product and Process</h2>
         </div>
       </section>
 
       <!-- AGENT DEFINITION -->
-      <section class="slide minimal-slide mood-center" data-slide="5" data-notes="Define agent concretely for this talk: Claude Code inspired systems, not vague autonomy.&#10;• A Claude Code inspired system: an LLM in a loop.&#10;• It is hooked up to tools that can observe or change the world.&#10;• The important tools are file system manipulation, code generation, and code execution.&#10;• Each action produces output that feeds the next turn.">
+      <section class="slide minimal-slide mood-center" data-slide="6" data-notes="Define agent concretely for this talk: Claude Code inspired systems, not vague autonomy.&#10;• A Claude Code inspired system: an LLM in a loop.&#10;• It is hooked up to tools that can observe or change the world.&#10;• The important tools are file system manipulation, code generation, and code execution.&#10;• Each action produces output that feeds the next turn.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--mono">Loop + Tools + World</h2>
         </div>
       </section>
 
       <!-- AGENCY -->
-      <section class="slide minimal-slide mood-right tilt-left" data-slide="6" data-notes="Clarify the terminology discomfort: agency and responsibility should stay human.&#10;• I hate the word “agent.”&#10;• Agency belongs to humans, not machines.&#10;• But “agent” is the word the industry uses.">
+      <section class="slide minimal-slide mood-right tilt-left" data-slide="7" data-notes="Clarify the terminology discomfort: agency and responsibility should stay human.&#10;• I hate the word “agent.”&#10;• Agency belongs to humans, not machines.&#10;• But “agent” is the word the industry uses.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--huge wordmark--italic">Agency Is Human</h2>
         </div>
       </section>
 
       <!-- WRITE CODE RUN CODE -->
-      <section class="slide minimal-slide mood-center" data-slide="7" data-notes="The core capability: writing code and running code creates the feedback loop that makes these systems powerful.&#10;• The model can write a small program for the thing it wants to do.&#10;• The harness runs it and returns stdout, stderr, files, logs, screenshots, or test results.&#10;• The model reads that feedback and changes course.&#10;• That write-run-read loop is what makes a good agent.&#10;• Everything else in this talk unfolds from that loop.">
+      <section class="slide minimal-slide mood-center" data-slide="8" data-notes="The core capability: writing code and running code creates the feedback loop that makes these systems powerful.&#10;• The model can write a small program for the thing it wants to do.&#10;• The harness runs it and returns stdout, stderr, files, logs, screenshots, or test results.&#10;• The model reads that feedback and changes course.&#10;• That write-run-read loop is what makes a good agent.&#10;• Everything else in this talk unfolds from that loop.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--giant">Write. Run. Read.</h2>
         </div>
       </section>
 
+      <!-- CHANGE THE HARNESS DEMO -->
+      <section class="slide minimal-slide mood-center asciinema-slide" data-slide="9" data-notes="Show the Pi demo from pi.dev: change the harness, not your workflow. The point is that the agent can customize its own tools and interaction surface, then you reload and keep working.">
+        <div class="frame frame-wide center">
+          <div class="asciinema-shell" aria-label="Change the harness, not your workflow asciinema demo">
+            <div class="asciinema-mount" data-asciinema-src="./assets/recordings/change-harness.cast"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- PART I DIVIDER -->
-      <section class="slide minimal-slide mood-left" data-slide="8" data-notes="Transition into the human and organizational effects.">
+      <section class="slide minimal-slide mood-left" data-slide="10" data-notes="Transition into the human and organizational effects.">
         <div class="frame frame-narrow">
           <p class="kicker">Part I</p>
           <h2 class="wordmark wordmark--huge wordmark--italic">Agent Psychosis</h2>
@@ -638,70 +729,70 @@
       </section>
 
       <!-- PI OPEN SOURCE SLOP -->
-      <section class="slide minimal-slide mood-right tilt-right" data-slide="9" data-notes="Concrete example from Pi: because it is developed in the open, we see agent-generated slop arrive as PRs. Mention the biggest PRs by churn and commits; do not frame this as bad intent. Frame it as speed without context and review capacity.&#10;• Pi is an agent, developed publicly on GitHub.&#10;• That means we see the new contribution pattern in the raw — and it is horrifying.&#10;• #2973 “Add pid …”: 671k lines of slop, 3,632 files, 450 commits.&#10;• #1284 “migrate to Vercel AI SDK”: 80k lines of slop over 423 files.&#10;• #1923: 70k lines added, 167 files, 58 commits.">
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="11" data-notes="Concrete example from Pi: because it is developed in the open, we see agent-generated slop arrive as PRs. Mention the biggest PRs by churn and commits; do not frame this as bad intent. Frame it as speed without context and review capacity.&#10;• Pi is an agent, developed publicly on GitHub.&#10;• That means we see the new contribution pattern in the raw — and it is horrifying.&#10;• #2973 “Add pid …”: 671k lines of slop, 3,632 files, 450 commits.&#10;• #1284 “migrate to Vercel AI SDK”: 80k lines of slop over 423 files.&#10;• #1923: 70k lines added, 167 files, 58 commits.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--wide">Built in the Open</h2>
         </div>
       </section>
 
       <!-- PI OPEN SOURCE SCREENSHOT I -->
-      <section class="slide minimal-slide mood-center" data-slide="10" data-notes="Show the first screenshot as a concrete example of generated churn arriving in the open. Let the size and shape of the PR speak before explaining it.">
+      <section class="slide minimal-slide mood-center" data-slide="12" data-notes="Show the first screenshot as a concrete example of generated churn arriving in the open. Let the size and shape of the PR speak before explaining it.">
         <div class="frame frame-wide center">
           <img src="./assets/pi-open-slop-1.png" alt="" class="slide-content-image screenshot-image" />
         </div>
       </section>
 
       <!-- PI OPEN SOURCE SCREENSHOT II -->
-      <section class="slide minimal-slide mood-center" data-slide="11" data-notes="Show the second screenshot as another example of speed without local context. Use it to transition from raw volume into the psychology of output feeling like progress.">
+      <section class="slide minimal-slide mood-center" data-slide="13" data-notes="Show the second screenshot as another example of speed without local context. Use it to transition from raw volume into the psychology of output feeling like progress.">
         <div class="frame frame-wide center">
           <img src="./assets/pi-open-slop-2.png" alt="" class="slide-content-image screenshot-image" />
         </div>
       </section>
 
       <!-- OUTPUT FEELS LIKE PROGRESS -->
-      <section class="slide minimal-slide mood-center" data-slide="12" data-notes="This is the psychological trap: output has become cheaper than understanding.&#10;Quote: Agents produce output fast, and output feels like progress.&#10;• Your brain rewards velocity.&#10;• The organization starts expecting velocity.&#10;• More code is not the same as more understanding.&#10;• The agent does not know when to stop; neither do you once you are in the flow.">
+      <section class="slide minimal-slide mood-center" data-slide="14" data-notes="This is the psychological trap: output has become cheaper than understanding.&#10;Quote: Agents produce output fast, and output feels like progress.&#10;• Your brain rewards velocity.&#10;• The organization starts expecting velocity.&#10;• More code is not the same as more understanding.&#10;• The agent does not know when to stop; neither do you once you are in the flow.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--huge">Output Is Not Understanding</h2>
         </div>
       </section>
 
       <!-- EXPECTATIONS CHANGED FAST -->
-      <section class="slide minimal-slide mood-left tilt-left" data-slide="13" data-notes="Make this practical: the first visible change is often organizational pressure and changed contributor behavior.&#10;• The baseline expectation moves from “can we build it?” to “why is it not built yet?”&#10;• Product, support, sales, and founders can now arrive with working prototypes.&#10;• That is genuinely empowering.&#10;• It also turns engineering review into a painful bottleneck.">
+      <section class="slide minimal-slide mood-left tilt-left" data-slide="15" data-notes="Make this practical: the first visible change is often organizational pressure and changed contributor behavior.&#10;• The baseline expectation moves from “can we build it?” to “why is it not built yet?”&#10;• Product, support, sales, and founders can now arrive with working prototypes.&#10;• That is genuinely empowering.&#10;• It also turns engineering review into a painful bottleneck.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--wide">Expectations Move Overnight</h2>
         </div>
       </section>
 
       <!-- NEW CODE CONTRIBUTORS -->
-      <section class="slide minimal-slide mood-right" data-slide="14" data-notes="Two risks: non-engineers can now produce code without seeing the gap to good engineering, and juniors can feel senior leverage before developing senior judgment. Also call out the clanker-as-argument-generator pattern: it gives world knowledge, not necessarily the local context behind a senior review.&#10;• More people can now produce working code.&#10;• Non-engineers may not see the gap between “it runs” and “an engineer would own this.”&#10;• Juniors can feel senior-level leverage before they build senior-level judgment.&#10;• The clanker can produce arguments against a review, but not the institutional context behind it.">
+      <section class="slide minimal-slide mood-right" data-slide="16" data-notes="Two risks: non-engineers can now produce code without seeing the gap to good engineering, and juniors can feel senior leverage before developing senior judgment. Also call out the clanker-as-argument-generator pattern: it gives world knowledge, not necessarily the local context behind a senior review.&#10;• More people can now produce working code.&#10;• Non-engineers may not see the gap between “it runs” and “an engineer would own this.”&#10;• Juniors can feel senior-level leverage before they build senior-level judgment.&#10;• The clanker can produce arguments against a review, but not the institutional context behind it.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--wide">New Contributors, New Gaps</h2>
         </div>
       </section>
 
       <!-- ATROPHY -->
-      <section class="slide minimal-slide mood-center tilt-right" data-slide="15" data-notes="The muscle atrophy point: design, debugging, and review must remain active practices.&#10;• If the agent always explains the code, your own understanding fades.&#10;• If review becomes rubber-stamping, the codebase starts drifting.">
+      <section class="slide minimal-slide mood-center tilt-right" data-slide="17" data-notes="The muscle atrophy point: design, debugging, and review must remain active practices.&#10;• If the agent always explains the code, your own understanding fades.&#10;• If review becomes rubber-stamping, the codebase starts drifting.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--huge wordmark--italic">Skills Atrophy Quietly</h2>
         </div>
       </section>
 
       <!-- REVIEW ASYMMETRY -->
-      <section class="slide minimal-slide mood-left" data-slide="16" data-notes="A generated change can be cheap to produce and expensive to review. This is the maintainer burden.&#10;• A change can take minutes to generate and hours to understand.&#10;• Review capacity does not scale with generation capacity.&#10;• Large generated PRs create social pressure, not just tooling work.&#10;• Ask for small changes, clear intent, and the context that led to the code.">
+      <section class="slide minimal-slide mood-left" data-slide="18" data-notes="A generated change can be cheap to produce and expensive to review. This is the maintainer burden.&#10;• A change can take minutes to generate and hours to understand.&#10;• Review capacity does not scale with generation capacity.&#10;• Large generated PRs create social pressure, not just tooling work.&#10;• Ask for small changes, clear intent, and the context that led to the code.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--small">Generation Is Cheap. Review Isn’t.</h2>
         </div>
       </section>
 
       <!-- PSYCHOLOGY INSIGHT -->
-      <section class="slide minimal-slide mood-center" data-slide="17" data-notes="Land the section in one crisp sentence.&#10;• The danger is not that agents write code.&#10;• The danger is that humans stop thinking.">
+      <section class="slide minimal-slide mood-center" data-slide="19" data-notes="Land the section in one crisp sentence.&#10;• The danger is not that agents write code.&#10;• The danger is that humans stop thinking.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--huge">Humans Must Keep Thinking</h2>
         </div>
       </section>
 
       <!-- PART II DIVIDER -->
-      <section class="slide minimal-slide mood-right" data-slide="18" data-notes="Transition from psychology into the architecture of agents.">
+      <section class="slide minimal-slide mood-right" data-slide="20" data-notes="Transition from psychology into the architecture of agents.">
         <div class="frame frame-wide">
           <p class="kicker">Part II</p>
           <h2 class="wordmark wordmark--wide wordmark--italic">Code Is All You Need</h2>
@@ -709,42 +800,51 @@
       </section>
 
       <!-- CODE IS THE GLUE -->
-      <section class="slide minimal-slide mood-left tilt-right" data-slide="19" data-notes="This is the key conceptual bridge: code is not only the output of coding agents, it is how custom agents do work.&#10;• Agents do not only generate product code.&#10;• They write throwaway code to parse, fetch, inspect, transform, and validate.&#10;• They use scripts to drive browsers, debuggers, CLIs, APIs, and documents.&#10;• When you build an agent, you often wire together code execution, files, tools, and policy.">
+      <section class="slide minimal-slide mood-left tilt-right" data-slide="21" data-notes="This is the key conceptual bridge: code is not only the output of coding agents, it is how custom agents do work.&#10;• Agents do not only generate product code.&#10;• They write throwaway code to parse, fetch, inspect, transform, and validate.&#10;• They use scripts to drive browsers, debuggers, CLIs, APIs, and documents.&#10;• When you build an agent, you often wire together code execution, files, tools, and policy.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--giant">Code Is the Glue</h2>
         </div>
       </section>
 
       <!-- WHY CODE WINS -->
-      <section class="slide minimal-slide mood-center" data-slide="20" data-notes="Explain why code often beats many tool definitions or MCP-style interfaces for repeatable work.&#10;• You can inspect the approach instead of trusting each inference step.&#10;• You can rerun the script without another model call.&#10;• You can compose it with files, pipes, tests, logs, and existing tools.&#10;• Once written, most of the work becomes deterministic.">
+      <section class="slide minimal-slide mood-center" data-slide="22" data-notes="Explain why code often beats many tool definitions or MCP-style interfaces for repeatable work.&#10;• You can inspect the approach instead of trusting each inference step.&#10;• You can rerun the script without another model call.&#10;• You can compose it with files, pipes, tests, logs, and existing tools.&#10;• Once written, most of the work becomes deterministic.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--mono">Determinism Beats Inference</h2>
         </div>
       </section>
 
       <!-- PROGRAMMABLE WORLDS -->
-      <section class="slide minimal-slide mood-right tilt-left" data-slide="21" data-notes="The practical pattern: give the agent a small world where it can act safely and learn from failures.&#10;• Text files in, artifacts out.&#10;• Fast commands, deterministic outputs, useful errors.&#10;• Logs the agent can read without asking a human.&#10;• Enough constraints that failure is visible instead of dangerous.">
+      <section class="slide minimal-slide mood-right tilt-left" data-slide="23" data-notes="The practical pattern: give the agent a small world where it can act safely and learn from failures.&#10;• Text files in, artifacts out.&#10;• Fast commands, deterministic outputs, useful errors.&#10;• Logs the agent can read without asking a human.&#10;• Enough constraints that failure is visible instead of dangerous.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--huge wordmark--italic">Tiny Programmable Worlds</h2>
         </div>
       </section>
 
       <!-- GONDOLIN -->
-      <section class="slide minimal-slide mood-left" data-slide="22" data-notes="Pitch Gondolin as the concrete sandbox we built for this style of agent architecture.&#10;• https://github.com/earendil-works/gondolin&#10;• Local disposable Linux micro-VMs for agent turns and tasks.&#10;• Programmable filesystem mounts controlled from JavaScript.&#10;• Programmable HTTP/TLS egress policy and allowlists.&#10;• Secret injection through placeholders so the guest does not see the real secret.&#10;• Fast enough to treat the VM as something you create, use, and throw away.">
+      <section class="slide minimal-slide mood-left" data-slide="24" data-notes="Pitch Gondolin as the concrete sandbox we built for this style of agent architecture.&#10;• https://github.com/earendil-works/gondolin&#10;• Local disposable Linux micro-VMs for agent turns and tasks.&#10;• Programmable filesystem mounts controlled from JavaScript.&#10;• Programmable HTTP/TLS egress policy and allowlists.&#10;• Secret injection through placeholders so the guest does not see the real secret.&#10;• Fast enough to treat the VM as something you create, use, and throw away.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--wide">Gondolin: Disposable Worlds</h2>
         </div>
       </section>
 
+      <!-- GONDOLIN DEMO -->
+      <section class="slide minimal-slide mood-center asciinema-slide" data-slide="25" data-notes="Show the Gondolin asciinema demo. Use it as the concrete visual for disposable programmable worlds: create the sandbox, run work inside it, and throw it away.">
+        <div class="frame frame-wide center">
+          <div class="asciinema-shell" aria-label="Gondolin asciinema demo">
+            <div class="asciinema-mount" data-asciinema-src="./assets/recordings/gondolin.cast"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- AGENT LEGIBLE CODEBASE -->
-      <section class="slide minimal-slide mood-center tilt-right" data-slide="23" data-notes="Bring the codebase design lessons back in. These are also good human engineering practices.&#10;• Clear module boundaries: agents can work in one place without corrupting another.&#10;• Known patterns and conventions: agents pattern-match; give them patterns worth matching.&#10;• Greppable names and boring imports.&#10;• Fast tests and loud failures.&#10;• No hidden magic: if the agent cannot see it, it cannot respect it.">
+      <section class="slide minimal-slide mood-center tilt-right" data-slide="26" data-notes="Bring the codebase design lessons back in. These are also good human engineering practices.&#10;• Clear module boundaries: agents can work in one place without corrupting another.&#10;• Known patterns and conventions: agents pattern-match; give them patterns worth matching.&#10;• Greppable names and boring imports.&#10;• Fast tests and loud failures.&#10;• No hidden magic: if the agent cannot see it, it cannot respect it.">
         <div class="frame frame-narrow">
-          <h2 class="wordmark wordmark--huge">Legible Codebases Win</h2>
+          <h2 class="wordmark wordmark--huge">Codebase Is Your Infrastructure</h2>
         </div>
       </section>
 
       <!-- PART III DIVIDER -->
-      <section class="slide minimal-slide mood-left" data-slide="24" data-notes="Transition to the operating discipline required to make this sustainable.">
+      <section class="slide minimal-slide mood-left" data-slide="27" data-notes="Transition to the operating discipline required to make this sustainable.">
         <div class="frame frame-narrow">
           <p class="kicker">Part III</p>
           <h2 class="wordmark wordmark--huge wordmark--italic">Force Friction</h2>
@@ -752,37 +852,44 @@
       </section>
 
       <!-- WHERE SPEED HELPS -->
-      <section class="slide minimal-slide mood-right" data-slide="25" data-notes="Separate high-leverage speed from places where speed creates future cleanup cost.&#10;High leverage:&#10;• Exploring product directions.&#10;• Prototypes and onboarding experiments.&#10;• Debugging concrete failures.&#10;• Fixing CI and regressions.&#10;• Creating reproduction cases.&#10;Lower leverage:&#10;• Reliability and shared understanding.&#10;• Long-lived systems with many states.&#10;• Code you have not specified clearly yourself.&#10;• Anything where cleanup cost arrives later.">
+      <section class="slide minimal-slide mood-right" data-slide="28" data-notes="Separate high-leverage speed from places where speed creates future cleanup cost.&#10;High leverage:&#10;• Exploring product directions.&#10;• Prototypes and onboarding experiments.&#10;• Debugging concrete failures.&#10;• Fixing CI and regressions.&#10;• Creating reproduction cases.&#10;Lower leverage:&#10;• Reliability and shared understanding.&#10;• Long-lived systems with many states.&#10;• Code you have not specified clearly yourself.&#10;• Anything where cleanup cost arrives later.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--giant">Speed Kills</h2>
         </div>
       </section>
 
       <!-- MECHANICAL ENFORCEMENT -->
-      <section class="slide minimal-slide mood-left" data-slide="26" data-notes="Mechanical enforcement beats hoping the prompt is obeyed.&#10;• No bare catch-alls: force explicit error handling.&#10;• No new dependencies without a callout.&#10;• No raw access outside the agreed boundary.&#10;• Use component libraries and code generation where they preserve consistency.&#10;• Let tools reject the easy wrong answer before a human has to see it.">
+      <section class="slide minimal-slide mood-left" data-slide="29" data-notes="Mechanical enforcement beats hoping the prompt is obeyed.&#10;• No bare catch-alls: force explicit error handling.&#10;• No new dependencies without a callout.&#10;• No raw access outside the agreed boundary.&#10;• Use component libraries and code generation where they preserve consistency.&#10;• Let tools reject the easy wrong answer before a human has to see it.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--mono">Add Mechanical Guardrails</h2>
         </div>
       </section>
 
       <!-- PR REVIEW -->
-      <section class="slide minimal-slide mood-right tilt-right" data-slide="27" data-notes="Split review into what the machine should fix and what the human must judge.&#10;Immediately actionable → Agent:&#10;• Style violations.&#10;• Mechanical bugs.&#10;• Clear engineering rule breaks.&#10;• Missing tests for explicit behavior.&#10;Call-outs → Human:&#10;• Database migrations added.&#10;• New dependencies introduced.&#10;• Auth / permissions changes.&#10;• Backwards-incompatible API changes.&#10;• Irreversible destructive operations.">
+      <section class="slide minimal-slide mood-right tilt-right" data-slide="30" data-notes="Split review into what the machine should fix and what the human must judge.&#10;Immediately actionable → Agent:&#10;• Style violations.&#10;• Mechanical bugs.&#10;• Clear engineering rule breaks.&#10;• Missing tests for explicit behavior.&#10;Call-outs → Human:&#10;• Database migrations added.&#10;• New dependencies introduced.&#10;• Auth / permissions changes.&#10;• Backwards-incompatible API changes.&#10;• Irreversible destructive operations.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--wide">Machines Fix. Humans Judge.</h2>
         </div>
       </section>
 
       <!-- FORCE FRICTION -->
-      <section class="slide minimal-slide mood-center" data-slide="28" data-notes="Define the final lesson: remove toil, add friction around judgment.&#10;• Remove mechanical friction: formatting, boilerplate, setup, obvious fixes.&#10;• Add judgment friction: taste, architecture, security, data, trust.&#10;• Keep generated changes small enough to understand.&#10;• Make the human feel the pressure where responsibility actually lives.">
+      <section class="slide minimal-slide mood-center" data-slide="31" data-notes="Define the final lesson: remove toil, add friction around judgment.&#10;• Remove mechanical friction: formatting, boilerplate, setup, obvious fixes.&#10;• Add judgment friction: taste, architecture, security, data, trust.&#10;• Keep generated changes small enough to understand.&#10;• Make the human feel the pressure where responsibility actually lives.">
         <div class="frame frame-wide">
           <h2 class="wordmark wordmark--huge wordmark--italic">Remove Toil. Add Judgment.</h2>
         </div>
       </section>
 
       <!-- FINAL -->
-      <section class="slide minimal-slide mood-left tilt-left" data-slide="29" data-notes="Close with the friction thesis and thank the audience.&#10;• Some friction is waste.&#10;• Without friction, you cannot steer.&#10;• The friction is your judgment.">
+      <section class="slide minimal-slide mood-left tilt-left" data-slide="32" data-notes="Close with the friction thesis and thank the audience.&#10;• Some friction is waste.&#10;• Without friction, you cannot steer.&#10;• The friction is your judgment.">
         <div class="frame frame-narrow">
           <h2 class="wordmark wordmark--giant">Without Friction You Can't Steer</h2>
+        </div>
+      </section>
+
+      <!-- Q&A -->
+      <section class="slide minimal-slide mood-center" data-slide="33" data-notes="Q&A.">
+        <div class="frame frame-narrow center">
+          <h2 class="qa-wordmark">Q<span>&amp;</span>A</h2>
         </div>
       </section>
     </div>
@@ -1192,6 +1299,63 @@
         history.replaceState(null, "", `#${slideNumber}${stepSuffix}`);
       }
 
+      const asciinemaPlayers = new WeakMap();
+
+      function mountAsciinemaSlide(slide) {
+        const mount = slide?.querySelector("[data-asciinema-src]");
+        if (!mount || !window.AsciinemaPlayer) {
+          return null;
+        }
+
+        const existingPlayer = asciinemaPlayers.get(slide);
+        if (existingPlayer) {
+          return existingPlayer;
+        }
+
+        const player = window.AsciinemaPlayer.create(mount.dataset.asciinemaSrc, mount, {
+          theme: "dracula",
+          fit: false,
+          idleTimeLimit: 2,
+          autoPlay: false,
+          controls: false,
+          loop: true,
+          speed: 1,
+          terminalFontFamily: "Departure Mono",
+          terminalFontSize: "21px",
+          terminalLineHeight: 1.4,
+        });
+        asciinemaPlayers.set(slide, player);
+        player.addEventListener("ready", () => {
+          if (slide.classList.contains("active")) {
+            resetAndPlayAsciinema(player);
+          }
+        });
+        return player;
+      }
+
+      function resetAndPlayAsciinema(player) {
+        if (!player) {
+          return;
+        }
+
+        Promise.resolve(player.pause?.())
+          .then(() => player.seek?.(0))
+          .then(() => player.play?.())
+          .catch(() => player.play?.());
+      }
+
+      function syncAsciinemaSlides() {
+        slides.forEach((slide) => {
+          const player = asciinemaPlayers.get(slide);
+          if (player && !slide.classList.contains("active")) {
+            player.pause?.();
+          }
+        });
+
+        const activePlayer = mountAsciinemaSlide(slides[slideIndex]);
+        resetAndPlayAsciinema(activePlayer);
+      }
+
       function showSlide(index, { updateHash: shouldUpdateHash = true } = {}) {
         slideIndex = clamp(index, 0, slides.length - 1);
         slides.forEach((slide, idx) => {
@@ -1201,6 +1365,7 @@
         stepIndex = clamp(stepIndex, 0, stepCount);
         applySteps(slides[slideIndex]);
         updateSpeakerIndicator();
+        syncAsciinemaSlides();
 
         if (shouldUpdateHash) {
           updateHash();
