@@ -1,0 +1,189 @@
+@page {
+	size: 170mm 240mm;
+	margin: 20mm 18mm 22mm 18mm;
+	@bottom-center {
+		content: counter(page);
+		font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+		font-size: 8pt;
+		color: #888;
+	}
+}
+@page :first {
+	@bottom-center { content: none; }
+}
+@page cover {
+	margin: 0;
+	@bottom-center { content: none; }
+}
+
+:root {
+	--ink: #1d1d1f;
+	--muted: #666;
+	--accent: #2b4c7e;
+	--accent-soft: #e8eef7;
+	--warn: #b5651d;
+	--warn-soft: #fbf0e4;
+	--ok: #2f6b3a;
+	--ok-soft: #e7f2e8;
+	--rule: #d8d8d8;
+}
+
+html { font-size: 10pt; }
+body {
+	font-family: "Charter", "Iowan Old Style", "Georgia", serif;
+	color: var(--ink);
+	line-height: 1.45;
+	margin: 0;
+	hyphens: auto;
+	-webkit-hyphens: auto;
+}
+
+h1, h2, h3, h4, .sans, figcaption, table, .kicker, .toc {
+	font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+}
+
+/* cover */
+.cover {
+	page: cover;
+	height: 240mm;
+	width: 170mm;
+	box-sizing: border-box;
+	padding: 38mm 20mm 20mm 20mm;
+	background: #14243d;
+	color: #f4f1ea;
+	break-after: page;
+	position: relative;
+}
+.cover .kicker { letter-spacing: 0.18em; text-transform: uppercase; font-size: 8pt; color: #9fb4d6; }
+.cover h1 { font-size: 36pt; line-height: 1.05; margin: 6mm 0 4mm 0; font-weight: 600; color: #fff; }
+.cover .subtitle { font-size: 13pt; line-height: 1.35; color: #d9d4c7; max-width: 115mm; }
+.cover .meta { position: absolute; bottom: 20mm; left: 20mm; right: 20mm; font-family: "Avenir Next", sans-serif; font-size: 8.5pt; color: #9fb4d6; line-height: 1.5; }
+.cover svg { margin-top: 14mm; }
+
+/* parts and chapters */
+.part {
+	break-before: page;
+	break-after: page;
+	padding-top: 55mm;
+}
+.part .kicker { letter-spacing: 0.18em; text-transform: uppercase; font-size: 8pt; color: var(--accent); }
+.part h1 { font-size: 26pt; margin: 3mm 0 5mm 0; font-weight: 600; }
+.part p { font-size: 11pt; color: var(--muted); max-width: 110mm; }
+
+.chapter { break-before: page; }
+.chapter > .kicker { letter-spacing: 0.14em; text-transform: uppercase; font-size: 7.5pt; color: var(--accent); margin-top: 6mm; }
+.chapter > h2 { font-size: 19pt; margin: 1.5mm 0 6mm 0; font-weight: 600; line-height: 1.15; }
+h3 { font-size: 11.5pt; margin: 6mm 0 2mm 0; font-weight: 600; break-after: avoid; }
+h4 { font-size: 10pt; margin: 4mm 0 1mm 0; font-weight: 600; break-after: avoid; }
+
+p { margin: 0 0 2.6mm 0; text-align: justify; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 3mm 0; padding-left: 5mm; }
+li { margin-bottom: 1mm; }
+strong { font-weight: 700; }
+em { font-style: italic; }
+code {
+	font-family: "SF Mono", "Menlo", monospace;
+	font-size: 8.3pt;
+	background: #f2f2f0;
+	padding: 0 0.6mm;
+	border-radius: 0.6mm;
+	hyphens: none;
+}
+pre {
+	font-family: "SF Mono", "Menlo", monospace;
+	font-size: 7.8pt;
+	line-height: 1.4;
+	background: #f6f6f4;
+	border-left: 0.8mm solid var(--rule);
+	padding: 2.5mm 3mm;
+	margin: 0 0 3mm 0;
+	white-space: pre-wrap;
+	break-inside: avoid;
+	hyphens: none;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+blockquote {
+	margin: 3mm 0 4mm 0;
+	padding: 2mm 0 2mm 5mm;
+	border-left: 0.8mm solid var(--accent);
+	font-size: 11pt;
+	font-style: italic;
+	color: #333;
+}
+blockquote p { text-align: left; }
+
+.lead { font-size: 11pt; color: #333; }
+
+/* callouts */
+.box {
+	break-inside: avoid;
+	margin: 3mm 0 4mm 0;
+	padding: 2.5mm 3.5mm;
+	border-radius: 1mm;
+	background: var(--accent-soft);
+}
+.box p:last-child, .box ul:last-child { margin-bottom: 0; }
+.box .label {
+	font-family: "Avenir Next", sans-serif;
+	font-size: 7pt;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--accent);
+	display: block;
+	margin-bottom: 1mm;
+}
+.box.warn { background: var(--warn-soft); }
+.box.warn .label { color: var(--warn); }
+.box.talk { background: var(--ok-soft); }
+.box.talk .label { color: var(--ok); }
+
+/* tables */
+table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 8pt;
+	line-height: 1.35;
+	margin: 2mm 0 4mm 0;
+	break-inside: avoid;
+}
+th { text-align: left; font-weight: 600; border-bottom: 0.3mm solid var(--ink); padding: 1.2mm 1.5mm; vertical-align: bottom; }
+td { border-bottom: 0.15mm solid var(--rule); padding: 1.2mm 1.5mm; vertical-align: top; }
+td code, th code { font-size: 7.3pt; }
+table.long { break-inside: auto; }
+tr { break-inside: avoid; }
+
+/* figures */
+figure { margin: 4mm 0 5mm 0; break-inside: avoid; text-align: center; }
+figure svg { max-width: 100%; height: auto; }
+figcaption { font-size: 7.8pt; color: var(--muted); margin-top: 1.5mm; text-align: center; }
+
+svg text { font-family: "Avenir Next", "Helvetica Neue", sans-serif; }
+svg .t { font-size: 11px; fill: #1d1d1f; }
+svg .ts { font-size: 9.5px; fill: #555; }
+svg .tb { font-size: 11px; font-weight: 600; fill: #1d1d1f; }
+svg .tw { font-size: 11px; fill: #fff; font-weight: 600; }
+svg .mono { font-family: "SF Mono", Menlo, monospace; font-size: 9.5px; fill: #1d1d1f; }
+svg .box { fill: #fff; stroke: #1d1d1f; stroke-width: 1.2; }
+svg .boxa { fill: #e8eef7; stroke: #2b4c7e; stroke-width: 1.2; }
+svg .boxd { fill: #2b4c7e; stroke: #2b4c7e; stroke-width: 1.2; }
+svg .boxw { fill: #fbf0e4; stroke: #b5651d; stroke-width: 1.2; }
+svg .boxg { fill: #e7f2e8; stroke: #2f6b3a; stroke-width: 1.2; }
+svg .boxq { fill: #f4f4f2; stroke: #999; stroke-width: 1; stroke-dasharray: 4 3; }
+svg .line { stroke: #1d1d1f; stroke-width: 1.2; fill: none; }
+svg .linea { stroke: #2b4c7e; stroke-width: 1.4; fill: none; }
+svg .dash { stroke: #888; stroke-width: 1.1; fill: none; stroke-dasharray: 4 3; }
+svg .crash { stroke: #b5651d; stroke-width: 2; fill: none; }
+
+/* toc */
+.toc { break-before: page; }
+.toc h2 { font-size: 19pt; font-weight: 600; margin: 2mm 0 4mm 0; }
+.toc .tp { font-weight: 600; font-size: 8.5pt; margin: 3mm 0 0.5mm 0; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+.toc ol { list-style: none; padding-left: 0; margin: 0; font-size: 9.5pt; }
+.toc li { margin: 0.3mm 0; }
+.toc li span { color: var(--muted); display: inline-block; width: 8mm; }
+
+.small { font-size: 8.5pt; color: var(--muted); }
+.center { text-align: center; }
+.nobreak { break-inside: avoid; }

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Starts the demo (or continues it after a crash). Arguments go to main.ts, e.g. --reset or --crash-on "scanning gw-3".
+set -e
+cd "$(dirname "$0")"
+[ -e node_modules ] || ln -s "${PI_MONO:-$HOME/Development/pi-mono}/node_modules" node_modules
+exec node --conditions=source main.ts "$@"

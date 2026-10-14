@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Pi Durable: A Field Guide</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<section class="cover">
+	<div class="kicker">Earendil · Field Guide</div>
+	<h1>Pi Durable</h1>
+	<div class="subtitle">Agents that outlive their process. The why, the architecture, and the story of a crash, explained without code.</div>
+	<svg width="420" height="200" viewBox="0 0 420 200">
+		<!-- a transcript strip with commits, a crash and a resume -->
+		<g stroke="#9fb4d6" stroke-width="1.2" fill="none">
+			<line x1="10" y1="100" x2="190" y2="100"/>
+			<line x1="240" y1="100" x2="410" y2="100"/>
+		</g>
+		<g fill="#f4f1ea">
+			<circle cx="30" cy="100" r="6"/><circle cx="70" cy="100" r="6"/><circle cx="110" cy="100" r="6"/><circle cx="150" cy="100" r="6"/>
+			<circle cx="260" cy="100" r="6"/><circle cx="300" cy="100" r="6"/><circle cx="340" cy="100" r="6"/><circle cx="380" cy="100" r="6"/>
+		</g>
+		<circle cx="190" cy="100" r="6" fill="none" stroke="#e0a060" stroke-width="1.5" stroke-dasharray="2 2"/>
+		<path d="M205 70 L215 95 L203 98 L218 130" stroke="#e0a060" stroke-width="2.5" fill="none"/>
+		<text x="30" y="80" fill="#9fb4d6" font-size="10" text-anchor="middle">commit</text>
+		<text x="210" y="150" fill="#e0a060" font-size="10" text-anchor="middle">process dies</text>
+		<text x="260" y="80" fill="#9fb4d6" font-size="10" text-anchor="middle">reopen</text>
+		<path d="M150 120 C 190 175, 230 175, 258 118" stroke="#9fb4d6" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+		<text x="205" y="185" fill="#9fb4d6" font-size="9" text-anchor="middle">continue from the last checkpoint</text>
+	</svg>
+	<div class="meta">
+		Background reading for a ten-minute talk on <code style="background:none;color:#cfd9ea">@earendil-works/pi-durable</code><br>
+		Based on <code style="background:none;color:#cfd9ea">packages/durable</code> in pi-mono (v1.2.0, October 2026),<br>
+		its specification, its git history, and the launch post “Pi Durable” (1 October 2026).
+	</div>
+</section>
+
+<section class="toc">
+	<h2>Contents</h2>
+	<div class="tp">Before you start</div>
+	<ol><li><span></span>How to read this book</li></ol>
+	<div class="tp">Part I · Why</div>
+	<ol>
+		<li><span>1</span>The agent that lives in a terminal</li>
+		<li><span>2</span>Agents leave the terminal</li>
+		<li><span>3</span>The road to Pi Durable</li>
+		<li><span>4</span>A vocabulary for harnesses</li>
+	</ol>
+	<div class="tp">Part II · How it works</div>
+	<ol>
+		<li><span>5</span>The one rule: commit before you show</li>
+		<li><span>6</span>What lives in storage</li>
+		<li><span>7</span>Tasks: work as durable state machines</li>
+		<li><span>8</span>One turn, taken apart</li>
+		<li><span>9</span>One ownership tree</li>
+		<li><span>10</span>Many conversations: forks and subagents</li>
+		<li><span>11</span>The inbox: many people, one agent</li>
+		<li><span>12</span>Context without end</li>
+		<li><span>13</span>Extensions: names, not code</li>
+		<li><span>14</span>Documents, views and multiplayer</li>
+		<li><span>15</span>Running anywhere</li>
+		<li><span>16</span>What can go wrong, and what is not promised</li>
+	</ol>
+	<div class="tp">Part III · Seeing it work</div>
+	<ol>
+		<li><span>17</span>Pulling the plug: a crash, commit by commit</li>
+		<li><span>18</span>The vacation planner, underneath</li>
+		<li><span>19</span>Not just for models: a split payment</li>
+	</ol>
+	<div class="tp">Part IV · Toward the talk</div>
+	<ol>
+		<li><span>20</span>How to demo something you should not demo live</li>
+		<li><span>21</span>A ten-minute shape</li>
+		<li><span>22</span>Facts, numbers, and things to double-check</li>
+		<li><span>A</span>Glossary</li>
+		<li><span>B</span>A map of the source</li>
+	</ol>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Before you start</div>
+	<h2>How to read this book</h2>
+	<p class="lead">This book exists to make a ten-minute talk possible. Ten minutes is too short to teach Pi Durable. It is long enough to leave people with one picture in their heads, and to give that picture you have to understand the whole thing first. The book tries to get you there.</p>
+	<p>It deliberately avoids code. Where code appears, it shows a shape, never an API to memorize. The goal is that you can explain Pi Durable on a whiteboard: what is stored, who does the work, what happens when the power goes out.</p>
+	<ul>
+		<li><strong>Part I</strong> explains why Pi Durable exists: the assumptions a terminal coding agent can make, why they stop holding once agents leave the terminal, and how the design arrived where it is.</li>
+		<li><strong>Part II</strong> is the architecture, in the order you would explain it: the one rule everything follows, what lives in storage, tasks, a turn taken apart, ownership, and then the features that fall out of those.</li>
+		<li><strong>Part III</strong> walks through three scenarios in slow motion. These are the raw material for a demo that explains instead of just showing.</li>
+		<li><strong>Part IV</strong> turns all of it into options for the talk: demo formats, a ten-minute structure, and a list of facts to double-check before going on stage.</li>
+	</ul>
+	<p>If you only have half an hour: read chapters 2, 5, 7, 9 and 17. Those are the spine of the talk.</p>
+	<div class="box">
+		<span class="label">Sources</span>
+		<p>The normative specification in <code>packages/durable/docs/spec.md</code> (about 5,300 lines), the package README, the examples in <code>test/examples</code>, the git history of <code>packages/agent</code> and <code>packages/durable</code>, and the launch post on earendil.com. Where this book interprets rather than reports, it says so.</p>
+	</div>
+</section>
+
+<section class="part">
+	<div class="kicker">Part I</div>
+	<h1>Why</h1>
+	<p>A coding agent in a terminal can lean on a human for recovery. An agent in Slack, in an inbox, or in a Durable Object cannot. Pi Durable is what you build when no human is watching the process.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 1</div>
+	<h2>The agent that lives in a terminal</h2>
+	<p class="lead">Pi, the coding agent, runs on your machine (or a remote one), inside a terminal, driven by one person. It is minimal by design: a short system prompt, four tools, and an extension system that lets people mold it into what they need. More than five thousand extensions exist because of that malleability.</p>
+	<p>Pi stores a session as a transcript: a tree of entries, one JSON object per line, on disk. The process runs the agent loop: send the transcript to the model, run the tool calls it asks for, append the results, repeat until the model answers. The interesting state while this happens lives in memory: the half-streamed answer, the output of a running <code>bash</code>, the message you typed while the agent was busy, the retry it is about to attempt.</p>
+	<p>When the process dies, all of that is gone, and that is fine. You look at the transcript, see where it stopped, and type “continue”. <strong>The human is the recovery mechanism.</strong> Pi 1.0 is built around this, excels at it, and is not going to change.</p>
+
+	<h3>The assumptions a terminal agent gets to make</h3>
+	<p>It is worth spelling out what this design quietly relies on, because each of these is something Pi Durable had to give up:</p>
+	<table>
+		<tr><th style="width:38%">Assumption</th><th>Why it holds in a terminal</th></tr>
+		<tr><td>One process, one session, one human</td><td>You started it, you are watching it, nobody else types into it.</td></tr>
+		<tr><td>The conversation lives as long as the process</td><td>Sessions last minutes or hours; you close the laptop, you restart.</td></tr>
+		<tr><td>In-flight state can be volatile</td><td>If a tool call is lost, you will notice and redo it.</td></tr>
+		<tr><td>The transcript is the only state</td><td>There is no application around the agent that needs its own durable state.</td></tr>
+		<tr><td>The UI is in the same process</td><td>Events flow from the loop to the screen in memory.</td></tr>
+		<tr><td>The code is fixed while it runs</td><td>To change an extension you reload; a run in progress is your problem.</td></tr>
+	</table>
+	<p>None of these are flaws. They are what makes a terminal agent small. But every one of them breaks the moment the agent is not a program you are personally watching.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 2</div>
+	<h2>Agents leave the terminal</h2>
+	<p class="lead">Earendil wants this technology in front of everyone, in whatever form fits them: Lefos answers by email, a bot answers mentions in Slack, a triage bot labels GitHub issues, an agent runs inside a Cloudflare Durable Object behind a web page. None of these has a human watching the process.</p>
+	<p>The launch post names five requirements. Each one breaks one of the assumptions from the last chapter.</p>
+	<table>
+		<tr><th style="width:27%">Requirement</th><th style="width:33%">Breaks the assumption that…</th><th>What it forces</th></tr>
+		<tr><td><strong>Runs anywhere</strong></td><td>there is one machine with a file system and Node</td><td>Storage and execution behind small interfaces; no Node APIs in the core.</td></tr>
+		<tr><td><strong>Reachable from different surfaces</strong></td><td>the UI lives in the process</td><td>UIs attach to committed state, from anywhere, at any time.</td></tr>
+		<tr><td><strong>Infinitely long conversations</strong></td><td>a conversation fits in a process lifetime and in a context window</td><td>Bounded memory, compaction while working, nothing ever deleted.</td></tr>
+		<tr><td><strong>Survives catastrophic failures</strong></td><td>in-flight state can be volatile</td><td>Every step checkpointed; a new process continues the old one’s work.</td></tr>
+		<tr><td><strong>Multiple humans steer the same agents</strong></td><td>one person types into it</td><td>Durable queues, steering, exactly-once submission.</td></tr>
+	</table>
+	<p>There is a sixth requirement that is easy to miss: <strong>malleability</strong>. Pi’s soul is that you change it. An agent that runs for weeks still needs its code changed, and you cannot stop the world to do it.</p>
+
+	<h3>Who recovers when nobody is watching?</h3>
+	<p>This is the core of the “why”. In the terminal, a crash is an inconvenience. In a Slack bot, a crash in the middle of a tool call means a question that is never answered, a deploy that may or may not have happened, and a user who asked twice because the bot looked dead. When the container is redeployed, the laptop sleeps, or the machine runs out of memory, someone has to know what was in progress and what to do about it.</p>
+	<p>If the human is no longer the recovery mechanism, <strong>the harness has to be</strong>. That single sentence is the reason Pi Durable exists.</p>
+
+	<h3>Why not change Pi the coding agent?</h3>
+	<p>Because Pi works and people depend on it. Pi Durable is a separate, experimental package. It shares code with the coding agent (model access through <code>pi-ai</code>) and its principles (minimalism and malleability), but it is a framework for building <em>any</em> agentic application, coding agents included. It is also a place to try designs without disrupting Pi: lessons that prove themselves are meant to flow back.</p>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“A coding agent can rely on you to notice that it died. A Slack bot can’t. Pi Durable is what you build when nobody is watching the process.”</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 3</div>
+	<h2>The road to Pi Durable</h2>
+	<p class="lead">Pi Durable did not start as a database of tasks. It started as a much more modest idea: keep the session file, and add recovery notes to it. The git history shows the design moving, over about ten weeks, from one to the other.</p>
+
+	<h3>A timeline from the repository</h3>
+	<table>
+		<tr><th style="width:20%">When (2026)</th><th>What happened</th></tr>
+		<tr><td>28 July</td><td>A first “Durable AgentHarness” design document lands in <code>packages/agent</code>: about 2,100 lines. It keeps Pi’s session log and adds private <em>harness entries</em> to it.</td></tr>
+		<tr><td>August</td><td>Harness v2 and v3 implementations, designs for plugins and reload, sessions/branches/lanes, a “durable drive” runtime. Many design documents, many revisions.</td></tr>
+		<tr><td>Early September</td><td>A series of prototypes named <em>Pico</em>: a pico2 spike, a hardened pico3 kernel, then Pico5, built on Chord’s transactional replicated state.</td></tr>
+		<tr><td>18 September</td><td>Pico moves into its own package: <code>packages/durable</code>. Over the next two weeks: SQLite and JSONL storage, transactional sessions, documents, forks, the task runtime, the Harness, structured concurrency.</td></tr>
+		<tr><td>1 October</td><td>Shipped as experimental alongside Pi 1.0, together with a small coding agent and a vacation planner built on it.</td></tr>
+		<tr><td>Since</td><td>Durable code mode, nested tool calls, tool search, structured output, a stricter error model. About 150 commits touch the package.</td></tr>
+	</table>
+
+	<h3>Version one: a transcript with recovery notes</h3>
+	<p>The July design is a natural first idea. Pi already has an append-only session log. So: write extra, private records into the same log as you go: “operation started”, “tool started”, “message queued”. They are never shown to the model and never part of the tree. After a crash, a recovery procedure reads the end of the log, works out how far the run got, and continues. Its central invariant reads:</p>
+	<blockquote><p>Session entries define what the conversation is. Harness entries define what the harness did, in what order.</p></blockquote>
+	<p>It also had to say what it could not do: at most one operation per session at a time, hooks never re-run after a crash, provider streams never persisted.</p>
+
+	<h3>Where it ended up: a database of records</h3>
+	<p>The specification that ships today opens with a different core rule:</p>
+	<blockquote><p>A Session atomically commits immutable entries, full task records, and Chord-tracked documents. Only committed state is observable.</p></blockquote>
+	<p>Read the two side by side and you can see the shift. (This is an interpretation, but the documents support it.)</p>
+	<table>
+		<tr><th style="width:30%"></th><th style="width:35%">July: log plus recovery notes</th><th>October: Pi Durable</th></tr>
+		<tr><td>Source of truth</td><td>The transcript, with orchestration facts beside it</td><td>Conversations, entries, tasks, submissions and documents, all committed together</td></tr>
+		<tr><td>Recovery</td><td>A procedure that reads the log and reconstructs</td><td>Not special: running tasks become pending, the scheduler continues</td></tr>
+		<tr><td>Concurrency</td><td>One operation per session</td><td>Any number of conversations and tasks, in one ownership tree</td></tr>
+		<tr><td>In-flight state</td><td>Volatile; partial streams never persisted</td><td>Committed: partials and tool output are durable documents</td></tr>
+		<tr><td>UI model</td><td>Snapshot plus live events</td><td>Snapshot plus exact operations of each commit</td></tr>
+		<tr><td>Application state</td><td>Not addressed</td><td>Typed documents, committed with the transcript</td></tr>
+	</table>
+	<p>The lesson is the most interesting thing to say about the history in a talk: <strong>recovery stopped being a feature and became a consequence</strong>. If every unit of work is a durable state machine and nothing is visible until it is stored, there is nothing to reconstruct. A new process simply has the same state the old one had.</p>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“Our first design was a transcript with recovery notes in the margin. The design we shipped is a small database where the transcript is just one table, and every piece of work is a row that knows where it was.”</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 4</div>
+	<h2>A vocabulary for harnesses</h2>
+	<p class="lead">Everybody has their own definition of “harness”. Earendil’s earlier post compared it to a climbing harness: it holds you safely, connects you to ropes and tools, and you adapt it to the climb. Pi Durable needs a sharper definition, because it is a harness for building harnesses.</p>
+	<blockquote><p>A harness is storage plus the machinery needed to run one or more conversations with large language models in parallel. It provides the tools those models call, and the execution environments the tools run in.</p></blockquote>
+	<p>Six words carry the rest of this book:</p>
+	<table>
+		<tr><th style="width:24%">Word</th><th>Meaning</th></tr>
+		<tr><td><strong>Conversation</strong></td><td>An interaction between you and an agent, recorded as a transcript of immutable entries.</td></tr>
+		<tr><td><strong>Agent</strong></td><td>The model together with its settings (thinking level, instructions) and the tools it can call. Stored per conversation.</td></tr>
+		<tr><td><strong>Tool</strong></td><td>Something the model can call. Each call is durable work of its own.</td></tr>
+		<tr><td><strong>Execution environment</strong></td><td>Where tools touch files and processes: your laptop, a remote VM, a container, an in-memory sandbox.</td></tr>
+		<tr><td><strong>Task</strong></td><td>Everything the harness runs, from calling the model to executing a tool, is a task: a durable state machine.</td></tr>
+		<tr><td><strong>Extension</strong></td><td>A named bundle of prompt sections, tools, hooks and tasks. Conversations select extensions by name.</td></tr>
+	</table>
+	<figure>
+		<svg width="520" height="300" viewBox="0 0 520 300">
+			<!-- clients -->
+			<rect class="boxq" x="20" y="10" width="480" height="44" rx="4"/>
+			<text class="ts" x="30" y="25">clients attach to committed state</text>
+			<rect class="box" x="40" y="30" width="80" height="18" rx="3"/><text class="ts" x="80" y="43" text-anchor="middle">TUI</text>
+			<rect class="box" x="130" y="30" width="80" height="18" rx="3"/><text class="ts" x="170" y="43" text-anchor="middle">Slack</text>
+			<rect class="box" x="220" y="30" width="80" height="18" rx="3"/><text class="ts" x="260" y="43" text-anchor="middle">Web page</text>
+			<rect class="box" x="310" y="30" width="80" height="18" rx="3"/><text class="ts" x="350" y="43" text-anchor="middle">Email</text>
+			<rect class="box" x="400" y="30" width="80" height="18" rx="3"/><text class="ts" x="440" y="43" text-anchor="middle">Another agent</text>
+			<!-- harness -->
+			<rect class="boxa" x="20" y="70" width="350" height="130" rx="4"/>
+			<text class="tb" x="30" y="88">Harness</text>
+			<rect class="box" x="35" y="98" width="100" height="40" rx="3"/><text class="t" x="85" y="115" text-anchor="middle">Conversations</text><text class="ts" x="85" y="129" text-anchor="middle">transcripts</text>
+			<rect class="box" x="145" y="98" width="100" height="40" rx="3"/><text class="t" x="195" y="115" text-anchor="middle">Scheduler</text><text class="ts" x="195" y="129" text-anchor="middle">runs tasks</text>
+			<rect class="box" x="255" y="98" width="100" height="40" rx="3"/><text class="t" x="305" y="115" text-anchor="middle">Registry</text><text class="ts" x="305" y="129" text-anchor="middle">extensions</text>
+			<rect class="boxd" x="35" y="148" width="320" height="40" rx="3"/><text class="tw" x="195" y="165" text-anchor="middle">Session: one line of atomic commits</text><text class="ts" x="195" y="180" text-anchor="middle" style="fill:#cfd9ea">nothing is visible before it is stored</text>
+			<!-- side -->
+			<rect class="box" x="390" y="70" width="110" height="58" rx="4"/><text class="tb" x="445" y="92" text-anchor="middle">Models</text><text class="ts" x="445" y="108" text-anchor="middle">via pi-ai</text><text class="ts" x="445" y="120" text-anchor="middle">any provider</text>
+			<rect class="box" x="390" y="142" width="110" height="58" rx="4"/><text class="tb" x="445" y="164" text-anchor="middle">Environments</text><text class="ts" x="445" y="180" text-anchor="middle">where tools run</text><text class="ts" x="445" y="192" text-anchor="middle">local, VM, container</text>
+			<!-- storage -->
+			<rect class="box" x="20" y="222" width="480" height="62" rx="4"/>
+			<text class="tb" x="30" y="240">Storage</text>
+			<text class="ts" x="30" y="256">conversations · entries · tasks · submissions · documents</text>
+			<text class="ts" x="30" y="272">Memory · SQLite · JSONL · Cloudflare Durable Object · your own</text>
+			<!-- arrows -->
+			<line class="line" x1="195" y1="54" x2="195" y2="70"/>
+			<line class="line" x1="195" y1="200" x2="195" y2="222"/>
+			<line class="line" x1="370" y1="99" x2="390" y2="99"/>
+			<line class="line" x1="370" y1="171" x2="390" y2="171"/>
+		</svg>
+		<figcaption>Figure 4.1 · The pieces. Everything between the clients and the storage is replaceable; the only fixed point is that all state goes through one line of commits.</figcaption>
+	</figure>
+	<p>Like everything in Pi, Pi Durable is meant to be understood by your agent. At launch the source, without tests, was about 15,000 lines (about 150,000 tokens for GPT, 250,000 for Claude) and it has grown since. An agent building on it rarely needs all of it; the storage backends alone are 3,000 lines it can usually skip.</p>
+</section>
+<section class="part">
+	<div class="kicker">Part II</div>
+	<h1>How it works</h1>
+	<p>One rule, five kinds of records, and one kind of worker. Almost every feature of Pi Durable falls out of these.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 5</div>
+	<h2>The one rule: commit before you show</h2>
+	<p class="lead">If you remember one thing about Pi Durable, remember this: nothing is visible until it is stored. Not a streamed token, not a line of tool output, not a queued message. Everything else is built on that rule.</p>
+
+	<h3>The mutation line</h3>
+	<p>A harness opens over one storage. Inside it, a <strong>Session</strong> owns a single <em>mutation line</em>: a serialized queue through which every change passes. A change is a <strong>commit</strong>: a function that, in one transaction, may append transcript entries, change documents, create tasks, and record submissions. Either all of it is stored, or none of it is.</p>
+	<figure>
+		<svg width="520" height="230" viewBox="0 0 520 230">
+			<text class="ts" x="20" y="18">many actors want to change things…</text>
+			<rect class="box" x="20" y="28" width="100" height="26" rx="3"/><text class="t" x="70" y="45" text-anchor="middle">a user submits</text>
+			<rect class="box" x="20" y="62" width="100" height="26" rx="3"/><text class="t" x="70" y="79" text-anchor="middle">model streams</text>
+			<rect class="box" x="20" y="96" width="100" height="26" rx="3"/><text class="t" x="70" y="113" text-anchor="middle">tool prints output</text>
+			<rect class="box" x="20" y="130" width="100" height="26" rx="3"/><text class="t" x="70" y="147" text-anchor="middle">compaction ends</text>
+			<path class="line" d="M120 41 C 150 41, 150 92, 175 92"/>
+			<path class="line" d="M120 75 C 150 75, 150 92, 175 92"/>
+			<path class="line" d="M120 109 C 150 109, 150 92, 175 92"/>
+			<path class="line" d="M120 143 C 150 143, 150 92, 175 92"/>
+			<rect class="boxd" x="175" y="72" width="150" height="40" rx="4"/>
+			<text class="tw" x="250" y="89" text-anchor="middle">mutation line</text>
+			<text class="ts" x="250" y="103" text-anchor="middle" style="fill:#cfd9ea">one commit at a time</text>
+			<line class="line" x1="325" y1="92" x2="365" y2="92"/>
+			<rect class="box" x="365" y="72" width="70" height="40" rx="4"/><text class="tb" x="400" y="96" text-anchor="middle">storage</text>
+			<line class="linea" x1="435" y1="92" x2="470" y2="92"/>
+			<text class="ts" x="470" y="70">then, and</text><text class="ts" x="470" y="82">only then</text>
+			<rect class="boxa" x="470" y="88" width="40" height="16" rx="2"/><text class="ts" x="490" y="100" text-anchor="middle">UIs</text>
+			<rect class="boxq" x="175" y="150" width="335" height="66" rx="4"/>
+			<text class="tb" x="185" y="168">outside the line</text>
+			<text class="ts" x="185" y="184">model calls, processes, network, humans, other machines</text>
+			<text class="ts" x="185" y="198">never run inside a commit. They run between commits,</text>
+			<text class="ts" x="185" y="210">and their results come back as new commits.</text>
+		</svg>
+		<figcaption>Figure 5.1 · All changes pass through one line. Effects happen outside it; observers see only what storage accepted.</figcaption>
+	</figure>
+	<p>Two consequences follow immediately:</p>
+	<ul>
+		<li><strong>Effects never run inside a transaction.</strong> A commit cannot wait on a model, a process or a human. This keeps commits short and makes the boundaries between “decided” and “done” explicit.</li>
+		<li><strong>There is no volatile path to the screen.</strong> A streaming answer is committed as a partial at most every 100 milliseconds. A tool’s running output is committed the same way. A UI sees them because they are in storage, not because the process told it.</li>
+	</ul>
+
+	<h3>Why this one rule buys so much</h3>
+	<table>
+		<tr><th style="width:33%">Property</th><th>Why it follows</th></tr>
+		<tr><td><strong>A crash loses almost nothing</strong></td><td>Whatever anyone saw was stored. At most the last throttle window of streaming (100 ms by default) is gone.</td></tr>
+		<tr><td><strong>Recovery is just reopening</strong></td><td>The new process reads the same state the old one was showing. There is no second copy to reconcile.</td></tr>
+		<tr><td><strong>Any number of viewers</strong></td><td>A UI is a reader of committed state. Ten UIs, or one that joins late, all read the same thing.</td></tr>
+		<tr><td><strong>Consistency between parts</strong></td><td>A tool’s result entry and the todo list it updated are in the same commit. They can never disagree.</td></tr>
+		<tr><td><strong>Memory is a cache</strong></td><td>The process keeps a working set in memory. Anything not in use can be dropped and reloaded.</td></tr>
+	</table>
+	<div class="box">
+		<span class="label">An analogy</span>
+		<p>The screen is a window onto the database, not onto the process. When the process dies, the window does not go dark: it just stops changing until a new process takes over the same database.</p>
+	</div>
+	<div class="box warn">
+		<span class="label">The price</span>
+		<p>Every visible change costs a commit. Partials are throttled so this stays cheap on local SQLite; a host with remote storage can commit less often (say every 500 ms). And one process owns a storage at a time: there is no cross-process locking. Other clients attach to that process.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 6</div>
+	<h2>What lives in storage</h2>
+	<p class="lead">Storage holds four tables of records and one kind of mutable state. That is the entire durable model. If you can draw this page, you understand what survives a crash.</p>
+	<figure>
+		<svg width="520" height="250" viewBox="0 0 520 250">
+			<rect class="box" x="10" y="10" width="120" height="110" rx="4"/>
+			<text class="tb" x="20" y="28">Conversations</text>
+			<text class="ts" x="20" y="46">transcript scopes</text>
+			<text class="ts" x="20" y="62">parent: forked at entry</text>
+			<text class="ts" x="20" y="78">owner: a task</text>
+			<text class="mono" x="20" y="100">#1 root</text>
+			<text class="mono" x="20" y="113">#2 owner: T7</text>
+
+			<rect class="box" x="140" y="10" width="120" height="110" rx="4"/>
+			<text class="tb" x="150" y="28">Entries</text>
+			<text class="ts" x="150" y="46">immutable, ordered</text>
+			<text class="mono" x="150" y="64">pi.user</text>
+			<text class="mono" x="150" y="77">pi.system</text>
+			<text class="mono" x="150" y="90">pi.assistant</text>
+			<text class="mono" x="150" y="103">pi.tool-result</text>
+			<text class="mono" x="150" y="116">pi.compaction …</text>
+
+			<rect class="box" x="270" y="10" width="120" height="110" rx="4"/>
+			<text class="tb" x="280" y="28">Tasks</text>
+			<text class="ts" x="280" y="46">durable state machines</text>
+			<text class="ts" x="280" y="62">kind, input, checkpoint</text>
+			<text class="ts" x="280" y="78">status, owner, memos</text>
+			<text class="mono" x="280" y="100">pi.generation</text>
+			<text class="mono" x="280" y="113">pi.tool · yours</text>
+
+			<rect class="box" x="400" y="10" width="110" height="110" rx="4"/>
+			<text class="tb" x="410" y="28">Submissions</text>
+			<text class="ts" x="410" y="46">what you handed in</text>
+			<text class="ts" x="410" y="62">input or write</text>
+			<text class="ts" x="410" y="78">requestId</text>
+			<text class="mono" x="410" y="100">queued → placed</text>
+			<text class="mono" x="410" y="113">→ done</text>
+
+			<rect class="boxa" x="10" y="135" width="500" height="105" rx="4"/>
+			<text class="tb" x="20" y="153">Documents: typed JSON, changed in the same commits</text>
+			<rect class="box" x="20" y="164" width="88" height="40" rx="3"/><text class="mono" x="64" y="180" text-anchor="middle">pi.agent</text><text class="ts" x="64" y="195" text-anchor="middle">model, tools</text>
+			<rect class="box" x="116" y="164" width="88" height="40" rx="3"/><text class="mono" x="160" y="180" text-anchor="middle">pi.live</text><text class="ts" x="160" y="195" text-anchor="middle">what runs now</text>
+			<rect class="box" x="212" y="164" width="88" height="40" rx="3"/><text class="mono" x="256" y="180" text-anchor="middle">pi.inbox</text><text class="ts" x="256" y="195" text-anchor="middle">queued input</text>
+			<rect class="box" x="308" y="164" width="88" height="40" rx="3"/><text class="mono" x="352" y="180" text-anchor="middle">pi.usage</text><text class="ts" x="352" y="195" text-anchor="middle">tokens, cost</text>
+			<rect class="boxg" x="404" y="164" width="96" height="40" rx="3"/><text class="mono" x="452" y="180" text-anchor="middle">app.todos</text><text class="ts" x="452" y="195" text-anchor="middle">your own</text>
+			<text class="ts" x="20" y="226">scope: session, conversation, or task · history: latest or rewindable · on fork: as-of, current, or fresh</text>
+		</svg>
+		<figcaption>Figure 6.1 · The durable model. One commit can touch any of these at once.</figcaption>
+	</figure>
+
+	<h3>The four tables</h3>
+	<p><strong>Conversations</strong> are transcript scopes. A conversation has two optional edges: a <em>parent</em> (it was forked from that conversation at a given entry) and an <em>owner</em> (a task created it, as a subagent). These two edges are deliberately separate: one is about history, the other about responsibility.</p>
+	<p><strong>Entries</strong> are the transcript. They are immutable, their IDs are ordered across the whole session and never reused. Built-in kinds are user messages, model answers, tool results, system prompt changes, resets and compaction summaries. Applications add their own kinds, for example a chat mention that shows who asked.</p>
+	<p><strong>Tasks</strong> are units of work with a stored checkpoint. They are the subject of the next chapter.</p>
+	<p><strong>Submissions</strong> are what someone handed to a conversation: user input (which asks the model something) or a write (an entry to append without asking anything). A submission moves from <em>queued</em> to <em>placed</em> to <em>done</em>, or ends <em>unanswered</em> with a reason. An optional <code>requestId</code> makes it exactly-once: submit the same request ID again, after a crash or a network retry, and you get the original submission back.</p>
+
+	<h3>Documents: the part that changes</h3>
+	<p>Entries never change, but some things obviously do: the model selected for a conversation, the output of the tool that is running right now, the queue of messages typed while the agent was busy, the money spent. These live in <strong>documents</strong>: typed JSON values stored next to the transcript and changed in the same commits. Under the hood, a document change is recorded as a small list of JSON operations (via Chord, Earendil’s replicated-state library), with an occasional full copy so that replay stays short.</p>
+	<p>The built-in documents are worth knowing by name, because they are what makes “what is happening right now” durable:</p>
+	<table>
+		<tr><th style="width:20%">Document</th><th>Holds</th></tr>
+		<tr><td><code>pi.agent</code></td><td>What this conversation runs with: model, thinking level, selected extensions and tools (as names), instructions, working directory.</td></tr>
+		<tr><td><code>pi.live</code></td><td>The run in progress: the streaming partial answer, retry backoff, every running tool call with its output so far, nested calls, compactions in flight.</td></tr>
+		<tr><td><code>pi.inbox</code></td><td>Submissions waiting for a turn boundary: steers, follow-ups, writes.</td></tr>
+		<tr><td><code>pi.usage</code></td><td>Tokens and cost, per model and per tool, including failed and aborted attempts.</td></tr>
+		<tr><td><code>pi.provider</code></td><td>A stable ID given to the model provider, so prompt caches keep working across restarts.</td></tr>
+	</table>
+	<p>Documents also have a lifetime: <em>session</em> documents live forever, <em>conversation</em> documents belong to a conversation, and <em>task</em> documents disappear when their task finishes. And conversation documents declare what a fork sees: the value at the fork point, the current value, or a fresh one. That is a product decision, not an optimization (chapter 14).</p>
+
+	<h3>The storage itself</h3>
+	<p>The storage interface is small. Pi Durable ships four backends and a conformance suite plus benchmarks for writing your own (a key-value store or Postgres would do):</p>
+	<table>
+		<tr><th style="width:24%">Backend</th><th>Notes</th></tr>
+		<tr><td>Memory</td><td>Nothing persisted. Tests and throwaway agents.</td></tr>
+		<tr><td>SQLite</td><td>One file. Keeps only the working set in memory: active transcripts, live tasks, pending submissions. The choice for long-running agents.</td></tr>
+		<tr><td>JSONL</td><td>Append-only files in a directory. Keeps the whole history in memory.</td></tr>
+		<tr><td>Durable Object</td><td>The SQLite storage of one Cloudflare Durable Object.</td></tr>
+	</table>
+	<p>The SQLite and JSONL cores use no Node APIs, so with a small adapter they run on Bun or inside a Durable Object. Because active transcripts are bounded by the model’s context window (compaction sees to that), even a conversation with tens of thousands of messages keeps a small memory footprint on SQLite.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 7</div>
+	<h2>Tasks: work as durable state machines</h2>
+	<p class="lead">Everything the harness runs is a task: each request to the model, each tool call, each compaction. Extensions bring their own. A task is a small state machine whose current state is a row in storage, so a process that has never seen it before can pick it up.</p>
+
+	<h3>The shape of a task</h3>
+	<p>A task definition has a name and a version, a set of named <strong>phases</strong>, and an <strong>abort handler</strong>. A task record stores its input and a <strong>checkpoint</strong>: which phase is next, plus whatever that phase needs. A phase runs some code and ends by committing one of three things:</p>
+	<ul>
+		<li>a new checkpoint (“next, do phase B with this data”),</li>
+		<li>a wait (“resume at phase C once these other tasks are done”), or</li>
+		<li>an outcome (completed, failed, aborted).</li>
+	</ul>
+	<figure>
+		<svg width="520" height="200" viewBox="0 0 520 200">
+			<defs><marker id="ah7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1d1d1f"/></marker>
+			<marker id="ah7w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b5651d"/></marker></defs>
+			<rect class="box" x="10" y="84" width="90" height="32" rx="16"/><text class="t" x="55" y="104" text-anchor="middle">pending</text>
+			<rect class="boxa" x="160" y="84" width="90" height="32" rx="16"/><text class="t" x="205" y="104" text-anchor="middle">running</text>
+			<rect class="box" x="305" y="14" width="90" height="32" rx="16"/><text class="t" x="350" y="34" text-anchor="middle">waiting</text>
+			<rect class="box" x="300" y="148" width="100" height="32" rx="16"/><text class="t" x="350" y="168" text-anchor="middle">completing</text>
+			<rect class="boxd" x="430" y="84" width="80" height="32" rx="16"/><text class="tw" x="470" y="104" text-anchor="middle">terminal</text>
+			<line class="line" x1="100" y1="100" x2="158" y2="100" marker-end="url(#ah7)"/>
+			<text class="ts" x="130" y="93" text-anchor="middle">reserve</text>
+			<path class="line" d="M222 84 C 235 45, 270 28, 303 28" marker-end="url(#ah7)"/>
+			<text class="ts" x="250" y="22" text-anchor="end">wait for other tasks</text>
+			<path class="line" d="M330 46 C 315 70, 270 80, 250 90" marker-end="url(#ah7)"/>
+			<text class="ts" x="322" y="68">they are done</text>
+			<line class="line" x1="250" y1="100" x2="428" y2="100" marker-end="url(#ah7)"/>
+			<text class="ts" x="390" y="94" text-anchor="middle">outcome</text>
+			<path class="line" d="M228 116 C 240 150, 265 164, 298 164" marker-end="url(#ah7)"/>
+			<text class="ts" x="236" y="178" text-anchor="end">outcome, but</text><text class="ts" x="236" y="190" text-anchor="end">still owns live work</text>
+			<path class="line" d="M400 164 C 440 164, 465 140, 468 118" marker-end="url(#ah7)"/>
+			<text class="ts" x="440" y="180">owned work</text><text class="ts" x="440" y="192">drained</text>
+			<path class="line" d="M188 84 C 176 56, 214 56, 206 82" marker-end="url(#ah7)"/>
+			<text class="ts" x="176" y="58" text-anchor="end">next phase</text>
+			<path class="crash" d="M180 116 C 160 150, 80 150, 60 119" marker-end="url(#ah7w)"/>
+			<text class="ts" x="120" y="162" text-anchor="middle" style="fill:#b5651d">on reopen:</text><text class="ts" x="120" y="174" text-anchor="middle" style="fill:#b5651d">running → pending</text>
+		</svg>
+		<figcaption>Figure 7.1 · Task states. Only “running” has code executing. On reopen, running tasks fall back to pending and are simply scheduled again.</figcaption>
+	</figure>
+	<p>Two scheduler rules make this robust:</p>
+	<ul>
+		<li><strong>A phase must make durable progress.</strong> If a phase returns without having changed its checkpoint or committed an outcome, the task is <em>faulted</em>. Progress that is not written down does not count.</li>
+		<li><strong>On reopen, running becomes pending.</strong> Waiting tasks stay waiting. Nothing else happens at open; the scheduler later reserves pending tasks like any others and runs the phase in their checkpoint. There is no separate recovery code path per feature.</li>
+	</ul>
+
+	<h3>The effect sandwich</h3>
+	<p>This is the most important idea in the task model, and the most honest one. Durability cannot make an external effect happen exactly once: if the process dies while a card is being charged, nobody knows whether the bank saw the request. What durability can do is make that uncertainty <strong>explicit and local</strong>:</p>
+	<figure>
+		<svg width="520" height="130" viewBox="0 0 520 130">
+			<rect class="boxa" x="10" y="40" width="140" height="44" rx="4"/><text class="tb" x="80" y="58" text-anchor="middle">commit intent</text><text class="ts" x="80" y="73" text-anchor="middle">“about to charge, key K”</text>
+			<rect class="boxw" x="190" y="40" width="140" height="44" rx="4"/><text class="tb" x="260" y="58" text-anchor="middle">perform effect</text><text class="ts" x="260" y="73" text-anchor="middle">call the bank, run bash</text>
+			<rect class="boxa" x="370" y="40" width="140" height="44" rx="4"/><text class="tb" x="440" y="58" text-anchor="middle">commit outcome</text><text class="ts" x="440" y="73" text-anchor="middle">receipt, result, next</text>
+			<line class="line" x1="150" y1="62" x2="190" y2="62"/><line class="line" x1="330" y1="62" x2="370" y2="62"/>
+			<text class="ts" x="80" y="104" text-anchor="middle">crash before: nothing happened</text>
+			<text class="ts" x="260" y="104" text-anchor="middle" style="fill:#b5651d">crash here: it may have happened</text>
+			<text class="ts" x="440" y="104" text-anchor="middle">crash after: it happened</text>
+			<text class="ts" x="260" y="120" text-anchor="middle">→ retry with the key, poll, or report “interrupted”</text>
+			<text class="ts" x="260" y="25" text-anchor="middle">outside the mutation line</text>
+		</svg>
+		<figcaption>Figure 7.2 · Intent, effect, outcome. A restart that finds a task in its intent phase knows exactly which effect is in doubt.</figcaption>
+	</figure>
+	<p>A task that restarts in the middle knows precisely which effect is in doubt, and decides: retry safely with an idempotency key, poll an external handle (“is job 42 done?”), or report the interruption to whoever can decide. Tool calls use exactly this (chapter 8): a tool marked <em>replay safe</em> is simply run again; any other tool is reported to the model as interrupted, never repeated.</p>
+
+	<h3>Memos: decisions you only make once</h3>
+	<p>Sometimes a step has to decide something that must not be decided twice: an approval asked in Slack, a random choice, a generated name. A <strong>memo</strong> is a small value stored with the task where the first write wins. A hook that asks a human for approval stores the answer in a memo; after a restart it finds the stored answer instead of asking again.</p>
+
+	<h3>Time, versions, and missing code</h3>
+	<ul>
+		<li><strong>Timers survive restarts.</strong> A task sleeps until a wall-clock time stored in its checkpoint. A retry backoff is “retry at 14:02:10”, not “in five seconds”. A reminder that fires tomorrow is a task asleep until tomorrow.</li>
+		<li><strong>Tasks are versioned.</strong> A new definition can migrate old checkpoints when it reserves them.</li>
+		<li><strong>Missing code blocks, never destroys.</strong> If a task’s extension is not installed (yet), the task stays pending and is reconsidered when the registry changes. The harness never marks work failed just because the code to run it is temporarily missing.</li>
+	</ul>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“Durability can’t make a side effect happen exactly once. What it can do is tell you, after a crash, exactly which effect is in doubt.”</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 8</div>
+	<h2>One turn, taken apart</h2>
+	<p class="lead">With the vocabulary in place, here is what actually happens when you ask an agent something. One answered question is a small tree of tasks, and every arrow below is a commit.</p>
+	<figure>
+		<svg width="520" height="300" viewBox="0 0 520 300">
+			<rect class="box" x="10" y="10" width="150" height="34" rx="4"/><text class="tb" x="85" y="25" text-anchor="middle">submit(input)</text><text class="ts" x="85" y="38" text-anchor="middle">submission placed</text>
+			<line class="line" x1="160" y1="27" x2="190" y2="27"/>
+			<rect class="boxg" x="190" y="12" width="90" height="30" rx="3"/><text class="mono" x="235" y="31" text-anchor="middle">pi.user</text>
+
+			<rect class="boxa" x="10" y="64" width="150" height="44" rx="4"/><text class="tb" x="85" y="80" text-anchor="middle">pi.generation #1</text><text class="ts" x="85" y="94" text-anchor="middle">prepare → request</text>
+			<line class="line" x1="85" y1="44" x2="85" y2="64"/>
+			<line class="line" x1="160" y1="78" x2="190" y2="78"/>
+			<rect class="boxg" x="190" y="64" width="90" height="28" rx="3"/><text class="mono" x="235" y="82" text-anchor="middle">pi.system</text>
+			<text class="ts" x="290" y="82">only if prompt or tools changed</text>
+			<line class="line" x1="160" y1="100" x2="190" y2="108"/>
+			<rect class="boxg" x="190" y="98" width="90" height="28" rx="3"/><text class="mono" x="235" y="116" text-anchor="middle">pi.assistant</text>
+			<text class="ts" x="290" y="116">answer with 3 tool calls; #1 now waits</text>
+
+			<rect class="box" x="40" y="146" width="100" height="30" rx="3"/><text class="mono" x="90" y="165" text-anchor="middle">pi.tool: read</text>
+			<rect class="box" x="150" y="146" width="100" height="30" rx="3"/><text class="mono" x="200" y="165" text-anchor="middle">pi.tool: bash</text>
+			<rect class="box" x="260" y="146" width="100" height="30" rx="3"/><text class="mono" x="310" y="165" text-anchor="middle">pi.tool: edit</text>
+			<path class="line" d="M85 108 L85 128 M90 128 L310 128 M85 128 L90 128 M90 128 L90 146 M200 128 L200 146 M310 128 L310 146"/>
+			<text class="ts" x="372" y="158">owned by generation #1,</text><text class="ts" x="372" y="170">run in parallel</text>
+			<rect class="boxg" x="40" y="190" width="100" height="24" rx="3"/><text class="mono" x="90" y="206" text-anchor="middle">pi.tool-result</text>
+			<rect class="boxg" x="150" y="190" width="100" height="24" rx="3"/><text class="mono" x="200" y="206" text-anchor="middle">pi.tool-result</text>
+			<rect class="boxg" x="260" y="190" width="100" height="24" rx="3"/><text class="mono" x="310" y="206" text-anchor="middle">pi.tool-result</text>
+			<line class="line" x1="90" y1="176" x2="90" y2="190"/><line class="line" x1="200" y1="176" x2="200" y2="190"/><line class="line" x1="310" y1="176" x2="310" y2="190"/>
+
+			<rect class="boxa" x="10" y="240" width="150" height="44" rx="4"/><text class="tb" x="85" y="256" text-anchor="middle">pi.generation #2</text><text class="ts" x="85" y="270" text-anchor="middle">gets the run handed over</text>
+			<path class="dash" d="M200 214 C 200 232, 120 228, 100 240"/>
+			<text class="ts" x="210" y="236">when all three are terminal, #1 places steers and hands over</text>
+			<line class="line" x1="160" y1="262" x2="190" y2="262"/>
+			<rect class="boxg" x="190" y="248" width="90" height="28" rx="3"/><text class="mono" x="235" y="266" text-anchor="middle">pi.assistant</text>
+			<text class="ts" x="290" y="266">final answer → submission done</text>
+		</svg>
+		<figcaption>Figure 8.1 · One answered input. Blue: model-request tasks. White: tool tasks. Green: entries appended to the transcript.</figcaption>
+	</figure>
+
+	<h3>Step by step</h3>
+	<ol>
+		<li><strong>Admission.</strong> <code>submit()</code> durably records the input. If the conversation is idle it is placed at once as a <code>pi.user</code> entry, and a generation task is created. <code>pi.live.run</code> now says the conversation is busy and which task holds the run.</li>
+		<li><strong>Prepare.</strong> The generation resolves the conversation’s agent, renders the system prompt sections, and compares them with what the transcript says the model last saw. If anything changed, it appends a <code>pi.system</code> entry with only the difference. It checks whether the context is getting too long (chapter 12), then commits its next checkpoint: <em>request</em>, pinned to a model, a thinking level, and the last entry to include.</li>
+		<li><strong>Request.</strong> The model streams. Every 100 ms or so, the partial answer is committed to <code>pi.live</code>. That is how every attached UI sees tokens appear.</li>
+		<li><strong>Tool round.</strong> The response asks for three tools. One commit appends the answer, creates three <code>pi.tool</code> tasks owned by the generation, and puts the generation into <em>waiting</em> on them.</li>
+		<li><strong>Each tool.</strong> A tool task validates the arguments and runs the <code>beforeTool</code> hooks (which may rewrite or block the call). Then it commits its <em>intent</em>: the final arguments and whether the tool is replay safe. Then it executes, streaming output into <code>pi.live</code>. Then it commits the <code>pi.tool-result</code> entry and finishes.</li>
+		<li><strong>Boundary.</strong> When all three are terminal, the generation wakes up in its <em>tools</em> phase. This is a turn boundary: queued steering messages are placed here. It creates the next generation and hands it the run.</li>
+		<li><strong>Answer.</strong> The second generation’s answer has no tool calls. One commit appends it, marks the submission done, and clears the run. The conversation is idle.</li>
+	</ol>
+
+	<h3>Where can it die, and what happens then?</h3>
+	<table>
+		<tr><th style="width:28%">The process dies…</th><th>On reopen</th></tr>
+		<tr><td>after <code>submit()</code> returned</td><td>The input is stored. It is placed and answered as usual. A client that resubmits with the same <code>requestId</code> gets the same submission back, not a second question.</td></tr>
+		<tr><td>while the model streams</td><td>The committed partial is kept in the transcript as an <em>aborted</em> answer (visible, never sent to the model again). The same request is sent again, with the same pinned model and messages.</td></tr>
+		<tr><td>during a retry backoff</td><td>The generation sleeps until the stored deadline, then retries.</td></tr>
+		<tr><td>while a tool runs</td><td>Replay-safe tool: it runs again with the stored arguments. Otherwise: an <em>interrupted</em> error result, with the output stored so far, goes to the model, which decides what to do.</td></tr>
+		<tr><td>while the generation waits</td><td>It is still waiting; it resumes when its tools are done. Nothing to do.</td></tr>
+		<tr><td>in a subagent</td><td>The subagent is a conversation like any other; its own tasks resume (chapter 10).</td></tr>
+	</table>
+	<div class="box">
+		<span class="label">Why one task per request</span>
+		<p>Splitting a run into a fresh generation task per model request, and a task per tool call, is what makes all of the above uniform. Each piece has its own checkpoint, so recovery is always local: continue <em>this</em> request, rerun <em>this</em> tool. The run itself is just a pointer in <code>pi.live</code>, handed from one generation to the next.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 9</div>
+	<h2>One ownership tree</h2>
+	<p class="lead">Durability answers “what happens after a crash”. Ownership answers the other hard question of long-running agents: “what happens when someone presses Esc?” In Pi Durable, all tasks and conversations form one tree, and that tree decides what an abort reaches and when something is finished.</p>
+	<figure>
+		<svg width="520" height="270" viewBox="0 0 520 270">
+			<rect class="boxd" x="10" y="10" width="140" height="30" rx="4"/><text class="tw" x="80" y="29" text-anchor="middle">conversation: main</text>
+			<rect class="boxa" x="30" y="60" width="120" height="28" rx="3"/><text class="mono" x="90" y="78" text-anchor="middle">generation</text>
+			<line class="line" x1="45" y1="40" x2="45" y2="60"/>
+			<rect class="box" x="50" y="108" width="100" height="28" rx="3"/><text class="mono" x="100" y="126" text-anchor="middle">tool: subagent</text>
+			<rect class="box" x="160" y="108" width="100" height="28" rx="3"/><text class="mono" x="210" y="126" text-anchor="middle">tool: read</text>
+			<line class="line" x1="65" y1="88" x2="65" y2="108"/><path class="line" d="M110 88 C 110 98, 210 98, 210 108"/>
+			<rect class="boxd" x="70" y="156" width="150" height="30" rx="4"/><text class="tw" x="145" y="175" text-anchor="middle">conversation: child</text>
+			<line class="line" x1="85" y1="136" x2="85" y2="156"/>
+			<rect class="boxa" x="90" y="206" width="110" height="28" rx="3"/><text class="mono" x="145" y="224" text-anchor="middle">generation</text>
+			<line class="line" x1="105" y1="186" x2="105" y2="206"/>
+			<text class="ts" x="15" y="258">foreground: Esc on “main” reaches all of this, bottom-up</text>
+
+			<rect class="boxq" x="300" y="56" width="210" height="190" rx="5"/>
+			<text class="ts" x="502" y="72" text-anchor="end">background boundary</text>
+			<rect class="box" x="320" y="82" width="140" height="28" rx="3"/><text class="mono" x="390" y="100" text-anchor="middle">task: reminder (bg)</text>
+			<path class="dash" d="M150 20 L 270 20 C 285 20, 285 96, 320 96"/>
+			<rect class="box" x="320" y="130" width="140" height="28" rx="3"/><text class="mono" x="390" y="148" text-anchor="middle">task: research (bg)</text>
+			<path class="dash" d="M150 30 L 260 30 C 275 30, 275 144, 320 144"/>
+			<text class="ts" x="215" y="14" text-anchor="middle">owned by the conversation</text>
+			<rect class="boxd" x="330" y="178" width="150" height="30" rx="4"/><text class="tw" x="405" y="197" text-anchor="middle">conversation: research</text>
+			<line class="line" x1="345" y1="158" x2="345" y2="178"/>
+			<text class="ts" x="310" y="228">Esc leaves this alone; main</text>
+			<text class="ts" x="310" y="240">goes idle while it runs</text>
+		</svg>
+		<figcaption>Figure 9.1 · Tasks own tasks, tasks own conversations, conversations own tasks. A background task is a boundary.</figcaption>
+	</figure>
+
+	<h3>The rules</h3>
+	<ul>
+		<li><strong>Everything names its owner.</strong> A task is owned by its conversation or by another task. A conversation is ownerless or owned by a task. A subagent is simply a conversation owned by the tool call that started it.</li>
+		<li><strong>Abort flows down.</strong> Aborting something aborts what it owns.</li>
+		<li><strong>Cleanup runs bottom-up.</strong> A task’s abort handler starts only after everything it owns has finished. So each task cleans up its own effects, and a parent’s handler sees the final outcome of its children.</li>
+		<li><strong>Owned work does not outlive its owner’s finish.</strong> A task that decides its outcome while its children still run is held as <em>completing</em> until they drain. When a tool call returns, its subagent is really done.</li>
+		<li><strong>Background is a boundary.</strong> A background task belongs to the conversation but not to its current work. The conversation goes idle while it runs, and Esc leaves it alone. Aborting the task itself, or the conversation with <code>{ background: true }</code>, still stops it.</li>
+	</ul>
+
+	<h3>Waiting together</h3>
+	<p>A task can create children and then wait for them without running any code. With <em>allSettled</em> it resumes when all are done. With <em>failFast</em>, the first failure aborts the others. Chapter 19 uses this for a checkout that charges several cards at once and refunds them all if one is declined.</p>
+
+	<h3>Aborted versus orphaned</h3>
+	<p>There is a fine but important distinction in the outcomes. <em>Aborted</em> means the task’s own abort handler ran and cleaned up. <em>Orphaned</em> means its code was not available (its extension was uninstalled, say) and someone aborted it anyway: no cleanup ran, and effects it started may remain. The harness never pretends cleanup happened.</p>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“Durability is the easy half. The hard half is Esc. When you press it, what stops? In Pi Durable, the answer is a tree, and cleanup runs from the leaves up.”</p>
+	</div>
+</section>
+<section class="chapter">
+	<div class="kicker">Chapter 10</div>
+	<h2>Many conversations: forks and subagents</h2>
+	<p class="lead">One harness runs as many conversations as you need, concurrently, all with the same guarantees. New conversations start fresh, fork an existing one, or are created by a tool as a subagent.</p>
+
+	<h3>Forks share history without copying it</h3>
+	<p>A fork names a parent conversation and an entry in it. It sees the parent’s transcript up to that entry, then continues on its own. Nothing is copied; reading a fork’s history walks its own entries, then the parent’s up to the cut.</p>
+	<figure>
+		<svg width="520" height="130" viewBox="0 0 520 130">
+			<text class="tb" x="10" y="28">#channel</text>
+			<g>
+				<rect class="boxg" x="80" y="14" width="56" height="22" rx="3"/><text class="ts" x="108" y="29" text-anchor="middle">why fail?</text>
+				<rect class="boxa" x="142" y="14" width="56" height="22" rx="3"/><text class="ts" x="170" y="29" text-anchor="middle">answer</text>
+				<rect class="boxg" x="204" y="14" width="56" height="22" rx="3"/><text class="ts" x="232" y="29" text-anchor="middle">on call?</text>
+				<rect class="boxa" x="266" y="14" width="56" height="22" rx="3"/><text class="ts" x="294" y="29" text-anchor="middle">answer</text>
+			</g>
+			<text class="tb" x="10" y="98">thread</text>
+			<path class="dash" d="M170 36 L170 70 C 170 82, 180 87, 195 87"/>
+			<text class="ts" x="120" y="62">fork at “answer”</text>
+			<rect class="boxg" x="204" y="76" width="70" height="22" rx="3"/><text class="ts" x="239" y="91" text-anchor="middle">roll it back?</text>
+			<rect class="boxa" x="280" y="76" width="56" height="22" rx="3"/><text class="ts" x="308" y="91" text-anchor="middle">answer</text>
+			<text class="ts" x="350" y="91">sees the channel up to the fork point</text>
+			<text class="ts" x="350" y="29">keeps going independently</text>
+			<text class="ts" x="80" y="122">both run at the same time; neither blocks the other</text>
+		</svg>
+		<figcaption>Figure 10.1 · The Slack example from the launch post: a channel is one conversation, a thread is a fork of it at the message it replies to.</figcaption>
+	</figure>
+
+	<h3>Each conversation has its own agent</h3>
+	<p>The <code>pi.agent</code> document stores, per conversation, what it runs with: model, thinking level, the selected extensions and which of their tools are active, extra instructions, and a working directory. A reviewer next to the main agent can use a cheaper model, read-only tools, and its own checkout. The Slack thread may search issues but not deploy.</p>
+	<p>Because the agent is a <em>rewindable</em> document, a fork starts with the agent its parent had <em>at the fork point</em>, not now. A subagent starts as a copy of its owner’s agent at creation, and is then adjusted.</p>
+
+	<h3>A subagent is a few lines, not a feature</h3>
+	<p>Pi Durable has no built-in subagents, and that is the point: the primitives make them trivial. A subagent tool, described in prose:</p>
+	<ol>
+		<li>In one commit: look for a conversation already owned by this tool call; if there is none, create one owned by it, and configure it with a smaller model and its own instructions.</li>
+		<li>Tell the UI which conversation it is, so the UI can show it under the call.</li>
+		<li>Submit the task to the child with a request ID derived from the tool call (<code>triage:&lt;task id&gt;</code>), and wait for the answer.</li>
+		<li>Return the answer as the tool result.</li>
+	</ol>
+	<p>Now look at what that buys, without writing anything else:</p>
+	<ul>
+		<li><strong>Crash:</strong> the tool is replay safe. A rerun finds the same child (step 1 looks it up first) and the same submission (same request ID), and keeps waiting for the same answer. The child’s own tasks resumed on their own.</li>
+		<li><strong>Esc:</strong> the child is owned by the call, so aborting the parent aborts the child, bottom-up.</li>
+		<li><strong>Idle:</strong> the parent is not idle until the child is.</li>
+		<li><strong>Cost:</strong> the child counts its own usage.</li>
+		<li><strong>UI:</strong> the child is a conversation like any other. You can watch it, and you can steer it.</li>
+	</ul>
+	<p>The <em>background</em> variant is a subagent owned by a background task: the tool returns immediately, the main agent keeps chatting, and a small task delivers the child’s report back to the main conversation as a follow-up message when it arrives. The vacation planner (chapter 18) is built exactly like this.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 11</div>
+	<h2>The inbox: many people, one agent</h2>
+	<p class="lead">In the terminal you rarely type while the agent works, and if you do, it is you. In a Slack channel, anyone can mention the agent at any time, and the person who asked the first question may want to correct it mid-flight.</p>
+	<p>A conversation is <strong>busy</strong> while a run is working on an input. Anything submitted to a busy conversation goes into its durable inbox (<code>pi.inbox</code>) and is placed at a <strong>turn boundary</strong>, where it is safe to add to the transcript (never between a tool call and its result). Each submission says how it wants to be treated:</p>
+	<table>
+		<tr><th style="width:18%">Mode</th><th>Behavior</th></tr>
+		<tr><td><strong>steer</strong></td><td>Placed after the current tool round and joins the running work. “Check the staging logs first.”</td></tr>
+		<tr><td><strong>follow-up</strong></td><td>The default. Placed when the run answers, and starts the next run. “Also run the tests.”</td></tr>
+		<tr><td><strong>reject</strong></td><td>Only if idle; otherwise the submit fails.</td></tr>
+		<tr><td><strong>write</strong></td><td>Appends an entry without asking the model anything. A display-only write (a chat message, “user opened a file”) is appended at once, even mid-run.</td></tr>
+	</table>
+	<p>Because the inbox is a document, every attached UI shows the queue, a queued message can be withdrawn, and a crash loses nothing that was queued. Because submissions take a <code>requestId</code>, a Slack webhook that is delivered twice asks the agent once.</p>
+	<p>An input can also be placed as an application entry: the model still sees “ann: can you check the build?” as a user message, but the transcript records a <code>chat.mention</code> with the author, which is what a UI wants to render.</p>
+	<div class="box">
+		<span class="label">This is the multiplayer mechanism</span>
+		<p>“Multiple humans steer the same agents” is not a separate feature. It is the inbox, plus the fact that every client reads the same committed state (chapter 14).</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 12</div>
+	<h2>Context without end</h2>
+	<p class="lead">A conversation that lasts weeks will not fit in any context window. Pi Durable keeps everything in storage forever and changes only what the model sees, without stopping the agent to do it.</p>
+
+	<h3>Heads: where the model’s view begins</h3>
+	<p>The transcript only ever grows. Some entries carry a <strong>head</strong>: a marker that says “from here on, the model’s context starts at entry N”. The <em>active transcript</em> is everything from the newest head to the tail. Older entries are still in storage and still searchable, just no longer sent.</p>
+	<figure>
+		<svg width="520" height="140" viewBox="0 0 520 140">
+			<g>
+				<rect class="boxq" x="10" y="44" width="34" height="24" rx="2"/><rect class="boxq" x="48" y="44" width="34" height="24" rx="2"/><rect class="boxq" x="86" y="44" width="34" height="24" rx="2"/><rect class="boxq" x="124" y="44" width="34" height="24" rx="2"/><rect class="boxq" x="162" y="44" width="34" height="24" rx="2"/>
+				<rect class="box" x="200" y="44" width="34" height="24" rx="2"/><rect class="box" x="238" y="44" width="34" height="24" rx="2"/><rect class="box" x="276" y="44" width="34" height="24" rx="2"/><rect class="box" x="314" y="44" width="34" height="24" rx="2"/>
+				<rect class="boxa" x="352" y="44" width="70" height="24" rx="2"/><text class="ts" x="387" y="60" text-anchor="middle">summary</text>
+				<rect class="box" x="426" y="44" width="34" height="24" rx="2"/><rect class="box" x="464" y="44" width="34" height="24" rx="2"/>
+			</g>
+			<path class="linea" d="M387 44 C 387 22, 217 22, 217 42"/>
+			<text class="ts" x="302" y="12" text-anchor="middle">head: the context starts at the first kept entry</text>
+			<line class="dash" x1="10" y1="84" x2="196" y2="84"/><text class="ts" x="103" y="98" text-anchor="middle">stored, searchable, summarized</text>
+			<line class="line" x1="200" y1="84" x2="498" y2="84"/><text class="ts" x="349" y="98" text-anchor="middle">sent to the model: summary, kept entries, new ones</text>
+			<text class="ts" x="260" y="122" text-anchor="middle">Compaction appends a summary that heads the first entry it keeps.</text>
+			<text class="ts" x="260" y="135" text-anchor="middle">Reset appends a head with an optional handoff note.</text>
+		</svg>
+		<figcaption>Figure 12.1 · Nothing is deleted; a head moves the window.</figcaption>
+	</figure>
+
+	<h3>Compaction is a task that runs while the agent works</h3>
+	<p>In the terminal agent, compaction is something the agent stops to do. In Pi Durable, compaction is a task like any other, and it runs <em>concurrently</em>:</p>
+	<ul>
+		<li>When the context gets within a configurable distance of the limit, a <strong>background compaction</strong> starts summarizing older messages. The agent keeps working.</li>
+		<li>The summary is placed at the next turn boundary, like a queued message.</li>
+		<li>The conversation only <em>waits</em> for a summary when the next request would not fit otherwise.</li>
+		<li>If the provider still rejects a request as too long, the harness compacts and retries once.</li>
+		<li>You can compact manually at any time, with your own instructions, also while the agent works.</li>
+	</ul>
+
+	<h3>Reset and handoff</h3>
+	<p><code>reset()</code> goes further: it starts a new context, optionally from a handoff note. A tool can request the same by returning a handoff. Because nothing is deleted, a second tool can still search everything before the handoff. That is all it takes to build an agent that hands off to itself and looks things up later.</p>
+
+	<h3>The system prompt is part of the transcript</h3>
+	<p>One more subtle piece. The system prompt is rebuilt from the selected extensions’ sections before every request, so a changed section (an updated <code>AGENTS.md</code>, a new todo list) is picked up by the next request. But what the model <em>saw</em> is recorded in the transcript as positional <code>pi.system</code> entries holding only the differences: “section cwd changed”, “tool read removed”. Two things follow:</p>
+	<ul>
+		<li>A restart or a fork sees exactly what the model saw, at the position where it changed.</li>
+		<li>On models that support it, only the change is sent, so the provider’s prompt cache stays valid.</li>
+	</ul>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 13</div>
+	<h2>Extensions: names, not code</h2>
+	<p class="lead">Pi is malleable, so Pi Durable has to be. The trick that makes it possible for long-running agents is small: conversations store extension and tool <em>names</em>, never code.</p>
+
+	<h3>Extensions and the registry</h3>
+	<p>An <strong>extension</strong> is a named bundle of system prompt sections, tools, hooks, tool wrappers, and task definitions. The application installs extensions in a <strong>registry</strong> that the process owns. By default every conversation selects every installed extension; each can narrow that.</p>
+	<ul>
+		<li>A later extension’s tool with the same name <strong>replaces</strong> an earlier one (a <code>bash</code> that runs inside a virtualenv).</li>
+		<li>A <strong>wrap</strong> decorates whichever tool won (time every <code>bash</code> call, whichever <code>bash</code> it is).</li>
+		<li><strong>Hooks</strong> step into the built-in tasks: rewrite a request before it goes to the model, block or rewrite a tool call, replace a result, keep a run going, write a compaction summary yourself. Several extensions can hook the same point; their hooks run as a chain in selection order.</li>
+	</ul>
+
+	<h3>Hot reload, for free</h3>
+	<p>The registry can change while conversations run. Installing an extension under a name that is already installed replaces it in one step:</p>
+	<ul>
+		<li>A tool call that is already running finishes on the code it started with. The next call uses the new code.</li>
+		<li>A task picks up new code at its next phase boundary.</li>
+		<li>After a restart, conversations pick up whatever the new process installs, because they only stored names.</li>
+		<li>A stored name that is not installed right now is skipped, not an error. When it is installed again, it takes effect again.</li>
+	</ul>
+	<p>This is the same mechanism that makes recovery work: the durable state never contains anything a different version of the code cannot read.</p>
+
+	<h3>Hooks have to be durable too</h3>
+	<p>A hook can run again after a crash. So a hook that makes a decision stores it in a memo. The canonical example: a <code>beforeTool</code> hook that asks for approval in Slack before any <code>deploy</code>. The answer is a memo on the tool task. After a restart, the hook finds the stored answer instead of asking again.</p>
+
+	<h3>Tools calling tools, and durable code mode</h3>
+	<p>A tool can call another tool. The nested call is its own task, owned by the caller, with its own hooks and replay policy. This is the basis for <strong>code mode</strong>: the model writes a small JavaScript program that calls the conversation’s tools, run in a QuickJS sandbox. The clever part is how a script survives a restart:</p>
+	<ul>
+		<li>The sandbox is deterministic: a virtual clock, seeded randomness, UTC.</li>
+		<li>Every result a script receives is written to a journal before the script gets it.</li>
+		<li>After a restart, the script runs again from the top; it is handed the journaled results in the same order, so it makes the same calls with the same arguments, which reattach to the nested calls already made. Then it continues where it was.</li>
+		<li>If the script takes a different path than before, or the sandbox changed, the call ends with an error instead of guessing.</li>
+	</ul>
+	<p>This is the effect sandwich again, applied to a program instead of a single call.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 14</div>
+	<h2>Documents, views and multiplayer</h2>
+	<p class="lead">An agent is rarely the whole application. There is a todo list, a plan, a ticket, a shopping cart, the sandbox the conversation runs in. In Pi Durable this state is as durable as the conversation, and every client sees it the same way.</p>
+
+	<h3>Your state, in the same commit</h3>
+	<p>Application state lives in <strong>documents</strong>: typed JSON stored next to the transcript and changed in the same atomic commits. A <code>todo</code> tool that adds an item appends its tool result and changes the todo document in one commit, so the state never disagrees with the transcript that produced it. A prompt section can render the document so the model sees the list before every request; a UI subscribes to the committed value.</p>
+	<p>Each document says what a fork starts with, and this is a product decision:</p>
+	<table>
+		<tr><th style="width:18%">Fork mode</th><th>A fork starts with…</th><th style="width:34%">Example</th></tr>
+		<tr><td><code>asOf</code></td><td>the parent’s value at the fork point</td><td>todos: the thread sees the list as it was then</td></tr>
+		<tr><td><code>current</code></td><td>the parent’s value now</td><td>a container assignment</td></tr>
+		<tr><td><code>initial</code></td><td>a fresh value</td><td>a scratchpad, the provider session ID</td></tr>
+	</table>
+
+	<h3>Views: snapshot, then exact changes</h3>
+	<p>Everything a UI needs is committed state. A client that attaches to a conversation gets the current <strong>view</strong> first: the active transcript, the answer being streamed, running tools and their output, queued messages, the agent, usage. After that it gets only what changes, as the exact JSON operations of each commit: small enough to send over a WebSocket.</p>
+	<ul>
+		<li><strong>Late join:</strong> a client that joins mid-run, or reconnects, starts from the current view. Nothing is replayed.</li>
+		<li><strong>Slow clients:</strong> a watch buffers up to 100 commits. Past that, the backlog is replaced by one frame with the whole current view.</li>
+		<li><strong>Familiar events:</strong> if you prefer the coding agent’s events (message start, message update, tool execution start…), <code>watchEvents()</code> derives them from the commits, at the cost of more bytes.</li>
+		<li><strong>Task graph:</strong> every live task of the session as one view, for a task panel or for debugging.</li>
+	</ul>
+	<p>Combined with the inbox, this is multiplayer: any number of people and clients watch the same conversation, join late, and steer it.</p>
+	<div class="box">
+		<span class="label">Why this falls out of the one rule</span>
+		<p>Because nothing is shown before it is stored, a “live view” and a “view after a restart” are the same thing. There is no event stream that has to be kept consistent with the database: the stream <em>is</em> the database’s commits.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 15</div>
+	<h2>Running anywhere</h2>
+	<p class="lead">“Anywhere” currently means anywhere there is a JavaScript runtime. Two small interfaces make that possible: storage, and the execution environment.</p>
+
+	<h3>The execution environment</h3>
+	<p>Tools that need files or a shell get them from an <strong>execution environment</strong>, never directly from the machine the harness runs on. Pi Durable ships a Node environment for local files; the interface is small enough to implement for a remote VM or a container. An <code>env</code> function builds the environment for every tool call, from the conversation’s working directory and its documents. So:</p>
+	<ul>
+		<li>the harness can run on one machine while its tools run on another;</li>
+		<li>each conversation can run in a different place: a directory per conversation, or a container per conversation recorded in an application document;</li>
+		<li>a tool rerun after a crash gets the conversation’s environment <em>at that time</em>.</li>
+	</ul>
+
+	<h3>Example: an agent in a Durable Object</h3>
+	<p>There is an example project (<code>pi-durable-cloudflare</code>) that hosts a harness inside a Cloudflare Durable Object. It is a good illustration of how little glue “anywhere” needs:</p>
+	<ul>
+		<li>Each named agent session is one Durable Object; the harness state is its SQLite.</li>
+		<li>The browser talks to it over one WebSocket and renders the event stream.</li>
+		<li>A <code>schedule</code> tool creates a durable task that delivers an instruction back to the same conversation when it is due. The earliest deadline becomes the Durable Object’s alarm.</li>
+		<li>When Cloudflare evicts and later reconstructs the object, the alarm wakes it, the harness reopens, and every task continues from its checkpoint.</li>
+		<li>A <code>recall</code> tool is a foreground subagent that searches other conversations and answers briefly, so raw matches never enter the parent’s context.</li>
+	</ul>
+	<p>Eviction, hibernation, redeploys: to Pi Durable these are all the same event as a crash, and handled the same way.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 16</div>
+	<h2>What can go wrong, and what is not promised</h2>
+	<p class="lead">A durable system is defined as much by what it refuses to promise as by what it does. This chapter is useful for the Q&amp;A.</p>
+
+	<h3>Three rules decide what an error does</h3>
+	<ol>
+		<li><strong>A storage error ends the harness.</strong> If storage fails, nothing can be recorded, so nothing may continue. The harness fails, closes itself, and must be reopened. Commits are atomic, so the store is consistent; resubmitting with the same request ID finds what was already admitted. Storage retries its own transient failures.</li>
+		<li><strong>An invalid request fails only that call.</strong> A bad cursor, an unknown conversation.</li>
+		<li><strong>Your code fails only its own unit.</strong> A throwing task phase faults that task. A throwing tool gives the model an error result. A throwing hook is reported and skipped, except <code>beforeTool</code>, where a throw blocks the call (failing closed).</li>
+	</ol>
+
+	<h3>What Pi Durable does not do</h3>
+	<table>
+		<tr><th style="width:36%">Not promised</th><th>Instead</th></tr>
+		<tr><td>Exactly-once external effects</td><td>The effect sandwich makes the doubt explicit; idempotency keys, polling, or “interrupted” resolve it.</td></tr>
+		<tr><td>Several processes writing one storage</td><td>One owner at a time, no cross-process lock. Other clients attach to the owner.</td></tr>
+		<tr><td>Offline multi-writer merge (CRDTs)</td><td>One line of commits; documents are changed by one writer.</td></tr>
+		<tr><td>Killing misbehaving code in-process</td><td>Code that ignores its abort signal delays close until it returns.</td></tr>
+		<tr><td>Power-loss durability on JSONL by default</td><td>Opt into fsync, or use SQLite (WAL; the newest commit may be lost on power failure).</td></tr>
+		<tr><td>A stable API</td><td>It is experimental. The API changes between releases.</td></tr>
+	</table>
+
+	<h3>Footguns worth knowing</h3>
+	<ul>
+		<li><strong>Long transactions.</strong> Never await a model, a process or a human inside a commit. It holds the line for everyone.</li>
+		<li><strong>Owned work holds its owner.</strong> A subagent you keep talking to keeps the tool call that owns it in <em>completing</em>. Work that should not hold its owner is created as background.</li>
+		<li><strong>Unstable prompt text.</strong> A section that embeds the current time changes on every request, appends a system delta every time, and defeats prompt caching.</li>
+		<li><strong>Guards are selected, not global.</strong> A conversation whose extension selection omits the permissions extension runs without it.</li>
+	</ul>
+</section>
+<section class="part">
+	<div class="kicker">Part III</div>
+	<h1>Seeing it work</h1>
+	<p>Three scenarios in slow motion. Each is told twice: what a user sees, and what is in storage. The second telling is the material for a demo that explains instead of just showing.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 17</div>
+	<h2>Pulling the plug: a crash, commit by commit</h2>
+	<p class="lead">A Slack bot built on Pi Durable gets a message. Halfway through the work, its container is redeployed. This chapter follows every commit, then the restart, then the end of the story.</p>
+
+	<h3>The setup</h3>
+	<p>Someone writes in a channel: <em>“@agent fix the flaky login test”</em>. The Slack integration submits it with the Slack event ID as <code>requestId</code>. The agent has two relevant tools: <code>search_issues</code>, which only reads and is marked replay safe, and <code>bash</code>, which is not (running a command twice is not something the harness will decide on its own).</p>
+
+	<h3>Act one: the work</h3>
+	<table class="long">
+		<tr><th style="width:7%">#</th><th style="width:30%">What happens</th><th>What the commit writes</th></tr>
+		<tr><td>1</td><td>Message admitted</td><td>Submission S1 (requestId <code>Ev042</code>). Entry 1 <code>pi.user</code>. Task T1 <code>pi.generation</code>, pending. <code>pi.live.run</code> = T1 answering S1.</td></tr>
+		<tr><td>2</td><td>Scheduler picks T1</td><td>T1 pending → running.</td></tr>
+		<tr><td>3</td><td>T1 prepares</td><td>Entry 2 <code>pi.system</code> (prompt sections and tools). T1 checkpoint → <em>request</em>, model pinned, cutoff entry 2.</td></tr>
+		<tr><td>4–9</td><td>Model streams</td><td><code>pi.live.generation</code> partial, every ~100 ms. Every attached UI shows tokens.</td></tr>
+		<tr><td>10</td><td>Model asks for two tools</td><td>Entry 3 <code>pi.assistant</code> with two calls. Tasks T2 (<code>search_issues</code>) and T3 (<code>bash: npm test</code>), owned by T1. T1 → waiting on T2, T3. <code>pi.live.tools</code> slots.</td></tr>
+		<tr><td>11</td><td>T2 records intent</td><td>T2 checkpoint → <em>execute</em>, arguments, replay safe. Slot running.</td></tr>
+		<tr><td>12</td><td>T3 records intent</td><td>T3 checkpoint → <em>execute</em>, <code>npm test</code>, replay unsafe. Slot running.</td></tr>
+		<tr><td>13–20</td><td>Tests print output</td><td>T3’s slot output: “running 214 tests… 120 passed…”</td></tr>
+		<tr><td>21</td><td>Search finishes</td><td>Entry 4 <code>pi.tool-result</code>. T2 terminal, completed.</td></tr>
+		<tr><td>22</td><td>Second person replies, as a steer: <em>“check the staging logs first”</em></td><td>Submission S2, mode steer, queued in <code>pi.inbox</code>. (The run is busy; it waits for a boundary.)</td></tr>
+	</table>
+	<div class="box warn">
+		<span class="label">Kill -9</span>
+		<p>The container is redeployed. The process is gone, mid <code>npm test</code>. The Slack integration never got an answer, and its webhook will be delivered again.</p>
+	</div>
+
+	<h3>What is on disk at the moment of the crash</h3>
+	<figure>
+		<svg width="520" height="215" viewBox="0 0 520 215">
+			<rect class="box" x="10" y="10" width="245" height="95" rx="4"/>
+			<text class="tb" x="20" y="28">Entries</text>
+			<text class="mono" x="20" y="46">1 pi.user       fix the flaky login test</text>
+			<text class="mono" x="20" y="60">2 pi.system     sections, tools</text>
+			<text class="mono" x="20" y="74">3 pi.assistant  calls: search, bash</text>
+			<text class="mono" x="20" y="88">4 pi.tool-result  search: 3 issues</text>
+
+			<rect class="box" x="265" y="10" width="245" height="95" rx="4"/>
+			<text class="tb" x="275" y="28">Tasks</text>
+			<text class="mono" x="275" y="46">T1 generation  waiting on T2,T3</text>
+			<text class="mono" x="275" y="60">T2 tool search terminal</text>
+			<text class="mono" x="275" y="74" style="fill:#b5651d">T3 tool bash   running · execute</text>
+			<text class="mono" x="275" y="88">              npm test, unsafe</text>
+
+			<rect class="box" x="10" y="115" width="245" height="90" rx="4"/>
+			<text class="tb" x="20" y="133">Submissions</text>
+			<text class="mono" x="20" y="151">S1 input  placed  (Ev042)</text>
+			<text class="mono" x="20" y="165">S2 steer  queued</text>
+
+			<rect class="boxa" x="265" y="115" width="245" height="90" rx="4"/>
+			<text class="tb" x="275" y="133">Documents</text>
+			<text class="mono" x="275" y="151">pi.live.run   T1, S1</text>
+			<text class="mono" x="275" y="165">pi.live.tools bash: “120 passed…”</text>
+			<text class="mono" x="275" y="179">pi.inbox      [S2 steer]</text>
+			<text class="mono" x="275" y="193">pi.usage      1 request</text>
+		</svg>
+		<figcaption>Figure 17.1 · Everything a new process needs. Note what is not there: no recovery log. This is simply the current state.</figcaption>
+	</figure>
+
+	<h3>Act two: a new process</h3>
+	<table class="long">
+		<tr><th style="width:7%">#</th><th style="width:30%">What happens</th><th>What the commit writes</th></tr>
+		<tr><td>R1</td><td>Harness opens</td><td>Reconciliation: T3 running → pending. T1 stays waiting. Nothing runs yet.</td></tr>
+		<tr><td>R2</td><td>Scheduling starts; T3 reserved</td><td>T3 → running, in phase <em>execute</em>. This phase is only ever reached by recovery.</td></tr>
+		<tr><td>R3</td><td>T3 decides</td><td><code>bash</code> is not replay safe, so it does not run again. Entry 5 <code>pi.tool-result</code>, error: “Tool bash was interrupted and may have partially run”, with the output stored so far. T3 terminal, failed.</td></tr>
+		<tr><td>R4</td><td>T1 wakes, turn boundary</td><td>Steer S2 placed as entry 6 <code>pi.user</code>. Task T4, the next generation, gets the run.</td></tr>
+		<tr><td>R5…</td><td>T4 requests</td><td>The model sees: the request, its own tool calls, the search result, the interrupted test run with its partial output, and the steer. It decides what to do: read the staging logs, then rerun the tests.</td></tr>
+		<tr><td>…</td><td>Webhook redelivered</td><td>Submit with requestId <code>Ev042</code> returns S1. No second question.</td></tr>
+		<tr><td>end</td><td>Final answer</td><td>Entry <code>pi.assistant</code>. S1 done. <code>pi.live.run</code> cleared. Slack gets one answer.</td></tr>
+	</table>
+
+	<h3>What to notice</h3>
+	<ul>
+		<li><strong>There was no recovery code.</strong> Reopen moved one row from running to pending. Everything else is the ordinary machinery: a task in a phase, a boundary, a new generation.</li>
+		<li><strong>The harness did not guess.</strong> It did not rerun <code>npm test</code> on its own, and it did not pretend the test run finished. It told the model exactly what is known.</li>
+		<li><strong>The second person was not lost.</strong> The steer was durable before the crash and placed at the first boundary after it.</li>
+		<li><strong>The search was not repeated.</strong> It had finished; its result was in the transcript. Had it been interrupted too, it would simply have run again, because it is marked safe.</li>
+		<li><strong>Slack sees one answer.</strong> The request ID made the retried webhook a no-op.</li>
+	</ul>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>This chapter is the best candidate for the demo. Its shape is: show the work as rows appearing, pull the plug, show that the rows are still there, start a new process, and show that exactly one row changes before work continues.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 18</div>
+	<h2>The vacation planner, underneath</h2>
+	<p class="lead">The launch post showed a vacation planner: about 1,300 lines of TypeScript, most of them a TUI borrowed from the coding agent. Its storyline has eight beats. Here is each, with what is happening underneath.</p>
+	<table class="long">
+		<tr><th style="width:5%">#</th><th style="width:35%">What you see</th><th>Underneath</th></tr>
+		<tr><td>1</td><td>“Plan a weekend in Vienna for two. Hand the research to a subagent.”</td><td>An ordinary submission and generation. The model calls the <code>research</code> tool.</td></tr>
+		<tr><td>2</td><td>A subagent runs three searches in parallel: weather, museums, trains. Each shows in the task panel.</td><td><code>research</code> creates a <em>background</em> task owned by the main conversation; that task owns a new subagent conversation and submits the request to it with request ID <code>research:&lt;task&gt;</code>. The tool returns at once. The subagent’s model calls <code>search</code> three times: three <code>pi.tool</code> tasks owned by its generation. The searches are canned and take 6, 10 and 30 seconds.</td></tr>
+		<tr><td>3</td><td>Meanwhile, the main agent is free to chat.</td><td>The research task is background: the main conversation is idle, so new input starts a new run there. The two conversations do not block each other.</td></tr>
+		<tr><td>4</td><td>The process dies. Weather and museums are done, trains is not.</td><td>On disk: two tool tasks terminal with results, one running in <em>execute</em>. The subagent’s generation waiting. The research task waiting for the subagent’s answer.</td></tr>
+		<tr><td>5</td><td>Restart with <code>--continue</code>. Only trains runs again.</td><td>Trains: running → pending → reserved in <em>execute</em>. <code>search</code> is replay safe, so it executes again with the stored arguments. Weather and museums are untouched.</td></tr>
+		<tr><td>6</td><td>Switch to the subagent and steer it.</td><td>The subagent is a conversation like any other. A steer goes into its inbox and is placed at its next boundary.</td></tr>
+		<tr><td>7</td><td>Back in main: ask, compact, and steer, all while it works.</td><td>A manual compaction is a task in the main conversation; it summarizes while the run continues, and its summary is placed at the next boundary.</td></tr>
+		<tr><td>8</td><td>The report arrives as a message; main turns it into a plan.</td><td>The research task reads the subagent’s answer and submits it to the main conversation as a follow-up, with its own request ID, so a restart never posts the report twice.</td></tr>
+	</table>
+	<p>Two things make this story good for a talk. First, the crash is natural: one search is slow on purpose, so there is a moment where some work is done and some is not. Second, everything in it is a conversation or a task, so the task panel shows the architecture directly.</p>
+	<div class="box warn">
+		<span class="label">Availability</span>
+		<p>The vacation planner and the small durable coding agent lived in <code>packages/coding-agent/src/experimental</code>. They are in the tags v1.0.0 through v1.1.0, and were removed from main on 12 October (commit <code>7472cda0d</code>, together with the experimental server stack). v1.2.0 does not include them, and the launch post’s links to them now point at nothing on main. To record them, check out v1.1.0.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 19</div>
+	<h2>Not just for models: a split payment</h2>
+	<p class="lead">The task machinery is not specific to language models. The launch post makes that point with a checkout that splits the bill across several cards. It is the clearest illustration of ownership, waiting and bottom-up cleanup.</p>
+
+	<h3>Two task types</h3>
+	<ul>
+		<li><strong>Payment</strong> has one phase, <em>charge</em>: charge one card with the idempotency key <code>payment-&lt;task id&gt;</code>, then commit the receipt or the decline as its outcome. Its abort handler refunds by the same key.</li>
+		<li><strong>Checkout</strong> has two phases. <em>pay</em> creates one Payment per card, owned by the checkout, and commits “wait for all of them, fail fast”. <em>decide</em> reads their outcomes and commits “order placed” or “a payment failed”.</li>
+	</ul>
+	<p>An agent starts a checkout with a tool. The checkout is owned by that tool call.</p>
+
+	<h3>Four things that can happen</h3>
+	<table>
+		<tr><th style="width:24%">Scenario</th><th>What the tree does</th></tr>
+		<tr><td>All four cards go through</td><td>Each payment completes. The checkout, which ran no code while it waited, resumes in <em>decide</em>: placed.</td></tr>
+		<tr><td>One card is declined</td><td>That payment fails. <em>failFast</em> marks the others that are still in flight for abort (here: all three). Each runs its own abort handler: a refund. When all four are terminal, the checkout resumes and reads <code>[aborted, failed, aborted, aborted]</code>.</td></tr>
+		<tr><td>The user presses Esc</td><td>Abort flows down from the conversation, through the generation and the tool call, to the checkout, to the payments. Cleanup runs from the bottom: payments refund first, then the checkout’s abort handler sees their final outcomes.</td></tr>
+		<tr><td>The process dies mid-payment</td><td>The payments still in <em>charge</em> become pending and charge again, with the same key, so the bank charges once. The checkout is still waiting and resumes when they are done.</td></tr>
+	</table>
+	<p>Notice that “refund on cancel” was written once, in the payment’s abort handler, at the level that did the effect. Nobody above it needs to know how to undo a charge.</p>
+	<figure>
+		<svg width="520" height="150" viewBox="0 0 520 150">
+			<rect class="box" x="10" y="10" width="120" height="28" rx="3"/><text class="mono" x="70" y="28" text-anchor="middle">tool: checkout</text>
+			<rect class="boxa" x="160" y="10" width="150" height="28" rx="3"/><text class="mono" x="235" y="28" text-anchor="middle">Checkout · waiting</text>
+			<line class="line" x1="130" y1="24" x2="160" y2="24"/>
+			<rect class="box" x="30" y="80" width="100" height="28" rx="3"/><text class="mono" x="80" y="98" text-anchor="middle">card A …</text>
+			<rect class="boxw" x="150" y="80" width="100" height="28" rx="3"/><text class="mono" x="200" y="98" text-anchor="middle">card B ✗</text>
+			<rect class="box" x="270" y="80" width="100" height="28" rx="3"/><text class="mono" x="320" y="98" text-anchor="middle">card C …</text>
+			<rect class="box" x="390" y="80" width="100" height="28" rx="3"/><text class="mono" x="440" y="98" text-anchor="middle">card D …</text>
+			<path class="line" d="M235 38 C 235 60, 80 55, 80 80"/><line class="line" x1="215" y1="38" x2="200" y2="80"/><path class="line" d="M250 38 C 260 60, 320 55, 320 80"/><path class="line" d="M270 38 C 290 55, 440 55, 440 80"/>
+			<path class="crash" d="M250 94 L270 94"/>
+			<text class="ts" x="260" y="130" text-anchor="middle">B declines → failFast aborts A, C, D → each refunds itself → Checkout resumes in “decide”</text>
+		</svg>
+		<figcaption>Figure 19.1 · A checkout that owns four payments.</figcaption>
+	</figure>
+	<div class="box warn">
+		<span class="label">A subtlety worth knowing for Q&amp;A</span>
+		<p><em>failFast</em> aborts only the payments that are still live. A payment that already <em>completed</em> before another was declined is not aborted, so its abort handler does not refund it. In the example in <code>test/examples/24-child-tasks.ts</code> the expired card is declined at once, before any other charge completes, so all three others are refunded. A production checkout would refund completed payments in its <em>decide</em> phase. The machinery gives you the outcomes; the compensation policy is still yours.</p>
+	</div>
+</section>
+<section class="part">
+	<div class="kicker">Part IV</div>
+	<h1>Toward the talk</h1>
+	<p>Ten minutes, one idea, one demo. These chapters are a starting point for a discussion, not a finished plan.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 20</div>
+	<h2>How to demo something you should not demo live</h2>
+	<p class="lead">The thing Pi Durable is good at is invisible when it works. A durable agent that answers a question looks exactly like a non-durable one. The interesting moment is a failure, and failures on stage are either fake or risky. So the demo has to make the invisible visible.</p>
+
+	<h3>What the demo must show</h3>
+	<ol>
+		<li>Work in progress is stored, not held in memory.</li>
+		<li>The process dies, and the state does not.</li>
+		<li>A new process continues, and changes almost nothing to do so.</li>
+		<li>Effects in doubt are handled honestly: rerun if safe, otherwise reported.</li>
+	</ol>
+	<p>A terminal demo shows 2 and 3 but not 1 or 4: you see the agent stop and start again, and you have to take the rest on faith. That is the argument for explaining the architecture rather than just running it.</p>
+
+	<h3>Options</h3>
+	<table class="long">
+		<tr><th style="width:22%">Option</th><th style="width:40%">What it is</th><th>Trade-offs</th></tr>
+		<tr><td><strong>A. The X-ray</strong> (recommended)</td><td>A split slide. Left: a chat, as a user sees it. Right: the storage, as four small tables and the <code>pi.live</code> document. Each click is one commit; rows appear on the right while text appears on the left. Then the left side goes dark (“kill -9”), the right stays. A new process appears, one row changes from running to pending, and work continues.</td><td>Zero risk; explains all four points; works at any speed. Needs building as an animated slide. Risk of feeling like a diagram, so it has to move.</td></tr>
+		<tr><td><strong>A+. Recorded truth</strong></td><td>Same as A, but the data is real: run a real harness (faux model provider, SQLite) through the chapter 17 scenario, record every commit with the commit subscription or a watch, kill it, reopen, record again. The slide replays the recorded trace.</td><td>Everything on screen is genuinely what the system wrote. A few hours of work; makes a great “this is not a mockup” line.</td></tr>
+		<tr><td><strong>B. Screencast</strong></td><td>A 30–45 second recording of the vacation planner: three searches, Ctrl+C with only trains left, <code>--continue</code>, only trains reruns, the report arrives. Sped up, with captions.</td><td>Proof that it is real, with a real TUI and task panel. Must be recorded from v1.1.0 (the demo is gone on main). On its own it shows the effect, not the mechanism.</td></tr>
+		<tr><td><strong>C. Live, deterministic</strong></td><td>Run an example like <code>13-recovery</code> or <code>24-child-tasks</code> live in a terminal. They use no network and print what happens.</td><td>Real and safe, but terminal text is not a good visual for an audience, and it costs time.</td></tr>
+		<tr><td><strong>D. Live kill</strong></td><td>Run the planner or a Slack bot live, kill it, restart it.</td><td>The most dramatic, and the most fragile: network, model latency, Wi-Fi. Not compatible with a ten-minute slot.</td></tr>
+		<tr><td><strong>E. Two screens</strong></td><td>Two browser tabs on the same conversation (the Cloudflare example): type in one, watch it in the other; reload one mid-answer; it comes back where it was.</td><td>Shows multiplayer and late join beautifully. Also live and network dependent.</td></tr>
+	</table>
+
+	<h3>A suggestion</h3>
+	<p>Make A (ideally A+) the spine of the talk, and do not call it a demo: call it <em>following one message through the system</em>. Then, optionally, close the section with ten seconds of B as the punchline (“and here is the real thing doing it”). That gives you the explanation and the proof without anything that can fail on stage.</p>
+
+	<h3>Sketch of the X-ray, beat by beat</h3>
+	<table class="long">
+		<tr><th style="width:6%">Beat</th><th style="width:40%">Left (what the user sees)</th><th>Right (what storage holds)</th></tr>
+		<tr><td>1</td><td>“@agent fix the flaky login test”</td><td>A submission row; an entry row; a task row, <em>pending</em>.</td></tr>
+		<tr><td>2</td><td>The answer streams in</td><td><code>pi.live</code> partial text growing, in sync. Make the point: the left is drawn from the right.</td></tr>
+		<tr><td>3</td><td>Two tool calls appear, one finishes</td><td>Two task rows (<em>search: safe</em>, <em>bash: unsafe</em>), each showing its intent checkpoint. Search goes terminal; its result entry appears.</td></tr>
+		<tr><td>4</td><td>A second person writes “check the staging logs first”</td><td>An inbox item appears, queued.</td></tr>
+		<tr><td>5</td><td>Darkness. “kill -9”</td><td>Unchanged. Pause here. This is the slide.</td></tr>
+		<tr><td>6</td><td>A new process</td><td>One row changes: bash <em>running → pending</em>. Nothing else.</td></tr>
+		<tr><td>7</td><td>“bash was interrupted”, then the steer, then work resumes</td><td>The interrupted result entry; the steer placed; a new generation row.</td></tr>
+		<tr><td>8</td><td>One answer in Slack</td><td>The submission goes <em>done</em>. A duplicate webhook bounces off the request ID.</td></tr>
+	</table>
+	<p>Optional ninth beat if there is time: press Esc on a run with a subagent, and show the ownership tree aborting from the leaves up. It demonstrates the other half (chapter 9), but ten minutes may not allow both.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 21</div>
+	<h2>A ten-minute shape</h2>
+	<p class="lead">One possible structure. The times add up to ten minutes; the slide counts are rough.</p>
+	<table class="long">
+		<tr><th style="width:14%">Time</th><th style="width:26%">Section</th><th>Content</th></tr>
+		<tr><td>0:00–0:45</td><td>Hook</td><td>“What happens when your agent dies?” In a terminal: you notice and type “continue”. You are the recovery mechanism.</td></tr>
+		<tr><td>0:45–2:30</td><td>Why</td><td>Agents are leaving the terminal: Slack, email, GitHub, Durable Objects. Nobody watches the process. The five requirements (run anywhere, many surfaces, endless conversations, survive crashes, many humans), plus malleability. “If the human is not the recovery mechanism, the harness has to be.”</td></tr>
+		<tr><td>2:30–3:30</td><td>How we got here</td><td>First design: the transcript plus recovery notes in the margin. What shipped: a small database where the transcript is one table and every piece of work is a row that knows where it was. Recovery stopped being a feature and became a consequence.</td></tr>
+		<tr><td>3:30–6:30</td><td>Four ideas</td><td>
+			<strong>1. Commit before you show.</strong> One line of commits; the screen is a window onto storage.<br>
+			<strong>2. Everything is a task.</strong> Model requests, tool calls, compaction. Intent, effect, outcome. Durability can’t make an effect happen once; it can tell you which one is in doubt.<br>
+			<strong>3. One ownership tree.</strong> Subagents are conversations owned by tool calls. Esc flows down, cleanup runs up. Background is a boundary.<br>
+			<strong>4. Names, not code.</strong> Conversations store extension names; code comes from the registry. Hot reload and restarts are the same thing.</td></tr>
+		<tr><td>6:30–9:00</td><td>Follow one message</td><td>The X-ray (chapter 20): eight beats, the plug pulled at beat five. Optionally ten seconds of the vacation planner as proof.</td></tr>
+		<tr><td>9:00–10:00</td><td>Close</td><td>Experimental, try it, point your agent at <code>packages/durable</code>. What we are building with it. The coding agent is not going away; lessons flow back.</td></tr>
+	</table>
+
+	<h3>Lines that might be worth keeping</h3>
+	<ul>
+		<li>“A coding agent can rely on you to notice that it died. A Slack bot can’t.”</li>
+		<li>“Nothing is shown before it is stored.”</li>
+		<li>“The screen is a window onto the database, not onto the process.”</li>
+		<li>“Durability can’t make a side effect happen exactly once. It can tell you exactly which one is in doubt.”</li>
+		<li>“Recovery stopped being a feature and became a consequence.”</li>
+		<li>“Durability is the easy half. The hard half is Esc.”</li>
+		<li>“A subagent is not a feature. It is a conversation owned by a tool call.”</li>
+		<li>“Conversations remember names, not code. That is why you can change the code.”</li>
+	</ul>
+
+	<h3>What to leave out</h3>
+	<p>Documents and fork semantics, code mode’s deterministic replay, the details of compaction thresholds, storage backends beyond a single mention, hook chains, the task graph. Each is interesting; none survives a ten-minute cut. Keep them for questions. Code mode’s journal (chapter 13) is a particularly good answer to “what about long-running scripts?”</p>
+
+	<h3>Likely questions</h3>
+	<table class="long">
+		<tr><th style="width:36%">Question</th><th>Short answer</th></tr>
+		<tr><td>Isn’t this just Temporal for agents?</td><td>Same family of idea (durable execution), different trade-offs: no separate server, runs inside your process or a Durable Object, and the unit is a conversation with a transcript, not a workflow function. The transcript and app state live in the same commits as the tasks.</td></tr>
+		<tr><td>Exactly-once tool calls?</td><td>No. Intent is committed before the effect; after a crash, replay-safe tools rerun and others are reported as interrupted to the model. External effects need idempotency keys.</td></tr>
+		<tr><td>What does it cost?</td><td>A commit per visible change, throttled (100 ms for streaming by default). On local SQLite this is cheap; remote storage can commit less often.</td></tr>
+		<tr><td>Multiple servers?</td><td>One process owns a storage at a time. Scale by sharding sessions, as the Durable Object example does (one object per session).</td></tr>
+		<tr><td>Why TypeScript?</td><td>Easiest way to bootstrap; runs everywhere there is JavaScript. A port is not ruled out.</td></tr>
+		<tr><td>Will Pi the coding agent move to it?</td><td>Pi Durable does not replace it. Lessons flow back as they prove themselves.</td></tr>
+	</table>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 22</div>
+	<h2>Facts, numbers, and things to double-check</h2>
+	<p class="lead">Numbers that might go on a slide, with where they come from. Check them again close to the talk; the package moves fast.</p>
+	<table class="long">
+		<tr><th style="width:38%">Fact</th><th>Source / caveat</th></tr>
+		<tr><td>Shipped 1 October 2026, alongside Pi 1.0, as experimental</td><td>Launch post.</td></tr>
+		<tr><td>Package <code>@earendil-works/pi-durable</code>, current version 1.2.0</td><td><code>package.json</code>; v1.2.0 tagged 13 October.</td></tr>
+		<tr><td>About 15,000 lines without tests at launch (≈150k GPT tokens, ≈250k Claude tokens)</td><td>Launch post. Today <code>src/</code> totals about 25,000 lines, of which about 2,900 are testing helpers (conformance suites), 3,200 storage, 1,700 code mode, 2,300 execution environments, 8,500 the harness itself. Recount before quoting.</td></tr>
+		<tr><td>Specification: about 5,300 lines</td><td><code>docs/spec.md</code>.</td></tr>
+		<tr><td>32 runnable examples</td><td><code>test/examples</code>, numbered 00 to 31. Most run without an API key using a faux provider.</td></tr>
+		<tr><td>Storage backends: memory, SQLite, JSONL, Cloudflare Durable Object</td><td>README.</td></tr>
+		<tr><td>Streaming partials and tool output committed at most every 100 ms</td><td>Default <code>progress</code> settings.</td></tr>
+		<tr><td>Watches buffer 100 commits before collapsing to a full view</td><td>README, spec section 12.</td></tr>
+		<tr><td>Compaction defaults: reserve 16,384 tokens; background starts 32,768 earlier; keep ~20,000 recent</td><td>Spec section 2.2.</td></tr>
+		<tr><td>Retry defaults: 3 retries, 2 s base delay, 60 s cap</td><td>Spec section 2.2.</td></tr>
+		<tr><td>First design document: 28 July 2026; package created 18 September</td><td>Git history. Pico prototypes in between.</td></tr>
+		<tr><td>Vacation planner: ≈1,300 lines, mostly TUI</td><td>Launch post; the commit adding it is 1,378 lines including README.</td></tr>
+	</table>
+	<div class="box warn">
+		<span class="label">Things to resolve before the talk</span>
+		<ul>
+			<li><strong>Broken demo links.</strong> The launch post links to the durable coding agent and the vacation planner under <code>packages/coding-agent/src/experimental</code>. Both were removed from main on 12 October and are not in v1.2.0. Either restore them, link to v1.1.0, or do not send the audience there.</li>
+			<li><strong>Model names.</strong> The post’s examples use model IDs like <code>gpt-6.1-sol</code> and <code>gpt-6-luna</code>. Make sure whatever appears on slides is current.</li>
+			<li><strong>Line counts.</strong> Decide whether to quote the launch number (15k) or a fresh count.</li>
+			<li><strong>The checkout example.</strong> As written, a payment that completes before another is declined is not refunded (chapter 19). Avoid presenting it as complete compensation logic.</li>
+		</ul>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Appendix A</div>
+	<h2>Glossary</h2>
+	<table class="long">
+		<tr><th style="width:24%">Term</th><th>Meaning</th></tr>
+		<tr><td>Abort handler</td><td>The code a task runs once when aborted, after everything it owns has finished; decides the aborted outcome and cleans up its own effects.</td></tr>
+		<tr><td>Active transcript</td><td>The entries from the newest head to the tail; what the model sees.</td></tr>
+		<tr><td>Agent</td><td>What a conversation runs with: model, thinking level, extensions, tools, instructions, working directory. Stored as names in <code>pi.agent</code>.</td></tr>
+		<tr><td>Background task</td><td>A conversation-owned task outside the conversation’s current work. Esc does not reach it; the conversation can be idle while it runs.</td></tr>
+		<tr><td>Boundary</td><td>A point between turns where queued submissions can safely be placed.</td></tr>
+		<tr><td>Checkpoint</td><td>A task’s stored progress: the next phase and its data.</td></tr>
+		<tr><td>Commit</td><td>One atomic write of entries, documents, tasks and submissions.</td></tr>
+		<tr><td>Compaction</td><td>A task that summarizes older messages and places a headed summary entry.</td></tr>
+		<tr><td>Completing</td><td>A task that has decided its outcome but still owns live work; it becomes terminal once that drains.</td></tr>
+		<tr><td>Conversation</td><td>A transcript scope. May fork another at an entry; may be owned by a task.</td></tr>
+		<tr><td>Document</td><td>Typed, mutable JSON state committed with entries; scoped to session, conversation, or task.</td></tr>
+		<tr><td>Effect sandwich</td><td>Commit intent, perform the effect, commit the outcome.</td></tr>
+		<tr><td>Entry</td><td>An immutable transcript record.</td></tr>
+		<tr><td>Environment</td><td>Where tools touch files and processes; built per call.</td></tr>
+		<tr><td>Extension</td><td>A named bundle of sections, tools, hooks, wraps and tasks.</td></tr>
+		<tr><td>Fork</td><td>A conversation that sees its parent’s history up to an entry, without copying.</td></tr>
+		<tr><td>Generation</td><td>The built-in task for one model request (<code>pi.generation</code>).</td></tr>
+		<tr><td>Head</td><td>A marker on an entry saying where the model’s context starts.</td></tr>
+		<tr><td>Hook</td><td>Extension code that steps into a built-in task (before a request, before a tool…).</td></tr>
+		<tr><td>Inbox</td><td>The queue of submissions waiting for a boundary (<code>pi.inbox</code>).</td></tr>
+		<tr><td>Memo</td><td>A small first-writer-wins value stored with a task, for decisions made once.</td></tr>
+		<tr><td>Mutation line</td><td>The single serialized path all commits take.</td></tr>
+		<tr><td>Orphaned</td><td>An aborted task whose code was unavailable, so no cleanup ran.</td></tr>
+		<tr><td>Registry</td><td>The extensions this process installed; can change while running.</td></tr>
+		<tr><td>Replay safe</td><td>A tool that may simply run again after a crash interrupted it.</td></tr>
+		<tr><td>Request ID</td><td>A caller-chosen key that makes a submission exactly-once.</td></tr>
+		<tr><td>Run / turn</td><td>A turn is one model response and its tool calls; a run is the turns from an input to its answer.</td></tr>
+		<tr><td>Session</td><td>The transactional core under a harness: one storage, one mutation line.</td></tr>
+		<tr><td>Steer / follow-up</td><td>Input placed after the current tool round / after the run answers.</td></tr>
+		<tr><td>Submission</td><td>Input or a write handed to a conversation; queued, placed, done or unanswered.</td></tr>
+		<tr><td>Task</td><td>A durable state machine: input, checkpoint, phases, abort handler, owner.</td></tr>
+		<tr><td>View / watch</td><td>A conversation’s committed state for UIs; a watch delivers each commit’s exact operations.</td></tr>
+	</table>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Appendix B</div>
+	<h2>A map of the source</h2>
+	<p class="lead">If you, or your agent, want to read the code: where things live in <code>packages/durable/src</code>, with approximate line counts.</p>
+	<table class="long">
+		<tr><th style="width:34%">Path</th><th style="width:10%">Lines</th><th>What it is</th></tr>
+		<tr><td><code>session/</code></td><td>2,500</td><td>The transactional Session: commits, transactions, forks, document observation.</td></tr>
+		<tr><td><code>harness/scheduler.ts</code></td><td>1,950</td><td>Reservation, reconciliation, abort cascades, ownership traversal.</td></tr>
+		<tr><td><code>harness/tool.ts</code></td><td>900</td><td>The <code>pi.tool</code> task: validate, hook, intent, execute, replay.</td></tr>
+		<tr><td><code>harness/generation.ts</code></td><td>700</td><td>The <code>pi.generation</code> task: prepare, request, retry, poll, tools.</td></tr>
+		<tr><td><code>harness/compaction.ts</code></td><td>460</td><td>The <code>pi.compaction</code> task.</td></tr>
+		<tr><td><code>harness/harness.ts</code></td><td>470</td><td>Opening, conversations, the public surface.</td></tr>
+		<tr><td><code>harness/</code> (rest)</td><td>4,000</td><td>Agent resolution, prompt, inbox, submissions, views, events, task graph, registry.</td></tr>
+		<tr><td><code>storage/</code></td><td>3,200</td><td>Memory, SQLite (Node and Cloudflare), JSONL.</td></tr>
+		<tr><td><code>env/</code></td><td>2,300</td><td>The execution environment interface and the Node environment.</td></tr>
+		<tr><td><code>tools/</code></td><td>1,550</td><td>read, write, edit, bash.</td></tr>
+		<tr><td><code>codemode/</code></td><td>1,700</td><td>Durable code mode: sandbox, journal, replay.</td></tr>
+		<tr><td><code>testing/</code></td><td>2,900</td><td>Storage and environment conformance suites, benchmarks.</td></tr>
+		<tr><td><code>*.ts</code> (root)</td><td>2,000</td><td>Types, documents, entries, tasks, IDs, errors, truncation.</td></tr>
+	</table>
+	<p>Recommended reading order for a human: the README’s Concepts section; then <code>test/examples/06-harness.ts</code>, <code>13-recovery.ts</code>, <code>22-subagent-foreground.ts</code> and <code>24-child-tasks.ts</code>; then spec sections 1, 5.2 and 5.5.</p>
+	<p class="small center" style="margin-top:12mm">End.</p>
+</section>
+</body></html>

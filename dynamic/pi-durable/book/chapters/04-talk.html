@@ -1,0 +1,187 @@
+<section class="part">
+	<div class="kicker">Part IV</div>
+	<h1>Toward the talk</h1>
+	<p>Ten minutes, one idea, one demo. These chapters are a starting point for a discussion, not a finished plan.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 20</div>
+	<h2>How to demo something you should not demo live</h2>
+	<p class="lead">The thing Pi Durable is good at is invisible when it works. A durable agent that answers a question looks exactly like a non-durable one. The interesting moment is a failure, and failures on stage are either fake or risky. So the demo has to make the invisible visible.</p>
+
+	<h3>What the demo must show</h3>
+	<ol>
+		<li>Work in progress is stored, not held in memory.</li>
+		<li>The process dies, and the state does not.</li>
+		<li>A new process continues, and changes almost nothing to do so.</li>
+		<li>Effects in doubt are handled honestly: rerun if safe, otherwise reported.</li>
+	</ol>
+	<p>A terminal demo shows 2 and 3 but not 1 or 4: you see the agent stop and start again, and you have to take the rest on faith. That is the argument for explaining the architecture rather than just running it.</p>
+
+	<h3>Options</h3>
+	<table class="long">
+		<tr><th style="width:22%">Option</th><th style="width:40%">What it is</th><th>Trade-offs</th></tr>
+		<tr><td><strong>A. The X-ray</strong> (recommended)</td><td>A split slide. Left: a chat, as a user sees it. Right: the storage, as four small tables and the <code>pi.live</code> document. Each click is one commit; rows appear on the right while text appears on the left. Then the left side goes dark (“kill -9”), the right stays. A new process appears, one row changes from running to pending, and work continues.</td><td>Zero risk; explains all four points; works at any speed. Needs building as an animated slide. Risk of feeling like a diagram, so it has to move.</td></tr>
+		<tr><td><strong>A+. Recorded truth</strong></td><td>Same as A, but the data is real: run a real harness (faux model provider, SQLite) through the chapter 17 scenario, record every commit with the commit subscription or a watch, kill it, reopen, record again. The slide replays the recorded trace.</td><td>Everything on screen is genuinely what the system wrote. A few hours of work; makes a great “this is not a mockup” line.</td></tr>
+		<tr><td><strong>B. Screencast</strong></td><td>A 30–45 second recording of the vacation planner: three searches, Ctrl+C with only trains left, <code>--continue</code>, only trains reruns, the report arrives. Sped up, with captions.</td><td>Proof that it is real, with a real TUI and task panel. Must be recorded from v1.1.0 (the demo is gone on main). On its own it shows the effect, not the mechanism.</td></tr>
+		<tr><td><strong>C. Live, deterministic</strong></td><td>Run an example like <code>13-recovery</code> or <code>24-child-tasks</code> live in a terminal. They use no network and print what happens.</td><td>Real and safe, but terminal text is not a good visual for an audience, and it costs time.</td></tr>
+		<tr><td><strong>D. Live kill</strong></td><td>Run the planner or a Slack bot live, kill it, restart it.</td><td>The most dramatic, and the most fragile: network, model latency, Wi-Fi. Not compatible with a ten-minute slot.</td></tr>
+		<tr><td><strong>E. Two screens</strong></td><td>Two browser tabs on the same conversation (the Cloudflare example): type in one, watch it in the other; reload one mid-answer; it comes back where it was.</td><td>Shows multiplayer and late join beautifully. Also live and network dependent.</td></tr>
+	</table>
+
+	<h3>A suggestion</h3>
+	<p>Make A (ideally A+) the spine of the talk, and do not call it a demo: call it <em>following one message through the system</em>. Then, optionally, close the section with ten seconds of B as the punchline (“and here is the real thing doing it”). That gives you the explanation and the proof without anything that can fail on stage.</p>
+
+	<h3>Sketch of the X-ray, beat by beat</h3>
+	<table class="long">
+		<tr><th style="width:6%">Beat</th><th style="width:40%">Left (what the user sees)</th><th>Right (what storage holds)</th></tr>
+		<tr><td>1</td><td>“@agent fix the flaky login test”</td><td>A submission row; an entry row; a task row, <em>pending</em>.</td></tr>
+		<tr><td>2</td><td>The answer streams in</td><td><code>pi.live</code> partial text growing, in sync. Make the point: the left is drawn from the right.</td></tr>
+		<tr><td>3</td><td>Two tool calls appear, one finishes</td><td>Two task rows (<em>search: safe</em>, <em>bash: unsafe</em>), each showing its intent checkpoint. Search goes terminal; its result entry appears.</td></tr>
+		<tr><td>4</td><td>A second person writes “check the staging logs first”</td><td>An inbox item appears, queued.</td></tr>
+		<tr><td>5</td><td>Darkness. “kill -9”</td><td>Unchanged. Pause here. This is the slide.</td></tr>
+		<tr><td>6</td><td>A new process</td><td>One row changes: bash <em>running → pending</em>. Nothing else.</td></tr>
+		<tr><td>7</td><td>“bash was interrupted”, then the steer, then work resumes</td><td>The interrupted result entry; the steer placed; a new generation row.</td></tr>
+		<tr><td>8</td><td>One answer in Slack</td><td>The submission goes <em>done</em>. A duplicate webhook bounces off the request ID.</td></tr>
+	</table>
+	<p>Optional ninth beat if there is time: press Esc on a run with a subagent, and show the ownership tree aborting from the leaves up. It demonstrates the other half (chapter 9), but ten minutes may not allow both.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 21</div>
+	<h2>A ten-minute shape</h2>
+	<p class="lead">One possible structure. The times add up to ten minutes; the slide counts are rough.</p>
+	<table class="long">
+		<tr><th style="width:14%">Time</th><th style="width:26%">Section</th><th>Content</th></tr>
+		<tr><td>0:00–0:45</td><td>Hook</td><td>“What happens when your agent dies?” In a terminal: you notice and type “continue”. You are the recovery mechanism.</td></tr>
+		<tr><td>0:45–2:30</td><td>Why</td><td>Agents are leaving the terminal: Slack, email, GitHub, Durable Objects. Nobody watches the process. The five requirements (run anywhere, many surfaces, endless conversations, survive crashes, many humans), plus malleability. “If the human is not the recovery mechanism, the harness has to be.”</td></tr>
+		<tr><td>2:30–3:30</td><td>How we got here</td><td>First design: the transcript plus recovery notes in the margin. What shipped: a small database where the transcript is one table and every piece of work is a row that knows where it was. Recovery stopped being a feature and became a consequence.</td></tr>
+		<tr><td>3:30–6:30</td><td>Four ideas</td><td>
+			<strong>1. Commit before you show.</strong> One line of commits; the screen is a window onto storage.<br>
+			<strong>2. Everything is a task.</strong> Model requests, tool calls, compaction. Intent, effect, outcome. Durability can’t make an effect happen once; it can tell you which one is in doubt.<br>
+			<strong>3. One ownership tree.</strong> Subagents are conversations owned by tool calls. Esc flows down, cleanup runs up. Background is a boundary.<br>
+			<strong>4. Names, not code.</strong> Conversations store extension names; code comes from the registry. Hot reload and restarts are the same thing.</td></tr>
+		<tr><td>6:30–9:00</td><td>Follow one message</td><td>The X-ray (chapter 20): eight beats, the plug pulled at beat five. Optionally ten seconds of the vacation planner as proof.</td></tr>
+		<tr><td>9:00–10:00</td><td>Close</td><td>Experimental, try it, point your agent at <code>packages/durable</code>. What we are building with it. The coding agent is not going away; lessons flow back.</td></tr>
+	</table>
+
+	<h3>Lines that might be worth keeping</h3>
+	<ul>
+		<li>“A coding agent can rely on you to notice that it died. A Slack bot can’t.”</li>
+		<li>“Nothing is shown before it is stored.”</li>
+		<li>“The screen is a window onto the database, not onto the process.”</li>
+		<li>“Durability can’t make a side effect happen exactly once. It can tell you exactly which one is in doubt.”</li>
+		<li>“Recovery stopped being a feature and became a consequence.”</li>
+		<li>“Durability is the easy half. The hard half is Esc.”</li>
+		<li>“A subagent is not a feature. It is a conversation owned by a tool call.”</li>
+		<li>“Conversations remember names, not code. That is why you can change the code.”</li>
+	</ul>
+
+	<h3>What to leave out</h3>
+	<p>Documents and fork semantics, code mode’s deterministic replay, the details of compaction thresholds, storage backends beyond a single mention, hook chains, the task graph. Each is interesting; none survives a ten-minute cut. Keep them for questions. Code mode’s journal (chapter 13) is a particularly good answer to “what about long-running scripts?”</p>
+
+	<h3>Likely questions</h3>
+	<table class="long">
+		<tr><th style="width:36%">Question</th><th>Short answer</th></tr>
+		<tr><td>Isn’t this just Temporal for agents?</td><td>Same family of idea (durable execution), different trade-offs: no separate server, runs inside your process or a Durable Object, and the unit is a conversation with a transcript, not a workflow function. The transcript and app state live in the same commits as the tasks.</td></tr>
+		<tr><td>Exactly-once tool calls?</td><td>No. Intent is committed before the effect; after a crash, replay-safe tools rerun and others are reported as interrupted to the model. External effects need idempotency keys.</td></tr>
+		<tr><td>What does it cost?</td><td>A commit per visible change, throttled (100 ms for streaming by default). On local SQLite this is cheap; remote storage can commit less often.</td></tr>
+		<tr><td>Multiple servers?</td><td>One process owns a storage at a time. Scale by sharding sessions, as the Durable Object example does (one object per session).</td></tr>
+		<tr><td>Why TypeScript?</td><td>Easiest way to bootstrap; runs everywhere there is JavaScript. A port is not ruled out.</td></tr>
+		<tr><td>Will Pi the coding agent move to it?</td><td>Pi Durable does not replace it. Lessons flow back as they prove themselves.</td></tr>
+	</table>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 22</div>
+	<h2>Facts, numbers, and things to double-check</h2>
+	<p class="lead">Numbers that might go on a slide, with where they come from. Check them again close to the talk; the package moves fast.</p>
+	<table class="long">
+		<tr><th style="width:38%">Fact</th><th>Source / caveat</th></tr>
+		<tr><td>Shipped 1 October 2026, alongside Pi 1.0, as experimental</td><td>Launch post.</td></tr>
+		<tr><td>Package <code>@earendil-works/pi-durable</code>, current version 1.2.0</td><td><code>package.json</code>; v1.2.0 tagged 13 October.</td></tr>
+		<tr><td>About 15,000 lines without tests at launch (≈150k GPT tokens, ≈250k Claude tokens)</td><td>Launch post. Today <code>src/</code> totals about 25,000 lines, of which about 2,900 are testing helpers (conformance suites), 3,200 storage, 1,700 code mode, 2,300 execution environments, 8,500 the harness itself. Recount before quoting.</td></tr>
+		<tr><td>Specification: about 5,300 lines</td><td><code>docs/spec.md</code>.</td></tr>
+		<tr><td>32 runnable examples</td><td><code>test/examples</code>, numbered 00 to 31. Most run without an API key using a faux provider.</td></tr>
+		<tr><td>Storage backends: memory, SQLite, JSONL, Cloudflare Durable Object</td><td>README.</td></tr>
+		<tr><td>Streaming partials and tool output committed at most every 100 ms</td><td>Default <code>progress</code> settings.</td></tr>
+		<tr><td>Watches buffer 100 commits before collapsing to a full view</td><td>README, spec section 12.</td></tr>
+		<tr><td>Compaction defaults: reserve 16,384 tokens; background starts 32,768 earlier; keep ~20,000 recent</td><td>Spec section 2.2.</td></tr>
+		<tr><td>Retry defaults: 3 retries, 2 s base delay, 60 s cap</td><td>Spec section 2.2.</td></tr>
+		<tr><td>First design document: 28 July 2026; package created 18 September</td><td>Git history. Pico prototypes in between.</td></tr>
+		<tr><td>Vacation planner: ≈1,300 lines, mostly TUI</td><td>Launch post; the commit adding it is 1,378 lines including README.</td></tr>
+	</table>
+	<div class="box warn">
+		<span class="label">Things to resolve before the talk</span>
+		<ul>
+			<li><strong>Broken demo links.</strong> The launch post links to the durable coding agent and the vacation planner under <code>packages/coding-agent/src/experimental</code>. Both were removed from main on 12 October and are not in v1.2.0. Either restore them, link to v1.1.0, or do not send the audience there.</li>
+			<li><strong>Model names.</strong> The post’s examples use model IDs like <code>gpt-6.1-sol</code> and <code>gpt-6-luna</code>. Make sure whatever appears on slides is current.</li>
+			<li><strong>Line counts.</strong> Decide whether to quote the launch number (15k) or a fresh count.</li>
+			<li><strong>The checkout example.</strong> As written, a payment that completes before another is declined is not refunded (chapter 19). Avoid presenting it as complete compensation logic.</li>
+		</ul>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Appendix A</div>
+	<h2>Glossary</h2>
+	<table class="long">
+		<tr><th style="width:24%">Term</th><th>Meaning</th></tr>
+		<tr><td>Abort handler</td><td>The code a task runs once when aborted, after everything it owns has finished; decides the aborted outcome and cleans up its own effects.</td></tr>
+		<tr><td>Active transcript</td><td>The entries from the newest head to the tail; what the model sees.</td></tr>
+		<tr><td>Agent</td><td>What a conversation runs with: model, thinking level, extensions, tools, instructions, working directory. Stored as names in <code>pi.agent</code>.</td></tr>
+		<tr><td>Background task</td><td>A conversation-owned task outside the conversation’s current work. Esc does not reach it; the conversation can be idle while it runs.</td></tr>
+		<tr><td>Boundary</td><td>A point between turns where queued submissions can safely be placed.</td></tr>
+		<tr><td>Checkpoint</td><td>A task’s stored progress: the next phase and its data.</td></tr>
+		<tr><td>Commit</td><td>One atomic write of entries, documents, tasks and submissions.</td></tr>
+		<tr><td>Compaction</td><td>A task that summarizes older messages and places a headed summary entry.</td></tr>
+		<tr><td>Completing</td><td>A task that has decided its outcome but still owns live work; it becomes terminal once that drains.</td></tr>
+		<tr><td>Conversation</td><td>A transcript scope. May fork another at an entry; may be owned by a task.</td></tr>
+		<tr><td>Document</td><td>Typed, mutable JSON state committed with entries; scoped to session, conversation, or task.</td></tr>
+		<tr><td>Effect sandwich</td><td>Commit intent, perform the effect, commit the outcome.</td></tr>
+		<tr><td>Entry</td><td>An immutable transcript record.</td></tr>
+		<tr><td>Environment</td><td>Where tools touch files and processes; built per call.</td></tr>
+		<tr><td>Extension</td><td>A named bundle of sections, tools, hooks, wraps and tasks.</td></tr>
+		<tr><td>Fork</td><td>A conversation that sees its parent’s history up to an entry, without copying.</td></tr>
+		<tr><td>Generation</td><td>The built-in task for one model request (<code>pi.generation</code>).</td></tr>
+		<tr><td>Head</td><td>A marker on an entry saying where the model’s context starts.</td></tr>
+		<tr><td>Hook</td><td>Extension code that steps into a built-in task (before a request, before a tool…).</td></tr>
+		<tr><td>Inbox</td><td>The queue of submissions waiting for a boundary (<code>pi.inbox</code>).</td></tr>
+		<tr><td>Memo</td><td>A small first-writer-wins value stored with a task, for decisions made once.</td></tr>
+		<tr><td>Mutation line</td><td>The single serialized path all commits take.</td></tr>
+		<tr><td>Orphaned</td><td>An aborted task whose code was unavailable, so no cleanup ran.</td></tr>
+		<tr><td>Registry</td><td>The extensions this process installed; can change while running.</td></tr>
+		<tr><td>Replay safe</td><td>A tool that may simply run again after a crash interrupted it.</td></tr>
+		<tr><td>Request ID</td><td>A caller-chosen key that makes a submission exactly-once.</td></tr>
+		<tr><td>Run / turn</td><td>A turn is one model response and its tool calls; a run is the turns from an input to its answer.</td></tr>
+		<tr><td>Session</td><td>The transactional core under a harness: one storage, one mutation line.</td></tr>
+		<tr><td>Steer / follow-up</td><td>Input placed after the current tool round / after the run answers.</td></tr>
+		<tr><td>Submission</td><td>Input or a write handed to a conversation; queued, placed, done or unanswered.</td></tr>
+		<tr><td>Task</td><td>A durable state machine: input, checkpoint, phases, abort handler, owner.</td></tr>
+		<tr><td>View / watch</td><td>A conversation’s committed state for UIs; a watch delivers each commit’s exact operations.</td></tr>
+	</table>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Appendix B</div>
+	<h2>A map of the source</h2>
+	<p class="lead">If you, or your agent, want to read the code: where things live in <code>packages/durable/src</code>, with approximate line counts.</p>
+	<table class="long">
+		<tr><th style="width:34%">Path</th><th style="width:10%">Lines</th><th>What it is</th></tr>
+		<tr><td><code>session/</code></td><td>2,500</td><td>The transactional Session: commits, transactions, forks, document observation.</td></tr>
+		<tr><td><code>harness/scheduler.ts</code></td><td>1,950</td><td>Reservation, reconciliation, abort cascades, ownership traversal.</td></tr>
+		<tr><td><code>harness/tool.ts</code></td><td>900</td><td>The <code>pi.tool</code> task: validate, hook, intent, execute, replay.</td></tr>
+		<tr><td><code>harness/generation.ts</code></td><td>700</td><td>The <code>pi.generation</code> task: prepare, request, retry, poll, tools.</td></tr>
+		<tr><td><code>harness/compaction.ts</code></td><td>460</td><td>The <code>pi.compaction</code> task.</td></tr>
+		<tr><td><code>harness/harness.ts</code></td><td>470</td><td>Opening, conversations, the public surface.</td></tr>
+		<tr><td><code>harness/</code> (rest)</td><td>4,000</td><td>Agent resolution, prompt, inbox, submissions, views, events, task graph, registry.</td></tr>
+		<tr><td><code>storage/</code></td><td>3,200</td><td>Memory, SQLite (Node and Cloudflare), JSONL.</td></tr>
+		<tr><td><code>env/</code></td><td>2,300</td><td>The execution environment interface and the Node environment.</td></tr>
+		<tr><td><code>tools/</code></td><td>1,550</td><td>read, write, edit, bash.</td></tr>
+		<tr><td><code>codemode/</code></td><td>1,700</td><td>Durable code mode: sandbox, journal, replay.</td></tr>
+		<tr><td><code>testing/</code></td><td>2,900</td><td>Storage and environment conformance suites, benchmarks.</td></tr>
+		<tr><td><code>*.ts</code> (root)</td><td>2,000</td><td>Types, documents, entries, tasks, IDs, errors, truncation.</td></tr>
+	</table>
+	<p>Recommended reading order for a human: the README’s Concepts section; then <code>test/examples/06-harness.ts</code>, <code>13-recovery.ts</code>, <code>22-subagent-foreground.ts</code> and <code>24-child-tasks.ts</code>; then spec sections 1, 5.2 and 5.5.</p>
+	<p class="small center" style="margin-top:12mm">End.</p>
+</section>

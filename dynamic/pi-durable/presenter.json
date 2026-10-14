@@ -1,0 +1,15 @@
+{
+  "title": "Pi Durable",
+  "keyboard": {
+    "next": ["ArrowRight", "Space", "PageDown", "l", "j"],
+    "prev": ["ArrowLeft", "PageUp", "h", "k"],
+    "first": ["Home"],
+    "last": ["End"]
+  },
+  "notes": { "source": "auto" },
+  "preview": { "relativeHash": true },
+  "timer": {
+    "mode": "countdown-total",
+    "durationMinutes": 13
+  }
+}

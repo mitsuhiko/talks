@@ -1,0 +1,234 @@
+<section class="cover">
+	<div class="kicker">Earendil · Field Guide</div>
+	<h1>Pi Durable</h1>
+	<div class="subtitle">Agents that outlive their process. The why, the architecture, and the story of a crash, explained without code.</div>
+	<svg width="420" height="200" viewBox="0 0 420 200">
+		<!-- a transcript strip with commits, a crash and a resume -->
+		<g stroke="#9fb4d6" stroke-width="1.2" fill="none">
+			<line x1="10" y1="100" x2="190" y2="100"/>
+			<line x1="240" y1="100" x2="410" y2="100"/>
+		</g>
+		<g fill="#f4f1ea">
+			<circle cx="30" cy="100" r="6"/><circle cx="70" cy="100" r="6"/><circle cx="110" cy="100" r="6"/><circle cx="150" cy="100" r="6"/>
+			<circle cx="260" cy="100" r="6"/><circle cx="300" cy="100" r="6"/><circle cx="340" cy="100" r="6"/><circle cx="380" cy="100" r="6"/>
+		</g>
+		<circle cx="190" cy="100" r="6" fill="none" stroke="#e0a060" stroke-width="1.5" stroke-dasharray="2 2"/>
+		<path d="M205 70 L215 95 L203 98 L218 130" stroke="#e0a060" stroke-width="2.5" fill="none"/>
+		<text x="30" y="80" fill="#9fb4d6" font-size="10" text-anchor="middle">commit</text>
+		<text x="210" y="150" fill="#e0a060" font-size="10" text-anchor="middle">process dies</text>
+		<text x="260" y="80" fill="#9fb4d6" font-size="10" text-anchor="middle">reopen</text>
+		<path d="M150 120 C 190 175, 230 175, 258 118" stroke="#9fb4d6" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+		<text x="205" y="185" fill="#9fb4d6" font-size="9" text-anchor="middle">continue from the last checkpoint</text>
+	</svg>
+	<div class="meta">
+		Background reading for a ten-minute talk on <code style="background:none;color:#cfd9ea">@earendil-works/pi-durable</code><br>
+		Based on <code style="background:none;color:#cfd9ea">packages/durable</code> in pi-mono (v1.2.0, October 2026),<br>
+		its specification, its git history, and the launch post “Pi Durable” (1 October 2026).
+	</div>
+</section>
+
+<section class="toc">
+	<h2>Contents</h2>
+	<div class="tp">Before you start</div>
+	<ol><li><span></span>How to read this book</li></ol>
+	<div class="tp">Part I · Why</div>
+	<ol>
+		<li><span>1</span>The agent that lives in a terminal</li>
+		<li><span>2</span>Agents leave the terminal</li>
+		<li><span>3</span>The road to Pi Durable</li>
+		<li><span>4</span>A vocabulary for harnesses</li>
+	</ol>
+	<div class="tp">Part II · How it works</div>
+	<ol>
+		<li><span>5</span>The one rule: commit before you show</li>
+		<li><span>6</span>What lives in storage</li>
+		<li><span>7</span>Tasks: work as durable state machines</li>
+		<li><span>8</span>One turn, taken apart</li>
+		<li><span>9</span>One ownership tree</li>
+		<li><span>10</span>Many conversations: forks and subagents</li>
+		<li><span>11</span>The inbox: many people, one agent</li>
+		<li><span>12</span>Context without end</li>
+		<li><span>13</span>Extensions: names, not code</li>
+		<li><span>14</span>Documents, views and multiplayer</li>
+		<li><span>15</span>Running anywhere</li>
+		<li><span>16</span>What can go wrong, and what is not promised</li>
+	</ol>
+	<div class="tp">Part III · Seeing it work</div>
+	<ol>
+		<li><span>17</span>Pulling the plug: a crash, commit by commit</li>
+		<li><span>18</span>The vacation planner, underneath</li>
+		<li><span>19</span>Not just for models: a split payment</li>
+	</ol>
+	<div class="tp">Part IV · Toward the talk</div>
+	<ol>
+		<li><span>20</span>How to demo something you should not demo live</li>
+		<li><span>21</span>A ten-minute shape</li>
+		<li><span>22</span>Facts, numbers, and things to double-check</li>
+		<li><span>A</span>Glossary</li>
+		<li><span>B</span>A map of the source</li>
+	</ol>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Before you start</div>
+	<h2>How to read this book</h2>
+	<p class="lead">This book exists to make a ten-minute talk possible. Ten minutes is too short to teach Pi Durable. It is long enough to leave people with one picture in their heads, and to give that picture you have to understand the whole thing first. The book tries to get you there.</p>
+	<p>It deliberately avoids code. Where code appears, it shows a shape, never an API to memorize. The goal is that you can explain Pi Durable on a whiteboard: what is stored, who does the work, what happens when the power goes out.</p>
+	<ul>
+		<li><strong>Part I</strong> explains why Pi Durable exists: the assumptions a terminal coding agent can make, why they stop holding once agents leave the terminal, and how the design arrived where it is.</li>
+		<li><strong>Part II</strong> is the architecture, in the order you would explain it: the one rule everything follows, what lives in storage, tasks, a turn taken apart, ownership, and then the features that fall out of those.</li>
+		<li><strong>Part III</strong> walks through three scenarios in slow motion. These are the raw material for a demo that explains instead of just showing.</li>
+		<li><strong>Part IV</strong> turns all of it into options for the talk: demo formats, a ten-minute structure, and a list of facts to double-check before going on stage.</li>
+	</ul>
+	<p>If you only have half an hour: read chapters 2, 5, 7, 9 and 17. Those are the spine of the talk.</p>
+	<div class="box">
+		<span class="label">Sources</span>
+		<p>The normative specification in <code>packages/durable/docs/spec.md</code> (about 5,300 lines), the package README, the examples in <code>test/examples</code>, the git history of <code>packages/agent</code> and <code>packages/durable</code>, and the launch post on earendil.com. Where this book interprets rather than reports, it says so.</p>
+	</div>
+</section>
+
+<section class="part">
+	<div class="kicker">Part I</div>
+	<h1>Why</h1>
+	<p>A coding agent in a terminal can lean on a human for recovery. An agent in Slack, in an inbox, or in a Durable Object cannot. Pi Durable is what you build when no human is watching the process.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 1</div>
+	<h2>The agent that lives in a terminal</h2>
+	<p class="lead">Pi, the coding agent, runs on your machine (or a remote one), inside a terminal, driven by one person. It is minimal by design: a short system prompt, four tools, and an extension system that lets people mold it into what they need. More than five thousand extensions exist because of that malleability.</p>
+	<p>Pi stores a session as a transcript: a tree of entries, one JSON object per line, on disk. The process runs the agent loop: send the transcript to the model, run the tool calls it asks for, append the results, repeat until the model answers. The interesting state while this happens lives in memory: the half-streamed answer, the output of a running <code>bash</code>, the message you typed while the agent was busy, the retry it is about to attempt.</p>
+	<p>When the process dies, all of that is gone, and that is fine. You look at the transcript, see where it stopped, and type “continue”. <strong>The human is the recovery mechanism.</strong> Pi 1.0 is built around this, excels at it, and is not going to change.</p>
+
+	<h3>The assumptions a terminal agent gets to make</h3>
+	<p>It is worth spelling out what this design quietly relies on, because each of these is something Pi Durable had to give up:</p>
+	<table>
+		<tr><th style="width:38%">Assumption</th><th>Why it holds in a terminal</th></tr>
+		<tr><td>One process, one session, one human</td><td>You started it, you are watching it, nobody else types into it.</td></tr>
+		<tr><td>The conversation lives as long as the process</td><td>Sessions last minutes or hours; you close the laptop, you restart.</td></tr>
+		<tr><td>In-flight state can be volatile</td><td>If a tool call is lost, you will notice and redo it.</td></tr>
+		<tr><td>The transcript is the only state</td><td>There is no application around the agent that needs its own durable state.</td></tr>
+		<tr><td>The UI is in the same process</td><td>Events flow from the loop to the screen in memory.</td></tr>
+		<tr><td>The code is fixed while it runs</td><td>To change an extension you reload; a run in progress is your problem.</td></tr>
+	</table>
+	<p>None of these are flaws. They are what makes a terminal agent small. But every one of them breaks the moment the agent is not a program you are personally watching.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 2</div>
+	<h2>Agents leave the terminal</h2>
+	<p class="lead">Earendil wants this technology in front of everyone, in whatever form fits them: Lefos answers by email, a bot answers mentions in Slack, a triage bot labels GitHub issues, an agent runs inside a Cloudflare Durable Object behind a web page. None of these has a human watching the process.</p>
+	<p>The launch post names five requirements. Each one breaks one of the assumptions from the last chapter.</p>
+	<table>
+		<tr><th style="width:27%">Requirement</th><th style="width:33%">Breaks the assumption that…</th><th>What it forces</th></tr>
+		<tr><td><strong>Runs anywhere</strong></td><td>there is one machine with a file system and Node</td><td>Storage and execution behind small interfaces; no Node APIs in the core.</td></tr>
+		<tr><td><strong>Reachable from different surfaces</strong></td><td>the UI lives in the process</td><td>UIs attach to committed state, from anywhere, at any time.</td></tr>
+		<tr><td><strong>Infinitely long conversations</strong></td><td>a conversation fits in a process lifetime and in a context window</td><td>Bounded memory, compaction while working, nothing ever deleted.</td></tr>
+		<tr><td><strong>Survives catastrophic failures</strong></td><td>in-flight state can be volatile</td><td>Every step checkpointed; a new process continues the old one’s work.</td></tr>
+		<tr><td><strong>Multiple humans steer the same agents</strong></td><td>one person types into it</td><td>Durable queues, steering, exactly-once submission.</td></tr>
+	</table>
+	<p>There is a sixth requirement that is easy to miss: <strong>malleability</strong>. Pi’s soul is that you change it. An agent that runs for weeks still needs its code changed, and you cannot stop the world to do it.</p>
+
+	<h3>Who recovers when nobody is watching?</h3>
+	<p>This is the core of the “why”. In the terminal, a crash is an inconvenience. In a Slack bot, a crash in the middle of a tool call means a question that is never answered, a deploy that may or may not have happened, and a user who asked twice because the bot looked dead. When the container is redeployed, the laptop sleeps, or the machine runs out of memory, someone has to know what was in progress and what to do about it.</p>
+	<p>If the human is no longer the recovery mechanism, <strong>the harness has to be</strong>. That single sentence is the reason Pi Durable exists.</p>
+
+	<h3>Why not change Pi the coding agent?</h3>
+	<p>Because Pi works and people depend on it. Pi Durable is a separate, experimental package. It shares code with the coding agent (model access through <code>pi-ai</code>) and its principles (minimalism and malleability), but it is a framework for building <em>any</em> agentic application, coding agents included. It is also a place to try designs without disrupting Pi: lessons that prove themselves are meant to flow back.</p>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“A coding agent can rely on you to notice that it died. A Slack bot can’t. Pi Durable is what you build when nobody is watching the process.”</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 3</div>
+	<h2>The road to Pi Durable</h2>
+	<p class="lead">Pi Durable did not start as a database of tasks. It started as a much more modest idea: keep the session file, and add recovery notes to it. The git history shows the design moving, over about ten weeks, from one to the other.</p>
+
+	<h3>A timeline from the repository</h3>
+	<table>
+		<tr><th style="width:20%">When (2026)</th><th>What happened</th></tr>
+		<tr><td>28 July</td><td>A first “Durable AgentHarness” design document lands in <code>packages/agent</code>: about 2,100 lines. It keeps Pi’s session log and adds private <em>harness entries</em> to it.</td></tr>
+		<tr><td>August</td><td>Harness v2 and v3 implementations, designs for plugins and reload, sessions/branches/lanes, a “durable drive” runtime. Many design documents, many revisions.</td></tr>
+		<tr><td>Early September</td><td>A series of prototypes named <em>Pico</em>: a pico2 spike, a hardened pico3 kernel, then Pico5, built on Chord’s transactional replicated state.</td></tr>
+		<tr><td>18 September</td><td>Pico moves into its own package: <code>packages/durable</code>. Over the next two weeks: SQLite and JSONL storage, transactional sessions, documents, forks, the task runtime, the Harness, structured concurrency.</td></tr>
+		<tr><td>1 October</td><td>Shipped as experimental alongside Pi 1.0, together with a small coding agent and a vacation planner built on it.</td></tr>
+		<tr><td>Since</td><td>Durable code mode, nested tool calls, tool search, structured output, a stricter error model. About 150 commits touch the package.</td></tr>
+	</table>
+
+	<h3>Version one: a transcript with recovery notes</h3>
+	<p>The July design is a natural first idea. Pi already has an append-only session log. So: write extra, private records into the same log as you go: “operation started”, “tool started”, “message queued”. They are never shown to the model and never part of the tree. After a crash, a recovery procedure reads the end of the log, works out how far the run got, and continues. Its central invariant reads:</p>
+	<blockquote><p>Session entries define what the conversation is. Harness entries define what the harness did, in what order.</p></blockquote>
+	<p>It also had to say what it could not do: at most one operation per session at a time, hooks never re-run after a crash, provider streams never persisted.</p>
+
+	<h3>Where it ended up: a database of records</h3>
+	<p>The specification that ships today opens with a different core rule:</p>
+	<blockquote><p>A Session atomically commits immutable entries, full task records, and Chord-tracked documents. Only committed state is observable.</p></blockquote>
+	<p>Read the two side by side and you can see the shift. (This is an interpretation, but the documents support it.)</p>
+	<table>
+		<tr><th style="width:30%"></th><th style="width:35%">July: log plus recovery notes</th><th>October: Pi Durable</th></tr>
+		<tr><td>Source of truth</td><td>The transcript, with orchestration facts beside it</td><td>Conversations, entries, tasks, submissions and documents, all committed together</td></tr>
+		<tr><td>Recovery</td><td>A procedure that reads the log and reconstructs</td><td>Not special: running tasks become pending, the scheduler continues</td></tr>
+		<tr><td>Concurrency</td><td>One operation per session</td><td>Any number of conversations and tasks, in one ownership tree</td></tr>
+		<tr><td>In-flight state</td><td>Volatile; partial streams never persisted</td><td>Committed: partials and tool output are durable documents</td></tr>
+		<tr><td>UI model</td><td>Snapshot plus live events</td><td>Snapshot plus exact operations of each commit</td></tr>
+		<tr><td>Application state</td><td>Not addressed</td><td>Typed documents, committed with the transcript</td></tr>
+	</table>
+	<p>The lesson is the most interesting thing to say about the history in a talk: <strong>recovery stopped being a feature and became a consequence</strong>. If every unit of work is a durable state machine and nothing is visible until it is stored, there is nothing to reconstruct. A new process simply has the same state the old one had.</p>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>“Our first design was a transcript with recovery notes in the margin. The design we shipped is a small database where the transcript is just one table, and every piece of work is a row that knows where it was.”</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 4</div>
+	<h2>A vocabulary for harnesses</h2>
+	<p class="lead">Everybody has their own definition of “harness”. Earendil’s earlier post compared it to a climbing harness: it holds you safely, connects you to ropes and tools, and you adapt it to the climb. Pi Durable needs a sharper definition, because it is a harness for building harnesses.</p>
+	<blockquote><p>A harness is storage plus the machinery needed to run one or more conversations with large language models in parallel. It provides the tools those models call, and the execution environments the tools run in.</p></blockquote>
+	<p>Six words carry the rest of this book:</p>
+	<table>
+		<tr><th style="width:24%">Word</th><th>Meaning</th></tr>
+		<tr><td><strong>Conversation</strong></td><td>An interaction between you and an agent, recorded as a transcript of immutable entries.</td></tr>
+		<tr><td><strong>Agent</strong></td><td>The model together with its settings (thinking level, instructions) and the tools it can call. Stored per conversation.</td></tr>
+		<tr><td><strong>Tool</strong></td><td>Something the model can call. Each call is durable work of its own.</td></tr>
+		<tr><td><strong>Execution environment</strong></td><td>Where tools touch files and processes: your laptop, a remote VM, a container, an in-memory sandbox.</td></tr>
+		<tr><td><strong>Task</strong></td><td>Everything the harness runs, from calling the model to executing a tool, is a task: a durable state machine.</td></tr>
+		<tr><td><strong>Extension</strong></td><td>A named bundle of prompt sections, tools, hooks and tasks. Conversations select extensions by name.</td></tr>
+	</table>
+	<figure>
+		<svg width="520" height="300" viewBox="0 0 520 300">
+			<!-- clients -->
+			<rect class="boxq" x="20" y="10" width="480" height="44" rx="4"/>
+			<text class="ts" x="30" y="25">clients attach to committed state</text>
+			<rect class="box" x="40" y="30" width="80" height="18" rx="3"/><text class="ts" x="80" y="43" text-anchor="middle">TUI</text>
+			<rect class="box" x="130" y="30" width="80" height="18" rx="3"/><text class="ts" x="170" y="43" text-anchor="middle">Slack</text>
+			<rect class="box" x="220" y="30" width="80" height="18" rx="3"/><text class="ts" x="260" y="43" text-anchor="middle">Web page</text>
+			<rect class="box" x="310" y="30" width="80" height="18" rx="3"/><text class="ts" x="350" y="43" text-anchor="middle">Email</text>
+			<rect class="box" x="400" y="30" width="80" height="18" rx="3"/><text class="ts" x="440" y="43" text-anchor="middle">Another agent</text>
+			<!-- harness -->
+			<rect class="boxa" x="20" y="70" width="350" height="130" rx="4"/>
+			<text class="tb" x="30" y="88">Harness</text>
+			<rect class="box" x="35" y="98" width="100" height="40" rx="3"/><text class="t" x="85" y="115" text-anchor="middle">Conversations</text><text class="ts" x="85" y="129" text-anchor="middle">transcripts</text>
+			<rect class="box" x="145" y="98" width="100" height="40" rx="3"/><text class="t" x="195" y="115" text-anchor="middle">Scheduler</text><text class="ts" x="195" y="129" text-anchor="middle">runs tasks</text>
+			<rect class="box" x="255" y="98" width="100" height="40" rx="3"/><text class="t" x="305" y="115" text-anchor="middle">Registry</text><text class="ts" x="305" y="129" text-anchor="middle">extensions</text>
+			<rect class="boxd" x="35" y="148" width="320" height="40" rx="3"/><text class="tw" x="195" y="165" text-anchor="middle">Session: one line of atomic commits</text><text class="ts" x="195" y="180" text-anchor="middle" style="fill:#cfd9ea">nothing is visible before it is stored</text>
+			<!-- side -->
+			<rect class="box" x="390" y="70" width="110" height="58" rx="4"/><text class="tb" x="445" y="92" text-anchor="middle">Models</text><text class="ts" x="445" y="108" text-anchor="middle">via pi-ai</text><text class="ts" x="445" y="120" text-anchor="middle">any provider</text>
+			<rect class="box" x="390" y="142" width="110" height="58" rx="4"/><text class="tb" x="445" y="164" text-anchor="middle">Environments</text><text class="ts" x="445" y="180" text-anchor="middle">where tools run</text><text class="ts" x="445" y="192" text-anchor="middle">local, VM, container</text>
+			<!-- storage -->
+			<rect class="box" x="20" y="222" width="480" height="62" rx="4"/>
+			<text class="tb" x="30" y="240">Storage</text>
+			<text class="ts" x="30" y="256">conversations · entries · tasks · submissions · documents</text>
+			<text class="ts" x="30" y="272">Memory · SQLite · JSONL · Cloudflare Durable Object · your own</text>
+			<!-- arrows -->
+			<line class="line" x1="195" y1="54" x2="195" y2="70"/>
+			<line class="line" x1="195" y1="200" x2="195" y2="222"/>
+			<line class="line" x1="370" y1="99" x2="390" y2="99"/>
+			<line class="line" x1="370" y1="171" x2="390" y2="171"/>
+		</svg>
+		<figcaption>Figure 4.1 · The pieces. Everything between the clients and the storage is replaceable; the only fixed point is that all state goes through one line of commits.</figcaption>
+	</figure>
+	<p>Like everything in Pi, Pi Durable is meant to be understood by your agent. At launch the source, without tests, was about 15,000 lines (about 150,000 tokens for GPT, 250,000 for Claude) and it has grown since. An agent building on it rarely needs all of it; the storage backends alone are 3,000 lines it can usually skip.</p>
+</section>

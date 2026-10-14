@@ -1,0 +1,154 @@
+<section class="part">
+	<div class="kicker">Part III</div>
+	<h1>Seeing it work</h1>
+	<p>Three scenarios in slow motion. Each is told twice: what a user sees, and what is in storage. The second telling is the material for a demo that explains instead of just showing.</p>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 17</div>
+	<h2>Pulling the plug: a crash, commit by commit</h2>
+	<p class="lead">A Slack bot built on Pi Durable gets a message. Halfway through the work, its container is redeployed. This chapter follows every commit, then the restart, then the end of the story.</p>
+
+	<h3>The setup</h3>
+	<p>Someone writes in a channel: <em>“@agent fix the flaky login test”</em>. The Slack integration submits it with the Slack event ID as <code>requestId</code>. The agent has two relevant tools: <code>search_issues</code>, which only reads and is marked replay safe, and <code>bash</code>, which is not (running a command twice is not something the harness will decide on its own).</p>
+
+	<h3>Act one: the work</h3>
+	<table class="long">
+		<tr><th style="width:7%">#</th><th style="width:30%">What happens</th><th>What the commit writes</th></tr>
+		<tr><td>1</td><td>Message admitted</td><td>Submission S1 (requestId <code>Ev042</code>). Entry 1 <code>pi.user</code>. Task T1 <code>pi.generation</code>, pending. <code>pi.live.run</code> = T1 answering S1.</td></tr>
+		<tr><td>2</td><td>Scheduler picks T1</td><td>T1 pending → running.</td></tr>
+		<tr><td>3</td><td>T1 prepares</td><td>Entry 2 <code>pi.system</code> (prompt sections and tools). T1 checkpoint → <em>request</em>, model pinned, cutoff entry 2.</td></tr>
+		<tr><td>4–9</td><td>Model streams</td><td><code>pi.live.generation</code> partial, every ~100 ms. Every attached UI shows tokens.</td></tr>
+		<tr><td>10</td><td>Model asks for two tools</td><td>Entry 3 <code>pi.assistant</code> with two calls. Tasks T2 (<code>search_issues</code>) and T3 (<code>bash: npm test</code>), owned by T1. T1 → waiting on T2, T3. <code>pi.live.tools</code> slots.</td></tr>
+		<tr><td>11</td><td>T2 records intent</td><td>T2 checkpoint → <em>execute</em>, arguments, replay safe. Slot running.</td></tr>
+		<tr><td>12</td><td>T3 records intent</td><td>T3 checkpoint → <em>execute</em>, <code>npm test</code>, replay unsafe. Slot running.</td></tr>
+		<tr><td>13–20</td><td>Tests print output</td><td>T3’s slot output: “running 214 tests… 120 passed…”</td></tr>
+		<tr><td>21</td><td>Search finishes</td><td>Entry 4 <code>pi.tool-result</code>. T2 terminal, completed.</td></tr>
+		<tr><td>22</td><td>Second person replies, as a steer: <em>“check the staging logs first”</em></td><td>Submission S2, mode steer, queued in <code>pi.inbox</code>. (The run is busy; it waits for a boundary.)</td></tr>
+	</table>
+	<div class="box warn">
+		<span class="label">Kill -9</span>
+		<p>The container is redeployed. The process is gone, mid <code>npm test</code>. The Slack integration never got an answer, and its webhook will be delivered again.</p>
+	</div>
+
+	<h3>What is on disk at the moment of the crash</h3>
+	<figure>
+		<svg width="520" height="215" viewBox="0 0 520 215">
+			<rect class="box" x="10" y="10" width="245" height="95" rx="4"/>
+			<text class="tb" x="20" y="28">Entries</text>
+			<text class="mono" x="20" y="46">1 pi.user       fix the flaky login test</text>
+			<text class="mono" x="20" y="60">2 pi.system     sections, tools</text>
+			<text class="mono" x="20" y="74">3 pi.assistant  calls: search, bash</text>
+			<text class="mono" x="20" y="88">4 pi.tool-result  search: 3 issues</text>
+
+			<rect class="box" x="265" y="10" width="245" height="95" rx="4"/>
+			<text class="tb" x="275" y="28">Tasks</text>
+			<text class="mono" x="275" y="46">T1 generation  waiting on T2,T3</text>
+			<text class="mono" x="275" y="60">T2 tool search terminal</text>
+			<text class="mono" x="275" y="74" style="fill:#b5651d">T3 tool bash   running · execute</text>
+			<text class="mono" x="275" y="88">              npm test, unsafe</text>
+
+			<rect class="box" x="10" y="115" width="245" height="90" rx="4"/>
+			<text class="tb" x="20" y="133">Submissions</text>
+			<text class="mono" x="20" y="151">S1 input  placed  (Ev042)</text>
+			<text class="mono" x="20" y="165">S2 steer  queued</text>
+
+			<rect class="boxa" x="265" y="115" width="245" height="90" rx="4"/>
+			<text class="tb" x="275" y="133">Documents</text>
+			<text class="mono" x="275" y="151">pi.live.run   T1, S1</text>
+			<text class="mono" x="275" y="165">pi.live.tools bash: “120 passed…”</text>
+			<text class="mono" x="275" y="179">pi.inbox      [S2 steer]</text>
+			<text class="mono" x="275" y="193">pi.usage      1 request</text>
+		</svg>
+		<figcaption>Figure 17.1 · Everything a new process needs. Note what is not there: no recovery log. This is simply the current state.</figcaption>
+	</figure>
+
+	<h3>Act two: a new process</h3>
+	<table class="long">
+		<tr><th style="width:7%">#</th><th style="width:30%">What happens</th><th>What the commit writes</th></tr>
+		<tr><td>R1</td><td>Harness opens</td><td>Reconciliation: T3 running → pending. T1 stays waiting. Nothing runs yet.</td></tr>
+		<tr><td>R2</td><td>Scheduling starts; T3 reserved</td><td>T3 → running, in phase <em>execute</em>. This phase is only ever reached by recovery.</td></tr>
+		<tr><td>R3</td><td>T3 decides</td><td><code>bash</code> is not replay safe, so it does not run again. Entry 5 <code>pi.tool-result</code>, error: “Tool bash was interrupted and may have partially run”, with the output stored so far. T3 terminal, failed.</td></tr>
+		<tr><td>R4</td><td>T1 wakes, turn boundary</td><td>Steer S2 placed as entry 6 <code>pi.user</code>. Task T4, the next generation, gets the run.</td></tr>
+		<tr><td>R5…</td><td>T4 requests</td><td>The model sees: the request, its own tool calls, the search result, the interrupted test run with its partial output, and the steer. It decides what to do: read the staging logs, then rerun the tests.</td></tr>
+		<tr><td>…</td><td>Webhook redelivered</td><td>Submit with requestId <code>Ev042</code> returns S1. No second question.</td></tr>
+		<tr><td>end</td><td>Final answer</td><td>Entry <code>pi.assistant</code>. S1 done. <code>pi.live.run</code> cleared. Slack gets one answer.</td></tr>
+	</table>
+
+	<h3>What to notice</h3>
+	<ul>
+		<li><strong>There was no recovery code.</strong> Reopen moved one row from running to pending. Everything else is the ordinary machinery: a task in a phase, a boundary, a new generation.</li>
+		<li><strong>The harness did not guess.</strong> It did not rerun <code>npm test</code> on its own, and it did not pretend the test run finished. It told the model exactly what is known.</li>
+		<li><strong>The second person was not lost.</strong> The steer was durable before the crash and placed at the first boundary after it.</li>
+		<li><strong>The search was not repeated.</strong> It had finished; its result was in the transcript. Had it been interrupted too, it would simply have run again, because it is marked safe.</li>
+		<li><strong>Slack sees one answer.</strong> The request ID made the retried webhook a no-op.</li>
+	</ul>
+	<div class="box talk">
+		<span class="label">For the talk</span>
+		<p>This chapter is the best candidate for the demo. Its shape is: show the work as rows appearing, pull the plug, show that the rows are still there, start a new process, and show that exactly one row changes before work continues.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 18</div>
+	<h2>The vacation planner, underneath</h2>
+	<p class="lead">The launch post showed a vacation planner: about 1,300 lines of TypeScript, most of them a TUI borrowed from the coding agent. Its storyline has eight beats. Here is each, with what is happening underneath.</p>
+	<table class="long">
+		<tr><th style="width:5%">#</th><th style="width:35%">What you see</th><th>Underneath</th></tr>
+		<tr><td>1</td><td>“Plan a weekend in Vienna for two. Hand the research to a subagent.”</td><td>An ordinary submission and generation. The model calls the <code>research</code> tool.</td></tr>
+		<tr><td>2</td><td>A subagent runs three searches in parallel: weather, museums, trains. Each shows in the task panel.</td><td><code>research</code> creates a <em>background</em> task owned by the main conversation; that task owns a new subagent conversation and submits the request to it with request ID <code>research:&lt;task&gt;</code>. The tool returns at once. The subagent’s model calls <code>search</code> three times: three <code>pi.tool</code> tasks owned by its generation. The searches are canned and take 6, 10 and 30 seconds.</td></tr>
+		<tr><td>3</td><td>Meanwhile, the main agent is free to chat.</td><td>The research task is background: the main conversation is idle, so new input starts a new run there. The two conversations do not block each other.</td></tr>
+		<tr><td>4</td><td>The process dies. Weather and museums are done, trains is not.</td><td>On disk: two tool tasks terminal with results, one running in <em>execute</em>. The subagent’s generation waiting. The research task waiting for the subagent’s answer.</td></tr>
+		<tr><td>5</td><td>Restart with <code>--continue</code>. Only trains runs again.</td><td>Trains: running → pending → reserved in <em>execute</em>. <code>search</code> is replay safe, so it executes again with the stored arguments. Weather and museums are untouched.</td></tr>
+		<tr><td>6</td><td>Switch to the subagent and steer it.</td><td>The subagent is a conversation like any other. A steer goes into its inbox and is placed at its next boundary.</td></tr>
+		<tr><td>7</td><td>Back in main: ask, compact, and steer, all while it works.</td><td>A manual compaction is a task in the main conversation; it summarizes while the run continues, and its summary is placed at the next boundary.</td></tr>
+		<tr><td>8</td><td>The report arrives as a message; main turns it into a plan.</td><td>The research task reads the subagent’s answer and submits it to the main conversation as a follow-up, with its own request ID, so a restart never posts the report twice.</td></tr>
+	</table>
+	<p>Two things make this story good for a talk. First, the crash is natural: one search is slow on purpose, so there is a moment where some work is done and some is not. Second, everything in it is a conversation or a task, so the task panel shows the architecture directly.</p>
+	<div class="box warn">
+		<span class="label">Availability</span>
+		<p>The vacation planner and the small durable coding agent lived in <code>packages/coding-agent/src/experimental</code>. They are in the tags v1.0.0 through v1.1.0, and were removed from main on 12 October (commit <code>7472cda0d</code>, together with the experimental server stack). v1.2.0 does not include them, and the launch post’s links to them now point at nothing on main. To record them, check out v1.1.0.</p>
+	</div>
+</section>
+
+<section class="chapter">
+	<div class="kicker">Chapter 19</div>
+	<h2>Not just for models: a split payment</h2>
+	<p class="lead">The task machinery is not specific to language models. The launch post makes that point with a checkout that splits the bill across several cards. It is the clearest illustration of ownership, waiting and bottom-up cleanup.</p>
+
+	<h3>Two task types</h3>
+	<ul>
+		<li><strong>Payment</strong> has one phase, <em>charge</em>: charge one card with the idempotency key <code>payment-&lt;task id&gt;</code>, then commit the receipt or the decline as its outcome. Its abort handler refunds by the same key.</li>
+		<li><strong>Checkout</strong> has two phases. <em>pay</em> creates one Payment per card, owned by the checkout, and commits “wait for all of them, fail fast”. <em>decide</em> reads their outcomes and commits “order placed” or “a payment failed”.</li>
+	</ul>
+	<p>An agent starts a checkout with a tool. The checkout is owned by that tool call.</p>
+
+	<h3>Four things that can happen</h3>
+	<table>
+		<tr><th style="width:24%">Scenario</th><th>What the tree does</th></tr>
+		<tr><td>All four cards go through</td><td>Each payment completes. The checkout, which ran no code while it waited, resumes in <em>decide</em>: placed.</td></tr>
+		<tr><td>One card is declined</td><td>That payment fails. <em>failFast</em> marks the others that are still in flight for abort (here: all three). Each runs its own abort handler: a refund. When all four are terminal, the checkout resumes and reads <code>[aborted, failed, aborted, aborted]</code>.</td></tr>
+		<tr><td>The user presses Esc</td><td>Abort flows down from the conversation, through the generation and the tool call, to the checkout, to the payments. Cleanup runs from the bottom: payments refund first, then the checkout’s abort handler sees their final outcomes.</td></tr>
+		<tr><td>The process dies mid-payment</td><td>The payments still in <em>charge</em> become pending and charge again, with the same key, so the bank charges once. The checkout is still waiting and resumes when they are done.</td></tr>
+	</table>
+	<p>Notice that “refund on cancel” was written once, in the payment’s abort handler, at the level that did the effect. Nobody above it needs to know how to undo a charge.</p>
+	<figure>
+		<svg width="520" height="150" viewBox="0 0 520 150">
+			<rect class="box" x="10" y="10" width="120" height="28" rx="3"/><text class="mono" x="70" y="28" text-anchor="middle">tool: checkout</text>
+			<rect class="boxa" x="160" y="10" width="150" height="28" rx="3"/><text class="mono" x="235" y="28" text-anchor="middle">Checkout · waiting</text>
+			<line class="line" x1="130" y1="24" x2="160" y2="24"/>
+			<rect class="box" x="30" y="80" width="100" height="28" rx="3"/><text class="mono" x="80" y="98" text-anchor="middle">card A …</text>
+			<rect class="boxw" x="150" y="80" width="100" height="28" rx="3"/><text class="mono" x="200" y="98" text-anchor="middle">card B ✗</text>
+			<rect class="box" x="270" y="80" width="100" height="28" rx="3"/><text class="mono" x="320" y="98" text-anchor="middle">card C …</text>
+			<rect class="box" x="390" y="80" width="100" height="28" rx="3"/><text class="mono" x="440" y="98" text-anchor="middle">card D …</text>
+			<path class="line" d="M235 38 C 235 60, 80 55, 80 80"/><line class="line" x1="215" y1="38" x2="200" y2="80"/><path class="line" d="M250 38 C 260 60, 320 55, 320 80"/><path class="line" d="M270 38 C 290 55, 440 55, 440 80"/>
+			<path class="crash" d="M250 94 L270 94"/>
+			<text class="ts" x="260" y="130" text-anchor="middle">B declines → failFast aborts A, C, D → each refunds itself → Checkout resumes in “decide”</text>
+		</svg>
+		<figcaption>Figure 19.1 · A checkout that owns four payments.</figcaption>
+	</figure>
+	<div class="box warn">
+		<span class="label">A subtlety worth knowing for Q&amp;A</span>
+		<p><em>failFast</em> aborts only the payments that are still live. A payment that already <em>completed</em> before another was declined is not aborted, so its abort handler does not refund it. In the example in <code>test/examples/24-child-tasks.ts</code> the expired card is declined at once, before any other charge completes, so all three others are refunded. A production checkout would refund completed payments in its <em>decide</em> phase. The machinery gives you the outcomes; the compensation policy is still yours.</p>
+	</div>
+</section>

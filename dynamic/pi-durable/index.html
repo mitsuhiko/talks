@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Pi Durable</title>
+    <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.1/client/standalone.js"></script>
+    <link rel="stylesheet" href="./assets/asciinema/asciinema-player.css" />
+    <script src="./assets/asciinema/asciinema-player.min.js"></script>
+    <style>
+      /* Fonts of earendil.com: Plantin Now for text, Commit Mono for everything monospaced. */
+      @font-face { font-family: "PlantinNow"; src: url("./assets/fonts/PlantinNowVariable-Upright.woff2") format("woff2"); font-weight: 200 800; font-style: normal; }
+      @font-face { font-family: "PlantinNow"; src: url("./assets/fonts/PlantinNowVariable-Italic.woff2") format("woff2"); font-weight: 200 800; font-style: italic; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-400-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-400-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-700-Regular.woff2") format("woff2"); font-weight: 700; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-700-Italic.woff2") format("woff2"); font-weight: 700; font-style: italic; }
+
+      /*
+       * The day theme of earendil.com, in OKLCH. Ink and paper are the site's #353431 and #faf9f6.
+       * Three quiet accents share one lightness and a low chroma, so they sit in the warm grays
+       * without shouting; every tint, rule, and wash is derived from them with relative colors.
+       */
+      :root {
+        --ink: oklch(0.335 0.005 85);
+        --paper: oklch(0.983 0.004 95);
+        --sea: oklch(0.5 0.055 240);
+        --moss: oklch(0.52 0.06 150);
+        --ember: oklch(0.58 0.095 55);
+
+        --ink-soft: oklch(from var(--ink) l c h / 0.72);
+        --ink-muted: oklch(from var(--ink) l c h / 0.58);
+        --ink-faint: oklch(from var(--ink) l c h / 0.38);
+        --rule: oklch(from var(--ink) l c h / 0.18);
+        --rule-soft: oklch(from var(--ink) l c h / 0.1);
+        --surface: oklch(from var(--paper) calc(l + 0.012) c h / 0.86);
+        --sea-tint: oklch(from var(--sea) 0.935 calc(c * 0.42) h);
+        --moss-tint: oklch(from var(--moss) 0.935 calc(c * 0.42) h);
+        --ember-tint: oklch(from var(--ember) 0.935 calc(c * 0.4) h);
+        --sea-line: oklch(from var(--sea) calc(l + 0.12) calc(c * 0.8) h);
+
+        --serif: "PlantinNow", "Plantin MT Pro", Georgia, serif;
+        --mono: "Commit Mono", "SF Mono", Menlo, monospace;
+        --frame: 100px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 100%; height: 100%; overflow: hidden;
+        background: oklch(0.78 0.003 90); touch-action: none; overscroll-behavior: none;
+      }
+      #ocean { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      .deck {
+        width: 1920px; height: 1080px; position: absolute; top: 50%; left: 50%;
+        transform-origin: center center; color: var(--ink); font-family: var(--serif);
+      }
+
+      /* Site chrome: emblem top left, a mono label top right, mono footer. */
+      .chrome { position: absolute; inset: 0; pointer-events: none; z-index: 5; font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink); }
+      .chrome .emblem { position: absolute; left: var(--frame); top: 70px; width: 40px; }
+      .chrome .emblem path { fill: var(--ink); opacity: 0.85; }
+      .chrome .tr { position: absolute; right: var(--frame); top: 88px; }
+      .chrome .bl { position: absolute; left: var(--frame); bottom: 82px; }
+      .chrome .br { position: absolute; right: var(--frame); bottom: 82px; color: var(--ink-muted); }
+
+      .slide {
+        display: none; position: absolute; inset: 0; padding: 168px 160px 170px; isolation: isolate;
+      }
+      .slide.active { display: block; }
+      /* The paper veil of the site's content pages, opening onto the ocean at the edges. */
+      .slide.paper::before {
+        content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+        background: radial-gradient(ellipse 72% 115% at 50% 48%,
+          oklch(from var(--paper) l c h / 0.985) 0%, oklch(from var(--paper) l c h / 0.985) 50%,
+          oklch(from var(--paper) l c h / 0.95) 60%, oklch(from var(--paper) l c h / 0.6) 74%,
+          oklch(from var(--paper) l c h / 0.2) 88%, oklch(from var(--paper) l c h / 0) 100%);
+      }
+
+      .kicker { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 18px; }
+      h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; }
+      h2 { font-size: 70px; line-height: 1.08; font-style: italic; letter-spacing: -0.01em; text-wrap: balance; }
+      h3 { font-size: 36px; line-height: 1.2; font-weight: 600; }
+      p { margin: 0; }
+      b, strong { font-weight: 650; }
+      .u { text-decoration: underline dotted; text-decoration-thickness: 0.06em; text-underline-offset: 0.14em; }
+      .body { position: absolute; left: 160px; right: 160px; top: 300px; bottom: 150px; }
+      .mono { font-family: var(--mono); }
+
+      /* steps */
+      [data-step] { transition: opacity 0.5s ease, transform 0.5s ease, background-color 0.4s ease, border-color 0.4s ease; }
+      .fade[data-step]:not(.on) { opacity: 0; transform: translateY(12px); }
+      .swap[data-step]:not(.on) { opacity: 0; }
+      .only[data-step]:not(.on) { display: none; }
+
+      /* ── hero slides (title, closing): text above the horizon, like the home page ── */
+      .hero { text-align: center; }
+      .hero .stack { position: absolute; left: 160px; right: 160px; bottom: calc(1080px * 0.394309 + 54px); }
+      .hero h1 { font-size: 150px; line-height: 1; font-style: italic; letter-spacing: -0.015em; }
+      .hero .sub { font-size: 48px; line-height: 1.25; font-style: italic; color: var(--ink-soft); margin-top: 22px; }
+      .hero .meta { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin-top: 44px; }
+      .hero svg.commits { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); }
+      .commits .rail { stroke: var(--ink-faint); stroke-width: 1.5; }
+      .commits .dot { fill: var(--ink); opacity: 0; animation: dot 9s infinite; transform-box: fill-box; transform-origin: center; }
+      .commits .bolt { stroke: var(--ember); stroke-width: 3; fill: none; opacity: 0; animation: bolt 9s infinite; }
+      .commits .arc { stroke: var(--ink-muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 6; animation: arc 9s infinite; }
+      .commits text { font-family: var(--mono); font-size: 15px; text-transform: uppercase; fill: var(--ink-muted); }
+      .commits text.warn { fill: var(--ember); }
+      @keyframes dot { 0%, 4% { opacity: 0; transform: scale(0.4); } 8%, 92% { opacity: 0.9; transform: none; } 100% { opacity: 0; } }
+      @keyframes bolt { 0%, 36% { opacity: 0; } 38% { opacity: 1; } 40% { opacity: 0.2; } 42%, 92% { opacity: 1; } 100% { opacity: 0; } }
+      @keyframes arc { 0%, 46% { stroke-dashoffset: 400; opacity: 0; } 47% { opacity: 1; } 58%, 92% { stroke-dashoffset: 0; opacity: 1; } 100% { opacity: 0; } }
+      .hero .install { display: inline-block; margin-top: 40px; font-family: var(--mono); font-size: 25px; padding: 16px 26px; border-radius: 4px; background: var(--surface); border: 1px solid var(--rule); }
+      .hero .links { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin-top: 30px; display: flex; gap: 46px; justify-content: center; }
+
+      /* ── what it is ── */
+      .pillars { display: grid; grid-template-columns: 1fr 1fr; gap: 0 90px; }
+      .pillar { display: grid; grid-template-columns: 70px 1fr; gap: 28px; padding: 30px 0 34px; border-top: 1px solid var(--rule); }
+      .pillar .n { font-family: var(--mono); font-size: 21px; color: var(--ink-muted); padding-top: 12px; }
+      .pillar h3 { font-size: 46px; font-style: italic; font-weight: 400; }
+      .pillar p { font-size: 29px; line-height: 1.42; color: var(--ink-soft); margin-top: 10px; }
+      .pillar.now .n { color: var(--sea); }
+      .pillar.now h3 { text-decoration: underline dotted; text-decoration-thickness: 0.05em; text-underline-offset: 0.14em; }
+      .bottom-line { position: absolute; left: 0; right: 0; bottom: 0; font-size: 32px; font-style: italic; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 24px; }
+
+      /* ── why ── */
+      .why { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; }
+      .why .label { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 18px; }
+      .term { background: #111e2a; color: #c0c9e5; font-family: var(--mono); font-size: 24px; line-height: 1.6; padding: 26px 30px; border-radius: 4px; height: 290px; }
+      .term .dim { color: #6f86a3; } .term .amber { color: #fff09b; } .term .green { color: #7afde1; }
+      .chat { display: grid; gap: 14px; align-content: start; height: 290px; padding: 26px 30px; border-radius: 4px; background: var(--surface); border: 1px solid var(--rule); }
+      .msg { font-size: 28px; line-height: 1.35; }
+      .msg .who { font-family: var(--mono); font-size: 20px; text-transform: uppercase; color: var(--sea); margin-right: 12px; }
+      .msg.agent .who { color: var(--moss); }
+      .msg.event { font-family: var(--mono); font-size: 20px; text-transform: uppercase; color: var(--ember); }
+      .dots span { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--ink-faint); margin-right: 6px; animation: blink 1.2s infinite; }
+      .dots span:nth-child(2) { animation-delay: 0.2s; } .dots span:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+      .verdict { font-size: 29px; line-height: 1.4; color: var(--ink-soft); margin-top: 22px; }
+      .banner { margin-top: 50px; padding-top: 26px; border-top: 1px solid var(--rule); font-size: 46px; font-style: italic; text-align: center; }
+      .crash-flash.on .term, .crash-flash.on .chat { animation: flash 0.9s ease 1; }
+      @keyframes flash { 20% { box-shadow: 0 0 0 6px var(--ember-tint); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+      /* ── diagrams ── */
+      svg text { font-family: var(--mono); }
+      .d-box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.5; }
+      .d-sea { fill: var(--sea); } .d-moss { fill: var(--moss); } .d-ember { fill: var(--ember); }
+      .d-sea-tint { fill: var(--sea-tint); stroke: var(--sea); stroke-width: 1.5; }
+      .d-moss-tint { fill: var(--moss-tint); stroke: var(--moss); stroke-width: 1.5; }
+      .d-ember-tint { fill: var(--ember-tint); }
+      .d-line { stroke: var(--rule); stroke-width: 2; fill: none; }
+      .d-dash { stroke: var(--ink-muted); stroke-width: 2; fill: none; stroke-dasharray: 7 6; }
+      .d-t { fill: var(--ink); font-size: 22px; }
+      .d-t-up { fill: var(--ink); font-size: 20px; text-transform: uppercase; }
+      .d-t-muted { fill: var(--ink-muted); font-size: 18px; text-transform: uppercase; }
+      .d-t-paper { fill: var(--paper); font-size: 22px; text-transform: uppercase; }
+      .d-t-paper-soft { fill: oklch(from var(--paper) l c h / 0.75); font-size: 18px; }
+      .d-t-moss { fill: var(--moss); font-size: 18px; text-transform: uppercase; }
+      .d-t-ember { fill: var(--ember); font-size: 18px; text-transform: uppercase; }
+      .d-t-sea { fill: var(--sea); font-size: 18px; text-transform: uppercase; }
+      .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 50px; margin-top: 36px; }
+      .fact { border-top: 1px solid var(--rule); padding-top: 20px; font-size: 29px; line-height: 1.4; color: var(--ink-soft); }
+      .fact b { display: block; font-style: italic; font-weight: 400; font-size: 38px; color: var(--ink); margin-bottom: 6px; }
+
+      /* ── code: the site's code blocks, rules above and below, no box ── */
+      .code-layout { display: grid; grid-template-columns: 1060px 1fr; gap: 70px; align-items: start; }
+      pre.code {
+        margin: 0; font-family: var(--mono); font-size: 24px; line-height: 1.6; color: var(--ink);
+        border-block: 1px solid var(--rule); padding: 22px 0; white-space: pre;
+      }
+      pre.code.small { font-size: 20px; line-height: 1.55; }
+      pre.code.tiny { font-size: 18px; line-height: 1.5; }
+      pre.code.mid { font-size: 22px; line-height: 1.55; }
+      pre.code .ln { display: block; padding: 0 22px; transition: opacity 0.35s ease, background-color 0.35s ease; }
+      pre.code.focus .ln { opacity: 0.3; }
+      pre.code.focus .ln.hl { opacity: 1; background: var(--sea-tint); box-shadow: inset 3px 0 0 var(--sea); }
+      .tk-k { font-weight: 700; }
+      .tk-s { color: var(--moss); }
+      .tk-c { color: var(--ink-muted); font-style: italic; }
+      .tk-n { color: var(--ember); }
+      .tk-f { color: var(--sea); }
+      .tk-t { font-weight: 700; }
+      .notes-col { display: grid; gap: 4px; border-top: 1px solid var(--rule); }
+      .note { font-size: 28px; line-height: 1.4; color: var(--ink-muted); padding: 18px 0 18px 52px; position: relative; border-bottom: 1px solid var(--rule-soft); }
+      .note::before { content: attr(data-step); position: absolute; left: 0; top: 22px; font-family: var(--mono); font-size: 20px; color: var(--ink-faint); }
+      .note.now { color: var(--ink); }
+      .note.now::before { content: ""; width: 24px; height: 24px; top: 24px; background: url("./assets/logos/cursor-dark.svg") center / contain no-repeat; animation: spin 1.15s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .note b { font-style: italic; font-weight: 400; color: var(--ink); }
+      .note code, .lane code { font-family: var(--mono); font-size: 0.82em; }
+
+      /* ── storage x-ray ── */
+      .xray { display: grid; grid-template-columns: 540px 1fr; gap: 64px; }
+      .pane-label { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 14px; }
+      .bubbles { display: grid; gap: 14px; align-content: start; }
+      .bubble { font-size: 27px; line-height: 1.38; padding: 14px 20px; border-radius: 4px; background: var(--surface); border: 1px solid var(--rule); }
+      .bubble.user { background: var(--ink); color: var(--paper); border-color: var(--ink); justify-self: end; max-width: 440px; }
+      .bubble .tool { display: inline-block; font-family: var(--mono); font-size: 19px; padding: 2px 10px; border-radius: 3px; background: var(--rule-soft); margin: 4px 8px 4px 0; }
+      .tables { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 36px; }
+      .tbl { border-top: 1px solid var(--rule); padding-top: 10px; }
+      .tbl.wide { grid-column: span 2; }
+      .tbl h4 { margin: 0 0 6px; font-family: var(--mono); font-weight: 400; font-size: 18px; text-transform: uppercase; color: var(--ink-muted); }
+      .row { display: grid; grid-template-columns: 50px 1fr auto; gap: 10px; align-items: center; font-family: var(--mono); font-size: 20px; line-height: 1.3; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); min-height: 46px; }
+      .row .id { color: var(--ink-faint); }
+      .row .what { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .what i { font-style: normal; color: var(--ink-muted); }
+      .slot { position: relative; width: 150px; height: 30px; }
+      .chip { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 3px; font-family: var(--mono); font-size: 16px; text-transform: uppercase; }
+      .chip.pending { background: var(--rule-soft); color: var(--ink-muted); }
+      .chip.running { background: var(--sea); color: var(--paper); }
+      .chip.waiting { background: var(--sea-tint); color: var(--sea); box-shadow: inset 0 0 0 1.5px var(--sea); }
+      .chip.done { background: var(--moss-tint); color: var(--moss); }
+      .chip.failed, .chip.queued { background: var(--ember-tint); color: var(--ember); }
+      .chip.placed { background: var(--sea-tint); color: var(--sea); }
+      .live { font-family: var(--mono); font-size: 20px; line-height: 1.5; color: var(--ink-soft); min-height: 92px; padding-top: 6px; }
+      .typing { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: bottom; width: 0; }
+      .on .typing, .typing.on { animation: type 2.6s steps(38) forwards; }
+      @keyframes type { to { width: 38ch; } }
+      .bubble .typing { font-family: var(--serif); }
+      .on .bubble .typing, .bubble.on .typing { animation-name: type-serif; }
+      @keyframes type-serif { to { width: 30ch; } }
+      .caption { margin-top: 24px; font-size: 28px; color: var(--ink-soft); }
+      .caption b { font-style: italic; font-weight: 400; color: var(--ink); }
+      .newrow.on { animation: arrive 1s ease 1; }
+      @keyframes arrive { 0% { background: var(--moss-tint); } 100% { background: transparent; } }
+
+      /* ── crash ── */
+      .crash { display: grid; grid-template-columns: 640px 1fr; gap: 56px; }
+      .proc { border-radius: 4px; padding: 20px 24px; position: relative; margin-bottom: 18px; border: 1.5px solid var(--sea); background: var(--surface); }
+      .proc h3 { font-size: 34px; font-style: italic; font-weight: 400; }
+      .proc p { font-family: var(--mono); font-size: 18px; text-transform: uppercase; color: var(--ink-muted); margin-top: 6px; }
+      .proc .pulse { position: absolute; right: 24px; top: 26px; width: 14px; height: 14px; border-radius: 50%; background: var(--moss); animation: pulse 1.4s infinite; }
+      @keyframes pulse { 0% { box-shadow: 0 0 0 0 oklch(from var(--moss) l c h / 0.5); } 100% { box-shadow: 0 0 0 14px oklch(from var(--moss) l c h / 0); } }
+      .proc.dead { border-color: var(--ember); background: var(--ember-tint); }
+      .proc .x { position: absolute; inset: 0; display: grid; place-items: center end; padding-right: 64px; font-family: var(--mono); font-size: 34px; text-transform: uppercase; color: var(--ember); opacity: 0; letter-spacing: 0.1em; }
+      .proc.dead .x { opacity: 1; }
+      .proc.dead .pulse { background: var(--ember); animation: none; }
+      .proc.dead h3, .proc.dead p { opacity: 0.3; }
+      .still { transition: box-shadow 0.4s; }
+      .slide[data-at="1"] .still { box-shadow: inset 4px 0 0 var(--moss); padding-left: 14px; }
+
+      /* ── effect sandwich ── */
+      .sandwich { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+      .layer { display: grid; grid-template-columns: 56px 1fr; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--rule-soft); position: relative; font-size: 31px; font-style: italic; }
+      .layer .n { font-family: var(--mono); font-style: normal; font-size: 19px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--paper); }
+      .layer.intent .n { background: var(--sea); } .layer.effect .n { background: var(--ember); } .layer.outcome .n { background: var(--moss); }
+      .layer small { display: block; font-style: normal; font-family: var(--mono); font-size: 17px; text-transform: uppercase; color: var(--ink-muted); margin-top: 4px; }
+      .bolt-mark { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+      .bolt-mark path { fill: var(--ember); }
+      .lanes { display: grid; gap: 14px; margin-top: 22px; }
+      .lane { padding: 14px 20px; font-size: 27px; line-height: 1.38; color: var(--ink-soft); border-left: 3px solid var(--rule); }
+      .lane b { font-style: italic; font-weight: 400; color: var(--ink); }
+      .lane.safe { border-color: var(--moss); background: var(--moss-tint); } .lane.unsafe { border-color: var(--ember); background: var(--ember-tint); }
+
+      /* ── timeline ── */
+      .timeline { position: relative; padding-left: 44px; display: grid; gap: 22px; }
+      .timeline::before { content: ""; position: absolute; left: 9px; top: 12px; bottom: 12px; width: 1.5px; background: var(--rule); }
+      .tl { position: relative; font-size: 28px; line-height: 1.36; }
+      .tl::before { content: ""; position: absolute; left: -42px; top: 10px; width: 18px; height: 18px; border-radius: 50%; background: var(--sea); box-shadow: 0 0 0 5px var(--paper); }
+      .tl.bad::before { background: var(--ember); } .tl.good::before { background: var(--moss); }
+      .tl .when { display: block; font-family: var(--mono); font-size: 18px; text-transform: uppercase; color: var(--ink-muted); }
+      .tl .sleeping { display: inline-block; font-family: var(--mono); font-size: 18px; text-transform: uppercase; padding: 1px 10px; border-radius: 3px; background: var(--sea-tint); color: var(--sea); }
+      .tl.aside { font-size: 25px; color: var(--ink-soft); font-style: italic; }
+
+      .opline { font-family: var(--mono); font-size: 19px; color: var(--sea); background: var(--sea-tint); padding: 10px 14px; border-radius: 3px; margin-top: 16px; white-space: nowrap; overflow: hidden; }
+
+      /* ── benefits ── */
+      .benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .benefit { padding: 24px 0 28px; border-top: 1px solid var(--rule); }
+      .benefit .tag { font-family: var(--mono); font-size: 17px; text-transform: uppercase; color: var(--sea); }
+      .benefit.g .tag { color: var(--moss); } .benefit.w .tag { color: var(--ember); }
+      .benefit h3 { font-size: 38px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .benefit p { font-size: 26px; line-height: 1.4; color: var(--ink-soft); margin-top: 8px; }
+
+      /* ── demo ── */
+      .demo-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+      /* The demo slide shows only the terminal: no title, no corner chrome. */
+      .chrome { transition: opacity 0.3s ease; }
+      .deck.bare .chrome { opacity: 0; }
+      .asciinema-shell { display: inline-block; line-height: 0; border-radius: 4px; overflow: hidden; background: #111e2a; }
+      .asciinema-mount div.ap-wrapper { display: block; height: auto; }
+      .asciinema-mount div.ap-player { width: auto !important; height: auto !important; max-width: none !important; }
+      .ap-player.asciinema-player-theme-pi {
+        --term-color-foreground: #c0c9e5; --term-color-background: #111e2a;
+        --term-color-0: #000000; --term-color-1: #fc644d; --term-color-2: #7afde1; --term-color-3: #fff09b;
+        --term-color-4: #6c9bf5; --term-color-5: #ff4fa1; --term-color-6: #64e0ff; --term-color-7: #c0c9e5;
+        --term-color-8: #304b66; --term-color-9: #fc644d; --term-color-10: #7afde1; --term-color-11: #fff09b;
+        --term-color-12: #6c9bf5; --term-color-13: #ff4fa1; --term-color-14: #64e0ff; --term-color-15: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="ocean" aria-hidden="true"></canvas>
+    <div class="deck">
+      <div class="chrome" aria-hidden="true">
+        <svg class="emblem" viewBox="120 21 84 153"><path d="M202.89,123.89c.4,29.74-40.27,26.97-40.8,48.11h-.05c-.52-21.14-41.19-18.38-40.8-48.11,27.99,0,40.09-46.29,40.82-101.27.74,54.98,12.83,101.27,40.82,101.27h0Z" /></svg>
+        <span class="tr">Pi Durable</span>
+        <span class="bl">Earendil Inc.</span>
+        <span class="br" id="page-no"></span>
+      </div>
+
+      <!-- 1 COVER -->
+      <section class="slide hero" data-slide="1" data-notes="Pi Durable: a library for building agents that survive their process.&#10;• Armin Ronacher, Earendil.&#10;• Ten minutes: what it is, why we built it, what code against it looks like, and what you get for free.">
+        <svg class="commits" width="640" height="190" viewBox="0 0 640 190">
+          <line class="rail" x1="20" y1="90" x2="280" y2="90" /><line class="rail" x1="360" y1="90" x2="620" y2="90" />
+          <circle class="dot" cx="40" cy="90" r="8" style="animation-delay: 0s" />
+          <circle class="dot" cx="100" cy="90" r="8" style="animation-delay: 0.5s" />
+          <circle class="dot" cx="160" cy="90" r="8" style="animation-delay: 1s" />
+          <circle class="dot" cx="220" cy="90" r="8" style="animation-delay: 1.5s" />
+          <circle class="dot" cx="400" cy="90" r="8" style="animation-delay: 5.2s" />
+          <circle class="dot" cx="460" cy="90" r="8" style="animation-delay: 5.7s" />
+          <circle class="dot" cx="520" cy="90" r="8" style="animation-delay: 6.2s" />
+          <circle class="dot" cx="580" cy="90" r="8" style="animation-delay: 6.7s" />
+          <path class="bolt" d="M318 40 L332 84 L314 88 L336 140" />
+          <path class="arc" d="M220 112 C 270 180, 350 180, 400 112" />
+          <text x="40" y="58" text-anchor="middle">commit</text>
+          <text class="warn" x="325" y="26" text-anchor="middle">process dies</text>
+          <text x="400" y="58" text-anchor="middle">reopen</text>
+        </svg>
+        <div class="stack">
+          <h1>Pi Durable</h1>
+          <p class="sub">A library for building agents that survive their process.</p>
+          <p class="meta">Armin Ronacher · Earendil</p>
+        </div>
+      </section>
+
+      <!-- 2 WHAT IS IT -->
+      <section class="slide paper" data-slide="2" data-notes="What Pi Durable is, in four statements.&#10;• A library for building agents, in TypeScript. Not an app, not a hosted service. It runs anywhere there is JavaScript: Node, Bun, a Cloudflare Durable Object.&#10;• Focused on durability and scheduling: every model request and every tool call is a durable task with a checkpoint, and a scheduler runs them.&#10;• Single-player and multiplayer: one person in a terminal, or a Slack channel where many people talk to and steer the same agent.&#10;• It recovers and tracks state: kill the process at any moment, open the storage again, and it continues. Your app's state lives next to the transcript.">
+        <p class="kicker">What it is</p>
+        <h2>Pi Durable in four sentences</h2>
+        <div class="body" style="top: 310px">
+          <div class="pillars">
+            <div class="pillar fade" data-step="1"><span class="n">01</span><div><h3>A library for building agents</h3><p>TypeScript. Runs wherever JavaScript runs: Node, Bun, Cloudflare Durable Objects.</p></div></div>
+            <div class="pillar fade" data-step="2"><span class="n">02</span><div><h3>Durability and scheduling</h3><p>Every model request and tool call is a durable task with a checkpoint. A scheduler runs them.</p></div></div>
+            <div class="pillar fade" data-step="3"><span class="n">03</span><div><h3>Single-player and multiplayer</h3><p>One person in a terminal, or a whole Slack channel steering the same agent.</p></div></div>
+            <div class="pillar fade" data-step="4"><span class="n">04</span><div><h3>Recovers and tracks state</h3><p>Kill the process at any moment; a new one continues. Your state lives next to the transcript.</p></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 WHY -->
+      <section class="slide paper" data-slide="3" data-notes="Why we built it.&#10;• Pi in a terminal: when the process dies, you notice, look at the transcript, and type continue. You are the recovery mechanism, and that is fine.&#10;• Agents are leaving the terminal: Slack bots, email (Lefos), GitHub triage, agents in Durable Objects. Nobody watches those processes.&#10;• The container is redeployed in the middle of a tool call. The question is never answered, the deploy may or may not have happened, and people ask again because the bot looked dead.&#10;• If the human is not the recovery mechanism, the harness has to be.">
+        <p class="kicker">Why</p>
+        <h2>Somebody has to recover the agent</h2>
+        <div class="body" style="top: 310px">
+          <div class="why">
+            <div class="crash-flash" data-step="1">
+              <p class="label">Pi in your terminal</p>
+              <div class="term">
+                <div><span class="green">›</span> fix the flaky login test</div>
+                <div class="dim">● bash npm test …</div>
+                <div class="amber swap" data-step="1">✗ process died</div>
+                <div class="swap" data-step="2"><span class="green">›</span> continue</div>
+                <div class="dim swap" data-step="2">● picking up where it stopped</div>
+              </div>
+              <p class="verdict swap" data-step="2">You notice. You type “continue”. <i>You are the recovery mechanism.</i></p>
+            </div>
+            <div class="crash-flash" data-step="1">
+              <p class="label">An agent in Slack</p>
+              <div class="chat">
+                <div class="msg"><span class="who">ann</span>@agent why did the deploy fail?</div>
+                <div class="msg agent swap" data-step="0" data-until="1"><span class="who">agent</span><span class="dots"><span></span><span></span><span></span></span></div>
+                <div class="msg event swap" data-step="1">container redeployed mid tool call</div>
+                <div class="msg swap" data-step="2"><span class="who">ann</span>hello??</div>
+                <div class="msg swap" data-step="2"><span class="who">ann</span>@agent why did the deploy fail?</div>
+              </div>
+              <p class="verdict swap" data-step="2">Nobody notices. The answer is lost, the deploy may have happened, and people ask twice.</p>
+            </div>
+          </div>
+          <p class="banner fade" data-step="3">If the human isn’t the recovery mechanism, the harness has to be.</p>
+        </div>
+      </section>
+
+      <!-- 4 THE RULE -->
+      <section class="slide paper" data-slide="4" data-notes="The one rule everything follows: nothing is visible until it is stored.&#10;• Everybody who wants to change something, a user submitting, the model streaming, a tool printing output, goes through one line of atomic commits.&#10;• Streaming tokens and tool output are committed too, at most every 100 ms. There is no volatile path to the screen.&#10;• The screen is a window onto storage, not onto the process. So a crash loses at most the last 100 ms, and reopening the storage is all recovery needs.&#10;• And any number of screens can look through that window: that is where multiplayer comes from.">
+        <p class="kicker">The one rule</p>
+        <h2>Nothing is shown before it is stored</h2>
+        <div class="body" style="top: 300px">
+          <svg width="1600" height="400" viewBox="0 0 1600 400">
+            <defs>
+              <path id="in1" d="M250 60 C 380 60, 400 200, 540 200" /><path id="in2" d="M250 200 L 540 200" /><path id="in3" d="M250 340 C 380 340, 400 200, 540 200" />
+              <path id="mid" d="M860 200 L 1000 200" />
+              <path id="out1" d="M1180 200 C 1280 200, 1290 60, 1380 60" /><path id="out2" d="M1180 200 L 1380 200" /><path id="out3" d="M1180 200 C 1280 200, 1290 340, 1380 340" />
+            </defs>
+            <g class="d-line"><use href="#in1" /><use href="#in2" /><use href="#in3" /><use href="#mid" /><use href="#out1" /><use href="#out2" /><use href="#out3" /></g>
+            <rect class="d-box" x="20" y="30" width="230" height="60" rx="4" /><text class="d-t-up" x="135" y="67" text-anchor="middle">user submits</text>
+            <rect class="d-box" x="20" y="170" width="230" height="60" rx="4" /><text class="d-t-up" x="135" y="207" text-anchor="middle">model streams</text>
+            <rect class="d-box" x="20" y="310" width="230" height="60" rx="4" /><text class="d-t-up" x="135" y="347" text-anchor="middle">tool prints</text>
+            <g class="d-sea">
+              <circle r="8"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0s"><mpath href="#in1" /></animateMotion></circle>
+              <circle r="8"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.8s"><mpath href="#in2" /></animateMotion></circle>
+              <circle r="8"><animateMotion dur="2.4s" repeatCount="indefinite" begin="1.6s"><mpath href="#in3" /></animateMotion></circle>
+            </g>
+            <g class="d-moss">
+              <circle r="8"><animateMotion dur="0.8s" repeatCount="indefinite"><mpath href="#mid" /></animateMotion></circle>
+              <circle r="8"><animateMotion dur="1.6s" repeatCount="indefinite" begin="0.2s"><mpath href="#out1" /></animateMotion></circle>
+              <circle r="8"><animateMotion dur="1.6s" repeatCount="indefinite" begin="0.2s"><mpath href="#out2" /></animateMotion></circle>
+              <circle r="8"><animateMotion dur="1.6s" repeatCount="indefinite" begin="0.2s"><mpath href="#out3" /></animateMotion></circle>
+            </g>
+            <rect x="540" y="150" width="320" height="100" rx="4" style="fill: var(--ink)" /><text class="d-t-paper" x="700" y="194" text-anchor="middle">one line of commits</text><text class="d-t-paper-soft" x="700" y="226" text-anchor="middle">atomic, in order</text>
+            <rect class="d-moss-tint" x="1000" y="130" width="180" height="140" rx="4" /><ellipse cx="1090" cy="162" rx="58" ry="13" fill="none" stroke-width="1.5" style="stroke: var(--moss)" /><text class="d-t-moss" x="1090" y="222" text-anchor="middle" style="font-size: 22px">storage</text>
+            <text class="d-t-moss" x="1090" y="110" text-anchor="middle">shown only after the commit</text>
+            <rect class="d-sea-tint" x="1380" y="30" width="200" height="60" rx="4" /><text class="d-t-up" x="1480" y="67" text-anchor="middle">terminal</text>
+            <rect class="d-sea-tint" x="1380" y="170" width="200" height="60" rx="4" /><text class="d-t-up" x="1480" y="207" text-anchor="middle">Slack</text>
+            <rect class="d-sea-tint" x="1380" y="310" width="200" height="60" rx="4" /><text class="d-t-up" x="1480" y="347" text-anchor="middle">browser</text>
+          </svg>
+          <div class="facts">
+            <p class="fact fade" data-step="1"><b>One line of atomic commits</b>Transcript entries, tasks, and state change together, or not at all.</p>
+            <p class="fact fade" data-step="2"><b>Streaming is committed too</b>Tokens and tool output land in storage at most every 100 ms.</p>
+            <p class="fact fade" data-step="3"><b>So recovery is reopening</b>A crash loses at most 100 ms. The screen is a window onto storage, not onto the process.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 CODE: OPEN AND ASK -->
+      <section class="slide paper" data-slide="5" data-notes="What code against it looks like. This is the whole setup.&#10;• The registry holds the tools this process can run; CodingTools installs read, write, edit and bash.&#10;• A harness opens over a storage. SQLite here; JSONL, memory, or a Durable Object work the same way.&#10;• The root conversation is created on first open and is the same one after every restart.&#10;• submit durably admits the input. The requestId makes it exactly-once: submit it again and you get the same submission back.&#10;• wait resolves with the answer, even if the process that started the work died in between.">
+        <p class="kicker">Code</p>
+        <h2>Open a harness, ask a question</h2>
+        <div class="body">
+          <div class="code-layout">
+            <pre class="code mid" data-hl="1:1-2;2:4-8;3:9-11;4:13-15;5:16">const registry = createRegistry();
+registry.install(CodingTools); // read, write, edit, bash
+
+const harness = await Harness.open(
+  await openNodeSqliteStorage("./agent.sqlite"),
+  { models, registry, env },
+  context,
+);
+const root = await harness.root(context, {
+  agent: { model: { provider: "openai", modelId: "gpt-6-sol" } },
+});
+
+const job = { type: "input", content: "Fix the flaky login test",
+              requestId: "job-42" } as const;
+const submission = await root.submit(job, context);
+const settled = await submission.wait(context);</pre>
+            <div class="notes-col">
+              <p class="note fade" data-step="1"><b>The registry</b> holds the tools this process can run: here read, write, edit and bash.</p>
+              <p class="note fade" data-step="2"><b>A harness opens over storage.</b> SQLite here; JSONL, memory or a Durable Object work the same.</p>
+              <p class="note fade" data-step="3"><b>The root conversation</b> is created once and is the same after every restart.</p>
+              <p class="note fade" data-step="4"><code>submit()</code> durably admits the input. A <code>requestId</code> makes it exactly-once.</p>
+              <p class="note fade" data-step="5"><code>wait()</code> resolves with the answer, even across a crash.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 X-RAY -->
+      <section class="slide paper" data-slide="6" data-notes="What that one question turns into in storage. Every step on the right is a commit; the chat on the left is drawn from it.&#10;• Submit: a submission, a user entry, and a generation task, pending.&#10;• The generation runs; the partial answer is committed to pi.live as it streams.&#10;• The model asks for two tools: the answer is stored, two tool tasks are created, the generation waits for them.&#10;• The tools finish and store their results; a fresh generation takes over the run.&#10;• The final answer is stored, the submission is done.&#10;• Everything the harness runs is a task like these: model requests, tool calls, compaction, and your own.">
+        <p class="kicker">Under the hood</p>
+        <h2>One question, as tasks and records</h2>
+        <div class="body">
+          <div class="xray">
+            <div>
+              <p class="pane-label">What the user sees</p>
+              <div class="bubbles">
+                <div class="bubble user fade" data-step="1">Fix the flaky login test</div>
+                <div class="bubble fade" data-step="2"><span class="typing">Let me look at the failing test first…</span></div>
+                <div class="bubble fade" data-step="3"><span class="tool">search_issues</span><span class="tool">bash npm test</span></div>
+                <div class="bubble fade" data-step="5">The test races the session cookie; I added a wait for the login redirect.</div>
+              </div>
+            </div>
+            <div>
+              <p class="pane-label">What storage holds</p>
+              <div class="tables">
+                <div class="tbl">
+                  <h4>Submissions</h4>
+                  <div class="row fade newrow" data-step="1"><span class="id">S1</span><span class="what">input <i>job-42</i></span><span class="slot"><span class="chip placed swap" data-step="1" data-until="5">placed</span><span class="chip done swap" data-step="5">done</span></span></div>
+                </div>
+                <div class="tbl">
+                  <h4>pi.live</h4>
+                  <div class="live">
+                    <div class="swap" data-step="2" data-until="3">partial: <span class="typing">Let me look at the failing test first…</span></div>
+                    <div class="swap" data-step="3" data-until="4">search_issues: running<br />bash: running 214 tests…</div>
+                    <div class="swap" data-step="4" data-until="5">generation #2 streaming…</div>
+                  </div>
+                </div>
+                <div class="tbl">
+                  <h4>Entries</h4>
+                  <div class="row fade newrow" data-step="1"><span class="id">1</span><span class="what">pi.user <i>Fix the flaky…</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">2</span><span class="what">pi.assistant <i>2 tool calls</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="4"><span class="id">3</span><span class="what">pi.tool-result <i>3 issues</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="4"><span class="id">4</span><span class="what">pi.tool-result <i>2 failing</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="5"><span class="id">5</span><span class="what">pi.assistant <i>answer</i></span><span></span></div>
+                </div>
+                <div class="tbl">
+                  <h4>Tasks</h4>
+                  <div class="row fade newrow" data-step="1"><span class="id">T1</span><span class="what">pi.generation</span><span class="slot"><span class="chip pending swap" data-step="1" data-until="2">pending</span><span class="chip running swap" data-step="2" data-until="3">running</span><span class="chip waiting swap" data-step="3" data-until="4">waiting</span><span class="chip done swap" data-step="4">done</span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">T2</span><span class="what">pi.tool <i>search</i></span><span class="slot"><span class="chip running swap" data-step="3" data-until="4">running</span><span class="chip done swap" data-step="4">done</span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">T3</span><span class="what">pi.tool <i>bash</i></span><span class="slot"><span class="chip running swap" data-step="3" data-until="4">running</span><span class="chip done swap" data-step="4">done</span></span></div>
+                  <div class="row fade newrow" data-step="4"><span class="id">T4</span><span class="what">pi.generation</span><span class="slot"><span class="chip running swap" data-step="4" data-until="5">running</span><span class="chip done swap" data-step="5">done</span></span></div>
+                </div>
+              </div>
+              <p class="caption fade" data-step="6"><b>Every change on this side is a commit.</b> The chat on the left is drawn from it.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7 CRASH -->
+      <section class="slide paper" data-slide="7" data-notes="Now the process dies in the middle of the bash call, while somebody else in the channel sends a correction.&#10;• kill -9: the process is gone. The storage is not: every row is still there, including bash in the middle of executing and the queued steer.&#10;• A new process opens the same file. The only thing reopening does: running tasks become pending. resume() starts the scheduler, and root() returns the same conversation.&#10;• bash is not marked safe to rerun, so it is not repeated: the model gets an interrupted result with the output stored so far. The steer is placed at the next boundary, and a new generation continues.&#10;• Slack, which never got an answer, retries the webhook with the same requestId and gets the same submission back, not a second question.&#10;• There is no recovery code. It is the ordinary machinery.">
+        <p class="kicker">Durability</p>
+        <h2>kill -9, then open it again</h2>
+        <div class="body">
+          <div class="crash">
+            <div>
+              <div class="proc" id="proc-a"><span class="pulse"></span><h3>Process A</h3><p>running the job</p><span class="x">kill -9</span></div>
+              <p class="caption only" data-step="1" data-until="2" style="margin: 0 0 18px"><b>The process is gone.</b> Every row is still in storage, including bash halfway through and the queued steer.</p>
+              <div class="proc fade" data-step="2"><span class="pulse"></span><h3>Process B</h3><p>opens the same storage</p></div>
+              <pre class="code tiny fade" data-step="2" data-hl="2:2-7;4:10-11">// a new process opens the same file
+const harness = await Harness.open(
+  await openNodeSqliteStorage("./agent.sqlite"),
+  { models, registry, env },
+  context,
+);
+harness.resume(); // continue pending tasks
+const root = await harness.root(context);
+
+// a client retrying after the crash:
+await root.submit(job, context); // → S1 again</pre>
+            </div>
+            <div>
+              <div class="tables">
+                <div class="tbl still">
+                  <h4>Submissions</h4>
+                  <div class="row"><span class="id">S1</span><span class="what">input <i>job-42</i></span><span class="slot"><span class="chip placed">placed</span></span></div>
+                  <div class="row"><span class="id">S2</span><span class="what">steer <i>check staging</i></span><span class="slot"><span class="chip queued swap" data-step="0" data-until="3">queued</span><span class="chip placed swap" data-step="3">placed</span></span></div>
+                  <div class="row fade newrow" data-step="4"><span class="id">S1</span><span class="what">retry <i>job-42</i></span><span class="slot"><span class="chip done">same</span></span></div>
+                </div>
+                <div class="tbl still">
+                  <h4>Tasks</h4>
+                  <div class="row"><span class="id">T1</span><span class="what">pi.generation</span><span class="slot"><span class="chip waiting swap" data-step="0" data-until="3">waiting</span><span class="chip done swap" data-step="3">done</span></span></div>
+                  <div class="row"><span class="id">T2</span><span class="what">pi.tool <i>search</i></span><span class="slot"><span class="chip done">done</span></span></div>
+                  <div class="row"><span class="id">T3</span><span class="what">pi.tool <i>bash</i></span><span class="slot"><span class="chip running swap" data-step="0" data-until="2">running</span><span class="chip pending swap" data-step="2" data-until="3">pending</span><span class="chip failed swap" data-step="3">interrupted</span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">T4</span><span class="what">pi.generation</span><span class="slot"><span class="chip running">running</span></span></div>
+                </div>
+                <div class="tbl wide still">
+                  <h4>Entries</h4>
+                  <div class="row"><span class="id">3</span><span class="what">pi.tool-result <i>search: 3 issues</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">4</span><span class="what">pi.tool-result <i>bash was interrupted and may have partially run · “120 passed…”</i></span><span></span></div>
+                  <div class="row fade newrow" data-step="3"><span class="id">5</span><span class="what">pi.user <i>check the staging logs first</i></span><span></span></div>
+                </div>
+              </div>
+              <p class="caption fade" data-step="5"><b>No recovery code.</b> Reopening moved one row from running to pending; the rest is the ordinary machinery.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8 TOOLS -->
+      <section class="slide paper" data-slide="8" data-notes="Durability cannot make a side effect happen exactly once. What it can do is tell you which effect is in doubt.&#10;• Every tool call commits its intent, the final arguments, before it runs, and its result after.&#10;• If the process dies in between, exactly that call may or may not have happened.&#10;• A tool that only reads says replay: safe, and simply runs again with the stored arguments.&#10;• Any other tool is never repeated: the model is told it was interrupted, with the output stored so far, and decides what to do.&#10;• api.output streams to every client watching, committed like everything else.">
+        <p class="kicker">Durability</p>
+        <h2>Tools say whether they are safe to rerun</h2>
+        <div class="body">
+          <div class="code-layout" style="grid-template-columns: 980px 1fr">
+            <pre class="code tiny" data-hl="1:1-11;2:5;3:13-22;4:7">const searchIssues = defineTool({
+  name: "search_issues",
+  description: "Search the issue tracker",
+  parameters: Type.Object({ query: Type.String() }),
+  replay: "safe", // only reads: rerun after a crash
+  execute: async (args, api) => {
+    api.output(`searching for ${args.query}\n`);
+    const text = await tracker.search(args.query);
+    return { output: [{ type: "text", text }] };
+  },
+});
+
+const deploy = defineTool({
+  name: "deploy",
+  description: "Deploy a version to production",
+  parameters: Type.Object({ version: Type.String() }),
+  // no replay: interrupted means the model is told
+  execute: async (args) =&gt; {
+    const text = await ci.deploy(args.version);
+    return { output: [{ type: "text", text }] };
+  },
+});</pre>
+            <div>
+              <div class="sandwich">
+                <div class="layer intent fade" data-step="1"><span class="n">1</span><div>commit the intent<small>tool, final arguments, replay policy</small></div></div>
+                <div class="layer effect fade" data-step="1"><span class="n">2</span><div>run the tool<small>outside any transaction</small></div>
+                  <svg class="bolt-mark swap" data-step="2" width="34" height="54" viewBox="0 0 40 60"><path d="M24 2 L8 32 L20 32 L14 58 L34 24 L22 24 Z" /></svg>
+                </div>
+                <div class="layer outcome fade" data-step="1"><span class="n">3</span><div>commit the result<small>an entry the model sees</small></div></div>
+              </div>
+              <div class="lanes">
+                <p class="lane safe fade" data-step="2"><b>replay: "safe"</b> runs again with the stored arguments.</p>
+                <p class="lane unsafe fade" data-step="3"><b>Otherwise</b> the model is told “interrupted”, with the output so far. Never repeated.</p>
+                <p class="lane fade" data-step="4"><code>api.output()</code> streams to every client, committed every 100 ms.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9 SCHEDULING -->
+      <section class="slide paper" data-slide="9" data-notes="Scheduling: your own work gets the same machinery as model requests and tool calls.&#10;• A task is a small state machine: named phases, and a checkpoint that says which phase is next.&#10;• A phase commits its next checkpoint or its outcome. A phase that writes nothing down is a fault.&#10;• Sleeps are wall-clock deadlines, so a reminder for tomorrow survives any number of restarts.&#10;• The delivery uses a requestId derived from the task, so a restart never delivers twice.&#10;• Tasks form one ownership tree with conversations: Esc aborts what a task owns, and cleanup runs from the leaves up. A subagent is just a conversation owned by a tool call.">
+        <p class="kicker">Scheduling</p>
+        <h2>Your own work is a durable task too</h2>
+        <div class="body">
+          <div class="code-layout" style="grid-template-columns: 1040px 1fr">
+            <pre class="code tiny" data-hl="1:1-5;2:7-10;3:12-17;4:20-21">type State = { phase: "wait" } | { phase: "deliver" };
+const Reminder = defineTask&lt;{ text: string; at: number }, State, null&gt;({
+  name: "app.reminder",
+  version: 1,
+  initial: () =&gt; ({ phase: "wait" }),
+  phases: {
+    wait: async (task, runtime, ctx) =&gt; {
+      await runtime.sleep(task.input.at, ctx); // wall-clock deadline
+      await runtime.commit(() =&gt; ({
+        status: "running", checkpoint: { phase: "deliver" } }), ctx);
+    },
+    deliver: async (task, runtime, ctx) =&gt; {
+      const chat = await runtime.conversation(task.conversationId, ctx);
+      await chat!.submit({ type: "input", content: task.input.text,
+        requestId: `reminder:${task.id}` }, ctx);
+      await runtime.commit(() =&gt; ({ status: "terminal",
+        outcome: { status: "completed", result: null } }), ctx);
+    },
+  },
+  abort: (_task, runtime, ctx) =&gt; runtime.commit(() =&gt; ({
+    status: "terminal", outcome: { status: "aborted" } }), ctx),
+});</pre>
+            <div class="timeline">
+              <p class="tl fade" data-step="1"><span class="when">Mon 18:02</span>“Remind me tomorrow at 9.” A tool creates the task.</p>
+              <p class="tl fade" data-step="2"><span class="when">Mon 18:02</span><i>wait</i> <span class="sleeping">sleeping until Tue 09:00</span></p>
+              <p class="tl bad fade" data-step="2"><span class="when">Mon 23:40</span>Redeployed. The task is still waiting.</p>
+              <p class="tl bad fade" data-step="2"><span class="when">Tue 03:12</span>The laptop slept. Still waiting.</p>
+              <p class="tl good fade" data-step="3"><span class="when">Tue 09:00</span><i>deliver</i>: the reminder arrives in the conversation, once.</p>
+              <p class="tl aside fade" data-step="4">Model requests, tool calls and compaction are tasks like this one, in one ownership tree: Esc aborts what a task owns, bottom-up.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10 MULTIPLAYER -->
+      <section class="slide paper" data-slide="10" data-notes="Multiplayer falls out of the one rule: everything a UI needs is committed state.&#10;• Any number of clients attach to a conversation. Each gets the current view first, then only what changes.&#10;• A client that joins late, or reconnects, starts from the current view. Nothing is replayed.&#10;• Anyone can steer a running conversation. The steer is queued durably and placed at the next turn boundary; a follow-up waits for the answer.&#10;• For remote clients, watch delivers the exact JSON operations of every commit, small enough for a socket.&#10;• A Slack thread is a fork of the channel conversation: it sees the channel up to the message it replies to, without copying it.">
+        <p class="kicker">Single-player and multiplayer</p>
+        <h2>Every client watches the same committed state</h2>
+        <div class="body">
+          <div class="code-layout" style="grid-template-columns: 880px 1fr">
+            <pre class="code small" data-hl="1:1-4;2:1-4;3:6-11;4:13-16">// any client, any time: the current view, then changes
+const view = await thread.viewState(context);
+render(view.value);
+view.subscribe((value) =&gt; render(value));
+
+// anyone can steer the running conversation
+await thread.submit({
+  type: "input",
+  content: "Check the staging logs first",
+  whenBusy: "steer",
+}, context);
+
+// remote clients: the exact operations of every commit
+const watch = await thread.watch(context);
+watch.start(async (_value, ops) =&gt;
+  socket.send(JSON.stringify(ops)));</pre>
+            <div>
+              <svg width="680" height="470" viewBox="0 0 680 470">
+                <defs>
+                  <path id="mp1" d="M340 240 L 110 70" /><path id="mp2" d="M340 240 L 570 70" /><path id="mp3" d="M340 240 L 340 410" />
+                  <path id="steer" d="M570 70 L 340 240" />
+                </defs>
+                <g class="d-line"><use href="#mp1" /><use href="#mp2" /><use href="#mp3" /></g>
+                <g class="d-moss">
+                  <circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp1" /></animateMotion></circle>
+                  <circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp2" /></animateMotion></circle>
+                </g>
+                <g class="swap d-moss" data-step="2"><circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp3" /></animateMotion></circle></g>
+                <g class="swap" data-step="3"><circle r="11" class="d-ember"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#steer" /></animateMotion></circle></g>
+                <rect x="230" y="180" width="220" height="120" rx="4" style="fill: var(--ink)" />
+                <text class="d-t-paper" x="340" y="234" text-anchor="middle">conversation</text>
+                <text class="d-t-paper-soft" x="340" y="264" text-anchor="middle">committed state</text>
+                <rect class="d-box" x="10" y="30" width="200" height="80" rx="4" /><text class="d-t-up" x="110" y="66" text-anchor="middle">terminal</text><text class="d-t-muted" x="110" y="93" text-anchor="middle">you</text>
+                <rect class="d-box" x="470" y="30" width="200" height="80" rx="4" /><text class="d-t-up" x="570" y="66" text-anchor="middle">Slack</text><text class="d-t-muted" x="570" y="93" text-anchor="middle">ann</text>
+                <g class="fade" data-step="2">
+                  <rect class="d-moss-tint" x="240" y="370" width="200" height="80" rx="4" /><text class="d-t-up" x="340" y="406" text-anchor="middle">browser</text><text class="d-t-moss" x="340" y="433" text-anchor="middle">late: snapshot</text>
+                </g>
+                <g class="swap" data-step="3">
+                  <rect class="d-ember-tint" x="470" y="124" width="200" height="36" rx="3" /><text class="d-t-ember" x="570" y="148" text-anchor="middle">steer: queued</text>
+                  <text class="d-t-ember" x="465" y="236">placed at the</text><text class="d-t-ember" x="465" y="260">next boundary</text>
+                </g>
+              </svg>
+              <div class="opline swap" data-step="4">["s", ["docs", "pi.live", "generation", "message"], …]</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 STATE -->
+      <section class="slide paper" data-slide="11" data-notes="An agent is rarely the whole application: there is a todo list, a plan, a ticket, the sandbox a conversation runs in.&#10;• That state lives in documents: typed JSON, stored next to the transcript.&#10;• A tool's result and the document change it made land in the same atomic commit, so the state never disagrees with the transcript that produced it.&#10;• Each document says what a fork starts with: here, the todos as they were at the fork point.&#10;• UIs subscribe to the committed value, like the conversation view.">
+        <p class="kicker">Tracking state</p>
+        <h2>Your state, committed with the transcript</h2>
+        <div class="body">
+          <div class="code-layout" style="grid-template-columns: 940px 1fr">
+            <pre class="code small" data-hl="1:1-8;2:10-14;3:6;4:16-17">const Todos = defineDoc&lt;{ items: string[] }&gt;({
+  kind: "app.todos",
+  version: 1,
+  scope: "conversation",
+  history: "rewindable",
+  fork: "asOf", // a fork sees the todos as of its fork point
+  initial: () =&gt; ({ items: [] }),
+});
+
+// in a tool: the result and the change, one atomic commit
+await api.commit(async (tx) =&gt; {
+  const list = await tx.doc(Todos, api.conversationId);
+  list.items.push(args.item);
+}, ctx);
+
+const todos = await harness.documentState(Todos, root.id, context);
+todos?.subscribe((value) =&gt; renderTodos(value?.items ?? []));</pre>
+            <svg width="620" height="450" viewBox="0 0 720 520">
+              <g class="fade" data-step="2">
+                <rect x="20" y="20" width="680" height="190" rx="4" stroke-width="1.5" stroke-dasharray="8 6" style="fill: var(--sea-tint); stroke: var(--sea)" />
+                <text class="d-t-sea" x="40" y="56">one commit</text>
+                <rect class="d-box" x="40" y="76" width="300" height="110" rx="4" />
+                <text class="d-t" x="60" y="116">pi.tool-result</text><text class="d-t-muted" x="60" y="152">“Added write docs”</text>
+                <rect class="d-moss-tint" x="380" y="76" width="300" height="110" rx="4" />
+                <text class="d-t" x="400" y="116">app.todos</text><text class="d-t-moss" x="400" y="152">push("write docs")</text>
+              </g>
+              <g class="fade" data-step="3">
+                <line x1="60" y1="290" x2="660" y2="290" stroke-width="2" style="stroke: var(--ink)" />
+                <circle cx="120" cy="290" r="9" style="fill: var(--ink)" /><circle cx="260" cy="290" r="9" style="fill: var(--ink)" /><circle cx="400" cy="290" r="9" style="fill: var(--ink)" /><circle cx="540" cy="290" r="9" style="fill: var(--ink)" />
+                <text class="d-t-up" x="60" y="262">channel</text>
+                <text class="d-t-muted" x="540" y="330" text-anchor="middle">todos: 3 items</text>
+                <path class="d-dash" d="M260 300 C 260 360, 300 380, 340 380 L 600 380" />
+                <circle cx="440" cy="380" r="9" style="fill: var(--ink-muted)" /><circle cx="580" cy="380" r="9" style="fill: var(--ink-muted)" />
+                <text class="d-t-up" x="80" y="390">thread (fork)</text>
+                <text class="d-t-muted" x="510" y="420" text-anchor="middle">as of the fork: 1 item</text>
+              </g>
+              <g class="fade" data-step="4">
+                <rect class="d-moss-tint" x="20" y="450" width="680" height="56" rx="4" style="stroke: none" />
+                <text class="d-t-moss" x="40" y="485">☐ write docs  ☐ fix login test  ☐ ship it</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 BENEFITS -->
+      <section class="slide paper" data-slide="12" data-notes="What you get without writing any of it yourself.&#10;• Survives crashes: reopen the storage and every task continues from its checkpoint.&#10;• Exactly-once input: retries with a requestId return the same submission.&#10;• Honest about side effects: safe tools rerun, others are reported as interrupted.&#10;• Durable scheduling: timers, retries and child tasks survive restarts.&#10;• Esc that works: abort flows down the ownership tree, cleanup runs bottom-up.&#10;• Multiplayer: many clients, late join, steering, all from committed state.&#10;• State that never disagrees with the transcript; forks see the right version.&#10;• Change it while it runs: conversations store names, so a reload and a restart work the same way.&#10;• Runs anywhere: memory, SQLite, JSONL, Durable Objects; tools on this machine or another.">
+        <p class="kicker">What you get</p>
+        <h2>The benefits, for free</h2>
+        <div class="body">
+          <div class="benefits">
+            <div class="benefit g fade" data-step="1"><p class="tag">recovery</p><h3>Survives crashes</h3><p>Reopen the storage; every task continues from its checkpoint.</p></div>
+            <div class="benefit g fade" data-step="1"><p class="tag">recovery</p><h3>Exactly-once input</h3><p>A retry with the same requestId returns the same submission.</p></div>
+            <div class="benefit w fade" data-step="1"><p class="tag">honesty</p><h3>Honest side effects</h3><p>Safe tools rerun; everything else is reported as interrupted.</p></div>
+            <div class="benefit fade" data-step="2"><p class="tag">scheduling</p><h3>Durable scheduling</h3><p>Timers, retries and child tasks survive restarts.</p></div>
+            <div class="benefit fade" data-step="2"><p class="tag">scheduling</p><h3>Esc that works</h3><p>Abort flows down the ownership tree; cleanup runs bottom-up.</p></div>
+            <div class="benefit fade" data-step="2"><p class="tag">multiplayer</p><h3>Many clients</h3><p>Late join, steering, forks, all from committed state.</p></div>
+            <div class="benefit g fade" data-step="3"><p class="tag">state</p><h3>Consistent state</h3><p>Documents commit with the transcript; forks see the right version.</p></div>
+            <div class="benefit fade" data-step="3"><p class="tag">malleable</p><h3>Change it while it runs</h3><p>Conversations store names, not code: reload and restart work the same.</p></div>
+            <div class="benefit fade" data-step="3"><p class="tag">anywhere</p><h3>Runs anywhere</h3><p>SQLite, JSONL, memory, Durable Objects; tools on any machine.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13 DEMO -->
+      <section class="slide paper bare" data-slide="13" data-notes="Demo (not part of the ten minutes): Pi Durable with Gondolin. The agent's sandbox VM only exists while tools run.&#10;• Two seconds after the last tool call the VM's disk is checkpointed (about 70 ms) and the VM is gone; it wakes from the checkpoint in half a second.&#10;• Watch the panel: the sandbox timeline is empty exactly where the model timeline is busy.&#10;• kill -9 in the middle of the analysis; the restart kills the orphaned VM and reruns the call from the checkpoint taken before it started.&#10;• The follow-up question runs against the logs still on the sandbox's disk.&#10;• Live alternative: ./gondolin-demo/demo --reset --crash-on 'scanning gw-3', then ./gondolin-demo/demo.">
+        <div class="demo-wrap">
+          <div class="asciinema-shell"><div class="asciinema-mount" data-asciinema-src="./assets/recordings/gondolin-demo.cast"></div></div>
+        </div>
+      </section>
+
+    </div>
+
+    <script>
+      // ── the ocean of earendil.com, day theme (afl_ext's ocean waves, MIT, as adapted for the site) ──
+      (() => {
+        const canvas = document.getElementById("ocean");
+        const gl = canvas.getContext("webgl", { antialias: false, depth: false, stencil: false, alpha: false });
+        if (!gl) return;
+        const vertex = "attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }";
+        const fragment = `
+          precision highp float;
+          uniform vec2 iResolution; uniform float u_waveTime; uniform float u_grainTime; uniform float u_noiseScale;
+          #define DRAG_MULT 0.38
+          #define WATER_DEPTH 1.0
+          #define CAMERA_HEIGHT 1.5
+          mat3 rot(vec3 axis, float angle) {
+            float s = sin(angle), c = cos(angle), oc = 1.0 - c;
+            return mat3(oc*axis.x*axis.x + c, oc*axis.x*axis.y - axis.z*s, oc*axis.z*axis.x + axis.y*s,
+                        oc*axis.x*axis.y + axis.z*s, oc*axis.y*axis.y + c, oc*axis.y*axis.z - axis.x*s,
+                        oc*axis.z*axis.x - axis.y*s, oc*axis.y*axis.z + axis.x*s, oc*axis.z*axis.z + c);
+          }
+          vec2 wavedx(vec2 position, vec2 direction, float frequency, float timeshift) {
+            float x = dot(direction, position) * frequency + timeshift;
+            float wave = exp(sin(x) - 1.0);
+            return vec2(wave, -wave * cos(x));
+          }
+          float getwaves(vec2 position, int iterations) {
+            float phaseShift = length(position) * 0.1;
+            vec2 swellDir = normalize(vec2(-0.25, 1.0));
+            float iter = 0.0, frequency = 1.0, timeMultiplier = 2.0, weight = 1.0, sumValues = 0.0, sumWeights = 0.0;
+            for (int i = 0; i < 16; i++) {
+              if (i >= iterations) break;
+              vec2 p = normalize(mix(vec2(sin(iter), cos(iter)), swellDir, 0.35));
+              vec2 res = wavedx(position, p, frequency, u_waveTime * timeMultiplier + phaseShift);
+              position += p * res.y * weight * DRAG_MULT;
+              sumValues += res.x * weight; sumWeights += weight;
+              weight = mix(weight, 0.0, 0.2); frequency *= 1.18; timeMultiplier *= 1.07; iter += 1232.399963;
+            }
+            float swell = sin(dot(position, swellDir) * 0.18 - u_waveTime * 0.08);
+            float swellFade = smoothstep(28.0, 4.0, length(position - vec2(u_waveTime * 0.2, 1.0)));
+            return sumValues / sumWeights + swell * swellFade * 0.35;
+          }
+          float raymarchwater(vec3 camera, vec3 start, vec3 end, float depth) {
+            vec3 pos = start; vec3 dir = normalize(end - start);
+            for (int i = 0; i < 24; i++) {
+              float height = getwaves(pos.xz, 6) * depth - depth;
+              if (height + 0.01 > pos.y) return distance(pos, camera);
+              pos += dir * (pos.y - height);
+            }
+            return distance(start, camera);
+          }
+          vec3 normal(vec2 pos, float e, float depth) {
+            vec2 ex = vec2(e, 0);
+            float H = getwaves(pos.xy, 16) * depth;
+            vec3 a = vec3(pos.x, H, pos.y);
+            return normalize(cross(a - vec3(pos.x - e, getwaves(pos.xy - ex.xy, 16) * depth, pos.y),
+                                   a - vec3(pos.x, getwaves(pos.xy + ex.yx, 16) * depth, pos.y + e)));
+          }
+          vec3 getRay(vec2 fragCoord) {
+            vec2 uv = ((fragCoord.xy / iResolution.xy) * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+            return rot(vec3(1.0, 0.0, 0.0), 0.14) * normalize(vec3(uv.x, uv.y, 1.5));
+          }
+          float intersectPlane(vec3 origin, vec3 direction, vec3 point, vec3 n) {
+            return clamp(dot(point - origin, n) / dot(direction, n), -1.0, 9991999.0);
+          }
+          vec3 atmosphere(vec3 raydir) {
+            vec3 sundir = normalize(vec3(-0.0773502691896258, 0.6, 0.5773502691896258));
+            float t1 = 1.0 / (raydir.y + 0.1);
+            float t2 = 1.0 / (sundir.y * 11.0 + 1.0);
+            float raysundt = pow(abs(dot(sundir, raydir)), 2.0);
+            vec3 suncolor = mix(vec3(1.0), max(vec3(0.0), vec3(1.0) - vec3(5.5, 13.0, 22.4) / 22.4), t2);
+            vec3 sky = vec3(12.0, 12.0, 13.0) / 22.4 * suncolor;
+            vec3 sky2 = max(vec3(0.0), sky - vec3(12.0, 12.0, 13.0) * 0.002 * (t1 - 6.0 * sundir.y * sundir.y));
+            sky2 *= t1 * (0.24 + raysundt * 0.24);
+            return sky2 * (1.0 + pow(1.0 - raydir.y, 3.0)) * 0.5;
+          }
+          vec3 aces(vec3 color) {
+            mat3 m1 = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
+            mat3 m2 = mat3(1.60475, -0.10208, -0.00327, -0.53108, 1.10813, -0.07276, -0.07367, -0.00605, 1.07602);
+            vec3 v = m1 * color;
+            vec3 a = v * (v + 0.0245786) - 0.000090537;
+            vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+            return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+          }
+          float gaussian(float z, float u, float o) { return (1.0 / (o * sqrt(6.283))) * exp(-(((z - u) * (z - u)) / (2.0 * o * o))); }
+          void main() {
+            vec3 ray = getRay(gl_FragCoord.xy);
+            vec3 color;
+            if (ray.y >= 0.0) {
+              color = aces(atmosphere(ray) * 2.0);
+            } else {
+              vec3 origin = vec3(u_waveTime * 0.2, CAMERA_HEIGHT, 1.0);
+              float high = intersectPlane(origin, ray, vec3(0.0), vec3(0.0, 1.0, 0.0));
+              float low = intersectPlane(origin, ray, vec3(0.0, -WATER_DEPTH, 0.0), vec3(0.0, 1.0, 0.0));
+              float dist = raymarchwater(origin, origin + ray * high, origin + ray * low, WATER_DEPTH);
+              vec3 hit = origin + ray * dist;
+              vec3 N = normal(hit.xz, max(0.01, dist * 0.004), WATER_DEPTH);
+              N = mix(N, vec3(0.0, 1.0, 0.0), 0.8 * min(1.0, sqrt(dist * 0.01) * 1.1));
+              float fs = 0.04 + 0.96 * pow(1.0 - max(0.0, dot(-N, ray)), 5.0);
+              float ff = 0.04 + 0.96 * pow(1.0 - max(0.0, dot(vec3(0.0, 1.0, 0.0), -ray)), 5.0);
+              float fresnel = mix(fs, ff, min(1.0, sqrt(dist * 0.01) * 1.1));
+              vec3 R = normalize(reflect(ray, N)); R.y = abs(R.y);
+              vec3 C = fresnel * atmosphere(R) + vec3(0.08, 0.08, 0.09) * (0.2 + (hit.y + WATER_DEPTH) / WATER_DEPTH);
+              C = mix(C, vec3(0.55, 0.55, 0.58), 1.0 - exp(-dist * 0.02));
+              color = aces(C * 1.4);
+            }
+            // The site's film grain, then mapped into its day palette.
+            float gray = dot(color, vec3(0.299, 0.587, 0.114));
+            vec2 uv = gl_FragCoord.xy * u_noiseScale / iResolution;
+            float noise = gaussian(fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453 + u_grainTime * 1.5), 0.0, 0.5625);
+            gray = clamp(gray + noise * (1.0 - gray) * 0.4, 0.0, 1.0);
+            gl_FragColor = vec4(mix(vec3(0.62), vec3(0.97), gray), 1.0);
+          }`;
+        const compile = (type, source) => {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+          return shader;
+        };
+        const program = gl.createProgram();
+        gl.attachShader(program, compile(gl.VERTEX_SHADER, vertex));
+        gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment));
+        gl.linkProgram(program);
+        gl.useProgram(program);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+        const position = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(position);
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        const uResolution = gl.getUniformLocation(program, "iResolution");
+        const uWave = gl.getUniformLocation(program, "u_waveTime");
+        const uGrain = gl.getUniformLocation(program, "u_grainTime");
+        const uNoise = gl.getUniformLocation(program, "u_noiseScale");
+        const dpr = window.devicePixelRatio || 1;
+        const scale = dpr < 1.5 ? 0.6 : 0.35;
+        function resize() {
+          canvas.width = Math.max(1, Math.floor(innerWidth * dpr * scale));
+          canvas.height = Math.max(1, Math.floor(innerHeight * dpr * scale));
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        addEventListener("resize", resize);
+        resize();
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        let last = -Infinity;
+        function frame(now) {
+          requestAnimationFrame(frame);
+          if (now - last < 1000 / 30) return;
+          last = now;
+          const t = reduced ? 0 : now * 0.001;
+          gl.uniform2f(uResolution, canvas.width, canvas.height);
+          gl.uniform1f(uWave, t);
+          gl.uniform1f(uGrain, t);
+          gl.uniform1f(uNoise, dpr < 1.5 ? 1.7 : 1.0);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+        requestAnimationFrame(frame);
+      })();
+
+      // ── syntax highlighting: the site's restraint (bold keywords, muted comments), plus theme colors ──
+      const KEYWORDS = /^(const|await|async|return|type|as|null|true|false|new|import|from)$/;
+      const TOKEN = /(\/\/.*$)|(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*")|\b(\d+)\b|\b([A-Za-z_$][\w$]*)\b(\s*\()?/g;
+      const escape = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      function highlightLine(line) {
+        let out = "";
+        let last = 0;
+        line.replace(TOKEN, (match, comment, string, number, word, call, offset) => {
+          out += escape(line.slice(last, offset));
+          if (comment) out += `<span class="tk-c">${escape(comment)}</span>`;
+          else if (string) out += `<span class="tk-s">${escape(string)}</span>`;
+          else if (number) out += `<span class="tk-n">${number}</span>`;
+          else if (KEYWORDS.test(word)) out += `<span class="tk-k">${word}</span>${call ?? ""}`;
+          else if (call) out += `<span class="tk-f">${word}</span>${call}`;
+          else if (/^[A-Z]/.test(word)) out += `<span class="tk-t">${word}</span>`;
+          else out += word;
+          last = offset + match.length;
+          return match;
+        });
+        return out + escape(line.slice(last));
+      }
+      for (const pre of document.querySelectorAll("pre.code")) {
+        pre.innerHTML = pre.textContent.split("\n").map((line) => `<span class="ln">${highlightLine(line) || " "}</span>`).join("");
+        pre.hl = new Map(
+          (pre.dataset.hl || "").split(";").filter(Boolean).map((part) => {
+            const [step, ranges] = part.split(":");
+            const lines = new Set();
+            for (const range of ranges.split(",")) {
+              const [a, b = a] = range.split("-").map(Number);
+              for (let n = a; n <= b; n++) lines.add(n);
+            }
+            return [Number(step), lines];
+          }),
+        );
+      }
+
+      // ── deck scaling and steps ──
+      const deck = document.querySelector(".deck");
+      function scaleDeck() {
+        const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+      addEventListener("resize", scaleDeck);
+      scaleDeck();
+
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const pageNo = document.getElementById("page-no");
+      const stepCount = (slide) => {
+        let max = 0;
+        for (const el of slide.querySelectorAll("[data-step]")) max = Math.max(max, Number(el.dataset.step));
+        for (const pre of slide.querySelectorAll("pre.code")) for (const step of pre.hl.keys()) max = Math.max(max, step);
+        return max;
+      };
+      let slideIndex = 0;
+      let stepIndex = 0;
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      function applySteps(slide) {
+        slide.dataset.at = String(stepIndex);
+        for (const el of slide.querySelectorAll("[data-step]")) {
+          const from = Number(el.dataset.step);
+          const until = el.dataset.until === undefined ? Infinity : Number(el.dataset.until);
+          el.classList.toggle("on", stepIndex >= from && stepIndex < until);
+          el.classList.toggle("now", stepIndex === from);
+        }
+        for (const pre of slide.querySelectorAll("pre.code")) {
+          const lines = pre.hl.get(stepIndex);
+          pre.classList.toggle("focus", Boolean(lines));
+          pre.querySelectorAll(".ln").forEach((ln, i) => ln.classList.toggle("hl", Boolean(lines?.has(i + 1))));
+        }
+        slide.querySelector("#proc-a")?.classList.toggle("dead", stepIndex >= 1);
+      }
+
+      // ── asciinema, in the site's terminal theme ──
+      const players = new WeakMap();
+      function syncPlayers() {
+        for (const slide of slides) if (slide !== slides[slideIndex]) players.get(slide)?.pause?.();
+        const slide = slides[slideIndex];
+        const mount = slide.querySelector("[data-asciinema-src]");
+        if (!mount || !window.AsciinemaPlayer) return;
+        let player = players.get(slide);
+        if (!player) {
+          player = window.AsciinemaPlayer.create(mount.dataset.asciinemaSrc, mount, {
+            theme: "pi", fit: false, idleTimeLimit: 2, autoPlay: true, controls: false, loop: true,
+            terminalFontFamily: "Commit Mono", terminalFontSize: "21px", terminalLineHeight: 1.2,
+          });
+          players.set(slide, player);
+        } else {
+          Promise.resolve(player.seek?.(0)).then(() => player.play?.());
+        }
+      }
+
+      function show(index, { hash = true } = {}) {
+        slideIndex = clamp(index, 0, slides.length - 1);
+        slides.forEach((slide, i) => slide.classList.toggle("active", i === slideIndex));
+        deck.classList.toggle("bare", slides[slideIndex].classList.contains("bare"));
+        stepIndex = clamp(stepIndex, 0, stepCount(slides[slideIndex]));
+        applySteps(slides[slideIndex]);
+        pageNo.textContent = `${String(slideIndex + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+        syncPlayers();
+        if (hash) updateHash();
+      }
+      function updateHash() {
+        history.replaceState(null, "", `#${slides[slideIndex].dataset.slide}${stepIndex ? `.${stepIndex}` : ""}`);
+      }
+      function parseHash(raw) {
+        const [s, st] = raw.split(".");
+        const index = slides.findIndex((slide) => slide.dataset.slide === s);
+        return { index: index < 0 ? 0 : index, step: Number.parseInt(st, 10) || 0 };
+      }
+      function next() {
+        if (stepIndex < stepCount(slides[slideIndex])) {
+          stepIndex++;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex < slides.length - 1) {
+          stepIndex = 0;
+          show(slideIndex + 1);
+        }
+      }
+      function prev() {
+        if (stepIndex > 0) {
+          stepIndex--;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex > 0) {
+          stepIndex = stepCount(slides[slideIndex - 1]);
+          show(slideIndex - 1);
+        }
+      }
+      function first() { stepIndex = 0; show(0); }
+      function last() { stepIndex = 0; show(slides.length - 1); }
+      function goto(hash) {
+        const parsed = parseHash(hash.replace("#", ""));
+        stepIndex = parsed.step;
+        show(parsed.index);
+      }
+      function syncFromHash() {
+        const raw = location.hash.replace("#", "");
+        const relative = raw.match(/^(.*)~(next|prev)$/);
+        if (relative) {
+          const base = relative[1] ? parseHash(relative[1]) : { index: slideIndex, step: stepIndex };
+          stepIndex = base.step;
+          show(base.index, { hash: false });
+          relative[2] === "next" ? next() : prev();
+          return;
+        }
+        const parsed = parseHash(raw);
+        stepIndex = parsed.step;
+        show(parsed.index, { hash: false });
+      }
+
+      addEventListener("hashchange", syncFromHash);
+      addEventListener("keydown", (event) => {
+        if (["ArrowRight", " ", "PageDown", "l", "j"].includes(event.key)) { event.preventDefault(); next(); }
+        if (["ArrowLeft", "PageUp", "h", "k"].includes(event.key)) { event.preventDefault(); prev(); }
+        if (event.key === "Home") { event.preventDefault(); first(); }
+        if (event.key === "End") { event.preventDefault(); last(); }
+      });
+      document.addEventListener("click", (event) => (event.clientX < innerWidth / 3 ? prev() : next()));
+
+      window.miniPresenter = {
+        next, prev, first, last, goto,
+        getSlideList: () => slides.map((slide) => `#${slide.dataset.slide}`),
+        getCurrentSlide: () => location.hash || `#${slides[slideIndex].dataset.slide}`,
+        getNotes(slideId) {
+          const target = typeof slideId === "string" && slideId ? slideId : location.hash;
+          return slides[parseHash((target || "").replace("#", "")).index]?.dataset.notes || null;
+        },
+      };
+      syncFromHash();
+    </script>
+  </body>
+</html>
