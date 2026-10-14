@@ -41,8 +41,12 @@ jobs:
               
               cd "$talk_dir"
               
-              # Find the markdown source file
-              md_file=$(ls *.md 2>/dev/null | head -1)
+              # Find the markdown source file. A talk that ships its own index.html is pre-built; its
+              # markdown files (speaker notes) must not be rendered as slides.
+              md_file=""
+              if [ ! -f "index.html" ]; then
+                md_file=$(ls *.md 2>/dev/null | head -1)
+              fi
               
               # Create output directory
               mkdir -p "../../_site/${talk_name}"
