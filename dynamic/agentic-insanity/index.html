@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Agentic Insanity</title>
+    <script src="https://cdn.jsdelivr.net/gh/mitsuhiko/mini-presenter@0.5.1/client/standalone.js"></script>
+    <style>
+      /* Fonts of Elanor (@earendil-works/elanor-fonts): Mallos Serif for text, Commit Mono for everything monospaced. */
+      @font-face { font-family: "Mallos Serif"; src: url("./assets/fonts/MallosSerif-Variable.woff2") format("woff2"); font-weight: 400 700; font-style: normal; }
+      @font-face { font-family: "Mallos Serif"; src: url("./assets/fonts/MallosSerif-Italic-Variable.woff2") format("woff2"); font-weight: 400 700; font-style: italic; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-300-Regular.woff2") format("woff2"); font-weight: 300; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-400-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-700-Regular.woff2") format("woff2"); font-weight: 700; font-style: normal; }
+
+      /*
+       * The day theme of earendil.com, in OKLCH. Ink and paper are the site's #353431 and #faf9f6.
+       * Three quiet accents share one lightness and a low chroma, so they sit in the warm grays
+       * without shouting; every tint, rule, and wash is derived from them with relative colors.
+       */
+      :root {
+        --ink: oklch(0.335 0.005 85);
+        --paper: oklch(0.983 0.004 95);
+        --sea: oklch(0.5 0.055 240);
+        --moss: oklch(0.52 0.06 150);
+        --ember: oklch(0.58 0.095 55);
+
+        --ink-soft: oklch(from var(--ink) l c h / 0.72);
+        --ink-muted: oklch(from var(--ink) l c h / 0.58);
+        --ink-faint: oklch(from var(--ink) l c h / 0.38);
+        --rule: oklch(from var(--ink) l c h / 0.18);
+        --rule-soft: oklch(from var(--ink) l c h / 0.1);
+        --surface: oklch(from var(--paper) calc(l + 0.012) c h / 0.86);
+        --sea-tint: oklch(from var(--sea) 0.935 calc(c * 0.42) h);
+        --moss-tint: oklch(from var(--moss) 0.935 calc(c * 0.42) h);
+        --ember-tint: oklch(from var(--ember) 0.935 calc(c * 0.4) h);
+
+        --serif: "Mallos Serif", Georgia, serif;
+        --mono: "Commit Mono", "SF Mono", Menlo, monospace;
+        --frame: 100px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 100%; height: 100%; overflow: hidden;
+        background: oklch(0.78 0.003 90); touch-action: none; overscroll-behavior: none;
+      }
+      #ocean { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      .deck {
+        width: 1920px; height: 1080px; position: absolute; top: 50%; left: 50%;
+        transform-origin: center center; color: var(--ink); font-family: var(--serif);
+      }
+
+      /* Site chrome: emblem top left, a mono label top right, mono footer. */
+      .chrome { position: absolute; inset: 0; pointer-events: none; z-index: 5; font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink); transition: opacity 0.3s ease; }
+      .chrome .emblem { position: absolute; left: var(--frame); top: 70px; width: 40px; }
+      .chrome .emblem path { fill: var(--ink); opacity: 0.85; }
+      .chrome .tr { position: absolute; right: var(--frame); top: 88px; }
+      .chrome .bl { position: absolute; left: var(--frame); bottom: 82px; }
+      .chrome .br { position: absolute; right: var(--frame); bottom: 82px; color: var(--ink-muted); }
+      .deck.bare .chrome { opacity: 0; }
+
+      .slide {
+        display: none; position: absolute; inset: 0; padding: 168px 160px 170px; isolation: isolate;
+      }
+      .slide.active { display: block; }
+      /*
+       * The paper veil of the site's content pages, opening onto the ocean at the left and right.
+       * It covers the whole window, not the 16:9 deck, so a letterboxed deck shows no water above
+       * or below; it is shown whenever the active slide is a paper slide.
+       */
+      #veil {
+        position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+        background: radial-gradient(ellipse 72% 150% at 50% 50%,
+          oklch(from var(--paper) l c h / 0.985) 0%, oklch(from var(--paper) l c h / 0.985) 50%,
+          oklch(from var(--paper) l c h / 0.95) 60%, oklch(from var(--paper) l c h / 0.6) 74%,
+          oklch(from var(--paper) l c h / 0.2) 88%, oklch(from var(--paper) l c h / 0) 100%);
+      }
+      body.paper #veil { opacity: 1; }
+
+      .kicker { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 18px; }
+      h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; }
+      h2 { font-size: 64px; line-height: 1.08; font-style: italic; letter-spacing: -0.01em; text-wrap: balance; }
+      h3 { font-size: 33px; line-height: 1.2; font-weight: 550; }
+      p { margin: 0; }
+      b, strong { font-weight: 600; }
+      .u { text-decoration: underline dotted; text-decoration-thickness: 0.06em; text-underline-offset: 0.14em; }
+      .body { position: absolute; left: 160px; right: 160px; top: 340px; bottom: 150px; }
+      .mono { font-family: var(--mono); }
+
+      /* steps */
+      [data-step] { transition: opacity 0.5s ease, transform 0.5s ease, background-color 0.4s ease, border-color 0.4s ease; }
+      .fade[data-step]:not(.on) { opacity: 0; transform: translateY(12px); }
+      .swap[data-step]:not(.on) { opacity: 0; }
+      .only[data-step]:not(.on) { display: none; }
+
+      /* ── hero slides (title, closing): text above the horizon, like the home page ── */
+      .hero { text-align: center; }
+      .hero .stack { position: absolute; left: 160px; right: 160px; bottom: calc(1080px * 0.394309 + 54px); }
+      .hero h1 { font-size: 136px; line-height: 1; font-style: italic; letter-spacing: -0.015em; }
+      .hero .sub { font-size: 44px; line-height: 1.25; font-style: italic; color: var(--ink-soft); margin-top: 22px; }
+      .hero .meta { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin-top: 44px; }
+
+      /* ── about me ── */
+      .intro { position: absolute; left: 160px; right: 160px; top: 50%; transform: translateY(-50%); }
+      .intro h2 { font-size: 120px; line-height: 1; letter-spacing: -0.015em; }
+      .intro .role { font-size: 48px; font-style: italic; color: var(--ink-soft); margin-top: 20px; }
+      .links { margin-top: 84px; max-width: 980px; border-top: 1px solid var(--rule); }
+      .links a { display: grid; grid-template-columns: 200px 1fr auto; align-items: baseline; padding: 24px 0; border-bottom: 1px solid var(--rule-soft); color: inherit; text-decoration: none; }
+      .links .what { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); }
+      .links .url { font-size: 44px; font-style: italic; }
+      .links .arrow { font-family: var(--mono); font-size: 24px; color: var(--ink-faint); }
+
+      /* ── shared: quotes, labels, fact rows, the closing line ── */
+      blockquote { margin: 0; }
+      .quote p { font-size: 54px; line-height: 1.18; font-style: italic; letter-spacing: -0.01em; text-wrap: balance; }
+      .quote.big p { font-size: 66px; line-height: 1.14; }
+      .quote cite { display: block; margin-top: 28px; font-family: var(--mono); font-size: 21px; font-style: normal; text-transform: uppercase; color: var(--ink-muted); }
+      .label { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 14px; }
+      .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; }
+      .fact { border-top: 1px solid var(--rule); padding-top: 20px; font-size: 28px; line-height: 1.4; color: var(--ink-soft); }
+      .fact b { display: block; font-style: italic; font-weight: 400; font-size: 40px; line-height: 1.15; color: var(--ink); margin-bottom: 8px; }
+      .bottom-line { position: absolute; left: 0; right: 0; bottom: 0; font-size: 34px; font-style: italic; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 24px; }
+
+      /* ── then: the intern ── */
+      .split { display: grid; grid-template-columns: 1fr 620px; gap: 90px; align-items: start; }
+      .kit-row { display: grid; grid-template-columns: 210px 1fr; align-items: baseline; padding: 16px 0; border-top: 1px solid var(--rule-soft); font-size: 27px; color: var(--ink-soft); }
+      .kit-row b { font-style: italic; font-weight: 400; font-size: 34px; color: var(--ink); }
+
+      /* ── two years in eight steps ── */
+      .steps8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 56px 52px; }
+      .st { position: relative; border-top: 1.5px solid var(--rule); padding-top: 30px; }
+      .st::before { content: ""; position: absolute; left: 0; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--sea); box-shadow: 0 0 0 5px var(--paper); }
+      .st.turn::before { background: var(--moss); }
+      .st.wild::before { background: var(--ember); }
+      .st .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); }
+      .st h3 { font-size: 40px; font-style: italic; font-weight: 400; margin-top: 8px; }
+      .st p { font-size: 25px; line-height: 1.38; color: var(--ink-soft); margin-top: 8px; }
+
+      /* ── two cases ── */
+      .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; }
+      .case { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .case h3 { font-size: 46px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .case .big { font-size: 96px; line-height: 1; font-style: italic; margin: 26px 0 16px; }
+      .case ul { margin: 22px 0 0; padding: 0; list-style: none; }
+      .case li { font-size: 27px; line-height: 1.4; color: var(--ink-soft); padding: 10px 0 10px 28px; position: relative; }
+      .case li::before { content: ""; position: absolute; left: 0; top: 29px; width: 10px; height: 1.5px; background: var(--ink-faint); }
+      .timebar { display: flex; height: 64px; margin: 30px 0 10px; border-radius: 3px; overflow: hidden; }
+      .timebar span { display: grid; place-items: center; font-family: var(--mono); font-size: 18px; text-transform: uppercase; }
+      .timebar .me { flex: 0.75; background: var(--ink); color: var(--paper); }
+      .timebar .watch { flex: 3; background: var(--sea-tint); color: var(--sea); }
+      .timebar .alone { flex: 7; background: var(--moss-tint); color: var(--moss); }
+
+      /* ── charts ── */
+      .velocity { display: grid; grid-template-columns: 980px 1fr; gap: 70px; align-items: end; }
+      svg.chart .bar { fill: var(--ink); opacity: 0.82; }
+      svg.chart .bar.now { fill: var(--ember); opacity: 1; }
+      svg.chart .bar.night { fill: var(--sea); opacity: 1; }
+      svg.chart .val { font-family: var(--mono); font-size: 17px; fill: var(--ink-muted); }
+      svg.chart .q { font-family: var(--mono); font-size: 16px; fill: var(--ink-faint); }
+      svg.chart .yr { font-family: var(--mono); font-size: 18px; fill: var(--ink-muted); text-transform: uppercase; }
+      svg.chart .note { font-family: var(--mono); font-size: 16px; fill: var(--sea); text-transform: uppercase; }
+      svg.chart .note-line { stroke: var(--sea); stroke-width: 1.5; stroke-dasharray: 4 5; }
+      svg.chart .axis { stroke: var(--rule); stroke-width: 1.5; }
+      svg.chart .loc-area { fill: var(--ember); opacity: 0.14; }
+      svg.chart .loc-line { fill: none; stroke: var(--ember); stroke-width: 3; stroke-linejoin: round; }
+      svg.chart .loc-dot { fill: var(--ember); }
+      .label.chart2 { margin-top: 30px; }
+      .side { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+      .side .fact { border-top: none; border-bottom: 1px solid var(--rule-soft); padding: 18px 0 20px; font-size: 25px; }
+      .side .fact b { font-size: 48px; }
+      .source { margin-top: 18px; font-family: var(--mono); font-size: 16px; line-height: 1.5; text-transform: uppercase; color: var(--ink-faint); }
+
+      /* ── the price ── */
+      .prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .price { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .price .tag { font-family: var(--mono); font-size: 18px; text-transform: uppercase; color: var(--ember); }
+      .price h3 { font-size: 42px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .price p { font-size: 26px; line-height: 1.4; color: var(--ink-soft); margin-top: 12px; }
+      .num-row { display: grid; grid-template-columns: 170px 1fr; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); font-size: 24px; color: var(--ink-soft); }
+      .num-row b { font-style: italic; font-weight: 400; font-size: 38px; color: var(--ink); }
+
+      /* ── the factory ── */
+      .factory { display: grid; grid-template-columns: 1fr 600px; gap: 90px; align-items: start; }
+      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+      .stat { border-top: 1px solid var(--rule); padding: 20px 0 26px; }
+      .stat b { display: block; font-size: 76px; line-height: 1; font-style: italic; font-weight: 400; }
+      .stat span { display: block; margin-top: 10px; font-size: 26px; line-height: 1.35; color: var(--ink-soft); }
+
+      /* ── the game: screenshots and models ── */
+      .gallery { display: grid; grid-template-columns: 958px 546px; gap: 96px; align-items: start; }
+      .shots { display: grid; grid-template-columns: repeat(2, 470px); gap: 18px; }
+      .models { display: grid; grid-template-columns: repeat(3, 174px); gap: 12px; }
+      .gallery img { display: block; width: 100%; object-fit: cover; border-radius: 6px; outline: 1px solid var(--rule); outline-offset: -1px; }
+      .shots img { height: 264px; }
+      .models img { height: 174px; }
+
+      /* ── now: what is left ── */
+      .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .pillar { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .pillar .n { font-family: var(--mono); font-size: 19px; color: var(--sea); }
+      .pillar h3 { font-size: 46px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .pillar p { font-size: 27px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+
+      .bio { list-style: none; margin: 0; padding: 0; max-width: 1180px; border-top: 1px solid var(--rule); }
+      .bio li { display: grid; grid-template-columns: 110px 1fr; align-items: baseline; padding: 30px 0; border-bottom: 1px solid var(--rule-soft); font-size: 52px; line-height: 1.2; }
+      .bio .n { font-family: var(--mono); font-size: 20px; color: var(--ink-muted); }
+      .bio i { font-style: italic; }
+
+      /* ── Pi and harnesses (from the Pi Durable talk) ── */
+      .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .stage { border-top: 1px solid var(--rule); padding-top: 18px; }
+      .stage svg { display: block; width: 100%; height: auto; margin-bottom: 10px; }
+      .stage .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ember); }
+      .stage h3 { font-size: 42px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .stage p:not(.when) { font-size: 27px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+      .g-link line, line.g-link { stroke: var(--rule); stroke-width: 2; }
+      .g-human { fill: var(--ink); }
+      .g-agent { fill: var(--sea); }
+      .g-agent.small { fill: var(--sea-tint); stroke: var(--sea); stroke-width: 2; }
+      .g-hub { fill: var(--ink); }
+
+      .hub-layout { display: grid; grid-template-columns: 760px 1fr; gap: 80px; align-items: center; }
+      svg.hub text { font-family: var(--mono); }
+      .d-box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.5; }
+      .d-moss { fill: var(--moss); } .d-ember { fill: var(--ember); }
+      .d-moss-tint { fill: var(--moss-tint); stroke: var(--moss); stroke-width: 1.5; }
+      .d-line { stroke: var(--rule); stroke-width: 2; fill: none; }
+      .d-t-up { fill: var(--ink); font-size: 20px; text-transform: uppercase; }
+      .d-t-muted { fill: var(--ink-muted); font-size: 18px; text-transform: uppercase; }
+      .d-t-paper { fill: var(--paper); font-size: 22px; text-transform: uppercase; }
+      .d-t-paper-soft { fill: oklch(from var(--paper) l c h / 0.75); font-size: 18px; }
+      .d-t-moss { fill: var(--moss); font-size: 18px; text-transform: uppercase; }
+
+      .offers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 90px; }
+      .offer { border-top: 1px solid var(--rule); padding-top: 24px; }
+      .offer h3 { font-size: 88px; line-height: 1; font-style: italic; font-weight: 400; margin-top: 10px; }
+      .offer p:not(.label):not(.url) { font-size: 32px; line-height: 1.4; color: var(--ink-soft); margin-top: 22px; max-width: 700px; }
+      .offer .url { margin-top: 26px; font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--sea); }
+
+      /* ── what this means ── */
+      .moves { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+      .moves li { display: grid; grid-template-columns: 340px 1fr auto; align-items: baseline; gap: 40px; padding: 30px 0; border-bottom: 1px solid var(--rule-soft); }
+      .moves .from { font-family: var(--mono); font-size: 26px; text-transform: uppercase; color: var(--sea); }
+      .moves .what { font-size: 36px; color: var(--ink-soft); }
+      .moves .what b { font-style: italic; font-weight: 400; color: var(--ink); font-size: 46px; }
+      .moves .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); }
+      .runtimes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .runtime { border-top: 1px solid var(--rule); padding-top: 24px; }
+      .runtime b { display: block; font-size: 84px; line-height: 1; font-style: italic; font-weight: 400; }
+      .runtime h3 { font-family: var(--mono); font-size: 20px; font-weight: 400; text-transform: uppercase; color: var(--ember); margin-top: 22px; }
+      .runtime p { font-size: 29px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+      .factory .quote p { font-size: 50px; }
+      .factory .quote p.after { margin-top: 34px; font-size: 32px; line-height: 1.4; font-style: normal; color: var(--ink-soft); }
+
+      /* ── the adventure map ── */
+      .map { position: absolute; inset: 0; pointer-events: none; }
+      .map svg { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; }
+      .map .trail-ahead { fill: none; stroke: var(--ink-faint); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 0.1 14; }
+      .map .trail-done { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 18 13; }
+      .map .trail-reveal { fill: none; stroke: #fff; stroke-width: 40; }
+      .map .stop .dot { fill: var(--paper); stroke: var(--ink-faint); stroke-width: 3; transition: r 0.4s ease, fill 0.4s ease; }
+      .map .stop .halo { fill: none; stroke: var(--ember); stroke-width: 2; opacity: 0; }
+      .map .stop .when { font-family: var(--mono); font-size: 17px; text-transform: uppercase; fill: var(--ink-muted); }
+      .map .stop .title { font-family: var(--serif); font-size: 32px; font-style: italic; fill: var(--ink); }
+      .map .stop.future text { opacity: 0.4; }
+      .map .stop.plain .dot { stroke: var(--ink); fill: var(--paper); }
+      .map .stop.visited .dot { fill: var(--ink); stroke: var(--ink); }
+      .map .stop.current .dot { fill: var(--ember); stroke: var(--ember); }
+      .map .stop.current .when { fill: var(--ember); }
+      .map .stop.current.arrived .halo { animation: halo 2s ease-out infinite; }
+      @keyframes halo { 0% { r: 16px; opacity: 0.9; } 100% { r: 44px; opacity: 0; } }
+      .map .start text, .map .edge text { font-family: var(--mono); font-size: 16px; text-transform: uppercase; fill: var(--ink-muted); }
+      .map .edge .title { font-family: var(--serif); font-size: 30px; font-style: italic; text-transform: none; fill: var(--ink-muted); }
+      .map .edge.current .title { fill: var(--ember); }
+      .map .deco { fill: none; stroke: var(--ink-faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+      .map .compass path { fill: var(--ink-faint); }
+      .map .compass circle { fill: none; stroke: var(--ink-faint); stroke-width: 1.5; }
+      .map .compass text { font-family: var(--mono); font-size: 16px; fill: var(--ink-muted); }
+      .map-caption { position: absolute; left: 160px; right: 160px; bottom: 150px; font-size: 34px; font-style: italic; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 24px; }
+      .stop-card { position: absolute; left: 160px; right: 160px; bottom: 150px; display: grid; grid-template-columns: 520px 1fr; gap: 60px; border-top: 1px solid var(--rule); padding-top: 26px; }
+      .stop-card .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ember); }
+      .stop-card h3 { font-size: 64px; line-height: 1.05; font-style: italic; font-weight: 400; margin-top: 8px; }
+      .stop-card p { font-size: 30px; line-height: 1.4; color: var(--ink-soft); }
+      .stop-card .cite { margin-top: 14px; font-family: var(--mono); font-size: 18px; text-transform: uppercase; color: var(--ink-muted); }
+
+      /* ── code: the site's code blocks, rules above and below, no box ── */
+      pre.code {
+        margin: 0; font-family: var(--mono); font-size: 24px; line-height: 1.6; color: var(--ink);
+        border-block: 1px solid var(--rule); padding: 22px 0; white-space: pre;
+      }
+      pre.code.small { font-size: 20px; line-height: 1.55; }
+      pre.code .ln { display: block; padding: 0 22px; transition: opacity 0.35s ease, background-color 0.35s ease; }
+      pre.code.focus .ln { opacity: 0.3; }
+      pre.code.focus .ln.hl { opacity: 1; background: var(--sea-tint); box-shadow: inset 3px 0 0 var(--sea); }
+      .tk-k { font-weight: 700; }
+      .tk-s { color: var(--moss); }
+      .tk-c { color: var(--ink-muted); }
+      .tk-n { color: var(--ember); }
+      .tk-f { color: var(--sea); }
+      .tk-t { font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <canvas id="ocean" aria-hidden="true"></canvas>
+    <div id="veil" aria-hidden="true"></div>
+    <div class="deck">
+      <div class="chrome" aria-hidden="true">
+        <svg class="emblem" viewBox="120 21 84 153"><path d="M202.89,123.89c.4,29.74-40.27,26.97-40.8,48.11h-.05c-.52-21.14-41.19-18.38-40.8-48.11,27.99,0,40.09-46.29,40.82-101.27.74,54.98,12.83,101.27,40.82,101.27h0Z" /></svg>
+        <span class="tr">Agentic Insanity</span>
+        <span class="bl">Earendil Inc.</span>
+        <span class="br" id="page-no"></span>
+      </div>
+
+      <!-- 1 COVER -->
+      <section class="slide hero" data-slide="1" data-notes="Agentic Insanity.&#10;• Armin Ronacher, Earendil.">
+        <div class="stack">
+          <h1>Agentic Insanity</h1>
+          <p class="meta">Armin Ronacher · Earendil</p>
+        </div>
+      </section>
+
+      <!-- 2 ABOUT ME -->
+      <section class="slide paper" data-slide="2" data-notes="Who I am.&#10;• Armin Ronacher, CTO at Earendil.&#10;• Company: earendil.com.&#10;• Blog: lucumr.pocoo.org.">
+        <div class="intro">
+          <p class="kicker">About me</p>
+          <h2>Armin Ronacher</h2>
+          <p class="role">CTO at Earendil</p>
+          <div class="links">
+            <a href="https://earendil.com/" target="_blank" rel="noopener"><span class="what">Company</span><span class="url">earendil.com</span><span class="arrow">→</span></a>
+            <a href="https://lucumr.pocoo.org/" target="_blank" rel="noopener"><span class="what">Blog</span><span class="url">lucumr.pocoo.org</span><span class="arrow">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 BACKGROUND -->
+      <section class="slide paper" data-slide="3" data-notes="Where I come from, so you know which lens I look through.&#10;• I created Flask and Jinja.&#10;• 20 years of Open Source: writing it, maintaining it, reviewing other people's contributions.&#10;• 10 years building engineering at Sentry, before starting Earendil.">
+        <p class="kicker">Background</p>
+        <h2>Before Earendil</h2>
+        <div class="body">
+          <ol class="bio">
+            <li><span class="n">01</span><span>Creator of <i>Flask</i> and <i>Jinja</i></span></li>
+            <li><span class="n">02</span><span><i>20 years</i> of Open Source</span></li>
+            <li><span class="n">03</span><span><i>10 years</i> of engineering at Sentry</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 4 STOP 1: AN INTERN -->
+      <section class="slide paper map-slide" data-slide="4" data-notes="Stop 1, January 2025: How I Use AI.&#10;• Cursor for autocomplete, ChatGPT voice mode as a search engine, local models through Ollama and Simon's llm for grammar fixes.&#10;• 'I treat AI as I would a collaborator or a pretty good intern but I remain responsible for the final outcome.'&#10;• It was 'horrible at Rust'. I wrote the code; the model debugged, explained and prototyped.&#10;• For scale: of the 20 posts I wrote in 2024, none was about AI.">
+        <p class="kicker">The map · stop 1 of 7</p>
+        <div class="map" data-at="1"></div>
+        <div class="stop-card">
+          <div><p class="when">January 2025</p><h3>An intern</h3></div>
+          <div><p>Cursor autocompletes, ChatGPT explains. I write the code; the model debugs and prototypes. “Horrible at Rust.”</p><p class="cite">How I Use AI</p></div>
+        </div>
+      </section>
+
+      <!-- 5 STOP 2: HANDS-OFF -->
+      <section class="slide paper map-slide" data-slide="5" data-notes="Stop 2, June 2025: AI Changes Everything.&#10;• Hooked on Claude Code since April or May. 'Where I used to spend most of my time in Cursor, I now mostly use Claude Code, almost entirely hands-off.'&#10;• 'If you would have told me even just six months ago that I'd prefer being an engineering lead to a virtual programmer intern over hitting the keys myself, I would not have believed it.'&#10;• 'Do I program any faster? Not really. But it feels like I've gained 30% more time in my day.'">
+        <p class="kicker">The map · stop 2 of 7</p>
+        <div class="map" data-at="2"></div>
+        <div class="stop-card">
+          <div><p class="when">June 2025</p><h3>Hands-off</h3></div>
+          <div><p>Claude Code with full permissions. I stop typing and start reviewing. Not faster, but 30% more time in my day.</p><p class="cite">AI Changes Everything</p></div>
+        </div>
+      </section>
+
+      <!-- 6 STOP 3: 90% -->
+      <section class="slide paper map-slide" data-slide="6" data-notes="Stop 3, September 2025: 90%.&#10;• The email infrastructure at Earendil: Go, OpenAPI first, raw SQL, Pulumi, generated Python and TypeScript SDKs. About 40,000 lines, north of 90% written by AI.&#10;• Claude for debugging with tools, Codex for review.&#10;• 'I still review every line, shape the architecture, and carry the responsibility for how it runs in production.'">
+        <p class="kicker">The map · stop 3 of 7</p>
+        <div class="map" data-at="3"></div>
+        <div class="stop-card">
+          <div><p class="when">September 2025</p><h3>90%</h3></div>
+          <div><p>A 40,000-line Go service, more than 90% written by AI. I still review every line; the architecture stays mine.</p><p class="cite">90%</p></div>
+        </div>
+      </section>
+
+      <!-- 7 STOP 4: PORTING BY VOICE -->
+      <section class="slide paper map-slide" data-slide="7" data-notes="Stop 4, January 2026: Porting MiniJinja to Go With an Agent.&#10;• About 45 minutes of my own time, 3 hours of the agent working while I watched, 7 more hours alone. All prompting by voice in Pi.&#10;• The oracle was the existing insta snapshot tests, parsed from Go, with a skip list.&#10;• Pi is now the agent I use almost exclusively.">
+        <p class="kicker">The map · stop 4 of 7</p>
+        <div class="map" data-at="4"></div>
+        <div class="stop-card">
+          <div><p class="when">January 2026</p><h3>Porting by voice</h3></div>
+          <div><p>MiniJinja, Rust to Go: 45 minutes of my time, ten hours of the agent’s, checked against the snapshot tests.</p><p class="cite">Porting MiniJinja to Go With an Agent</p></div>
+        </div>
+      </section>
+
+      <!-- 8 STOP 5: PI WITH PI -->
+      <section class="slide paper map-slide" data-slide="8" data-notes="Stop 5, April and May 2026: Mario and Earendil, Building Pi With Pi.&#10;• Mario and Pi join Earendil. We build Pi with Pi: /is to analyze an issue, /wr to wrap it up.&#10;• The tracker floods: 3,145 external issues and PRs in 90 days, 2,504 auto-closed. Issues that are '5% human and 95% clanker'.">
+        <p class="kicker">The map · stop 5 of 7</p>
+        <div class="map" data-at="5"></div>
+        <div class="stop-card">
+          <div><p class="when">April 2026</p><h3>Pi with Pi</h3></div>
+          <div><p>Mario and Pi join Earendil. We build Pi with Pi, and the tracker floods: 2,504 auto-closed in 90 days.</p><p class="cite">Building Pi With Pi</p></div>
+        </div>
+      </section>
+
+      <!-- 9 STOP 6: THE COMING LOOP -->
+      <section class="slide paper map-slide" data-slide="9" data-notes="Stop 6, June 2026: The Coming Loop.&#10;• Harnesses that keep the task alive after the model says it is done.&#10;• They work astonishingly well for ports, performance work, security scanning and research: code that is transformed or not meant to last.&#10;• 'My current status is that I have not had much success with this way of working for code I deeply care about.' And yet: 'I have no doubts that this looping future is going to be our future despite the fact that I presently resent it.'">
+        <p class="kicker">The map · stop 6 of 7</p>
+        <div class="map" data-at="6"></div>
+        <div class="stop-card">
+          <div><p class="when">June 2026</p><h3>The coming loop</h3></div>
+          <div><p>Harnesses that keep going after the model says it’s done. Great for ports and research. For my code, I resent them.</p><p class="cite">The Coming Loop</p></div>
+        </div>
+      </section>
+
+      <!-- 10 STOP 7: AND YET IT LOOPS -->
+      <section class="slide paper map-slide" data-slide="10" data-notes="Stop 7, November 2026: and yet it loops.&#10;• The answer to the previous stop. In June I wrote that loops don't work for code I care about, and that I resent them.&#10;• In November I run one anyway: a coordinator and its sub-agents build djs, a JavaScript engine in Rust, in six days. More on that in a moment.">
+        <p class="kicker">The map · stop 7 of 7</p>
+        <div class="map" data-at="7"></div>
+        <div class="stop-card">
+          <div><p class="when">November 2026</p><h3>And yet it loops</h3></div>
+          <div><p>In June I resented loops. In November, a coordinator and its sub-agents loop their way to a JavaScript engine in six days.</p><p class="cite">djs</p></div>
+        </div>
+      </section>
+
+      <!-- 11 HERE BE DRAGONS -->
+      <section class="slide paper map-slide" data-slide="11" data-notes="Where the map ends.&#10;• Nobody has charted what comes after the loops.&#10;• From The Coming Loop: the question is not whether we will loop, but how we keep judgment, good engineering, and a responsible human who can still supervise.">
+        <p class="kicker">The map · beyond</p>
+        <div class="map" data-at="8"></div>
+        <div class="stop-card">
+          <div><p class="when">Next</p><h3>Here be dragons</h3></div>
+          <div><p>The map ends here. The loops are coming either way; the open question is how a human still supervises.</p><p class="cite">The Coming Loop</p></div>
+        </div>
+      </section>
+
+      <!-- 12 VELOCITY -->
+      <section class="slide paper" data-slide="12" data-notes="The numbers. My own commits per quarter, across the 119 git repositories on my machine, deduplicated by hash (some repos are clones of each other).&#10;• 2024 is flat at about 100 a quarter. Q3 2025 is where it bends; Q1 2026, with Pi, it is 1,677.&#10;• Q4 2024 to Q3 2026: 111 to 2,303, about 21 times. The last bar is only October 1 to November 6.&#10;• Honest caveat: the chart does not include Sentry's private repositories, so 2024 is understated. That is why the headline number is GitHub's own count, which includes private work: 3,089 contributions in 2024, 4,233 in 2025, 11,054 in 2026 so far. 3.6 times, with two months to go.&#10;• Public commits alone: 869 in 2024, 1,179 in 2025, 6,885 in 2026 so far.&#10;• And this while my job moved away from engineering: ten years at Sentry, then co-founder and CTO of Earendil, with a team, hiring, Pi's community, a company to run.&#10;• Caveat: commits are not value. Lines added are even worse (ports and generated code inflate them), so I do not show them.">
+        <p class="kicker">Velocity</p>
+        <h2>Less of my job is engineering. More code ships.</h2>
+        <div class="body" style="top: 320px">
+          <div class="velocity">
+            <div>
+              <svg class="chart" width="980" height="560" viewBox="0 0 980 560">
+                <line class="axis" x1="30" y1="470" x2="960" y2="470" />
+                <line class="note-line" x1="453" y1="300" x2="453" y2="434" /><text class="note" x="453" y="288" text-anchor="middle">Claude Code</text>
+                <line class="note-line" x1="687" y1="200" x2="687" y2="296" /><text class="note" x="687" y="188" text-anchor="middle">Pi</text>
+                <line class="note-line" x1="921" y1="40" x2="921" y2="58" /><text class="note" x="944" y="28" text-anchor="end">and yet it loops</text>
+                <rect class="bar" x="40" y="461.2" width="46" height="8.8" /><text class="val" x="63" y="449.2" text-anchor="middle">101</text><text class="q" x="63" y="500" text-anchor="middle">Q1</text>
+                <rect class="bar" x="118" y="459.4" width="46" height="10.6" /><text class="val" x="141" y="447.4" text-anchor="middle">121</text><text class="q" x="141" y="500" text-anchor="middle">Q2</text>
+                <rect class="bar" x="196" y="461.3" width="46" height="8.7" /><text class="val" x="219" y="449.3" text-anchor="middle">99</text><text class="q" x="219" y="500" text-anchor="middle">Q3</text>
+                <rect class="bar" x="274" y="460.3" width="46" height="9.7" /><text class="val" x="297" y="448.3" text-anchor="middle">111</text><text class="q" x="297" y="500" text-anchor="middle">Q4</text>
+                <rect class="bar" x="352" y="451.5" width="46" height="18.5" /><text class="val" x="375" y="439.5" text-anchor="middle">211</text><text class="q" x="375" y="500" text-anchor="middle">Q1</text>
+                <rect class="bar" x="430" y="457.6" width="46" height="12.4" /><text class="val" x="453" y="445.6" text-anchor="middle">142</text><text class="q" x="453" y="500" text-anchor="middle">Q2</text>
+                <rect class="bar" x="508" y="434.1" width="46" height="35.9" /><text class="val" x="531" y="422.1" text-anchor="middle">410</text><text class="q" x="531" y="500" text-anchor="middle">Q3</text>
+                <rect class="bar" x="586" y="398.6" width="46" height="71.4" /><text class="val" x="609" y="386.6" text-anchor="middle">816</text><text class="q" x="609" y="500" text-anchor="middle">Q4</text>
+                <rect class="bar" x="664" y="323.3" width="46" height="146.7" /><text class="val" x="687" y="311.3" text-anchor="middle">1,677</text><text class="q" x="687" y="500" text-anchor="middle">Q1</text>
+                <rect class="bar" x="742" y="364.8" width="46" height="105.2" /><text class="val" x="765" y="352.8" text-anchor="middle">1,203</text><text class="q" x="765" y="500" text-anchor="middle">Q2</text>
+                <rect class="bar" x="820" y="268.5" width="46" height="201.5" /><text class="val" x="843" y="256.5" text-anchor="middle">2,303</text><text class="q" x="843" y="500" text-anchor="middle">Q3</text>
+                <rect class="bar now" x="898" y="90" width="46" height="380" /><text class="val" x="921" y="78" text-anchor="middle">4,344</text><text class="q" x="921" y="500" text-anchor="middle">Q4*</text>
+                <text class="yr" x="180" y="540" text-anchor="middle">2024</text>
+                <text class="yr" x="492" y="540" text-anchor="middle">2025</text>
+                <text class="yr" x="804" y="540" text-anchor="middle">2026</text>
+              </svg>
+            </div>
+            <div>
+              <div class="side">
+                <p class="fact"><b>3.6×</b>all GitHub contributions, 2024 vs. 2026 so far</p>
+                <p class="fact"><b>21×</b>commits per quarter in this chart</p>
+                <p class="fact"><b>869 → 6,885</b>public commits, 2024 vs. 2026</p>
+                <p class="fact"><b>Sentry → CTO</b>from engineering to running a company</p>
+              </div>
+              <p class="source">Chart: my commits, 119 local repos, without Sentry’s. *To Nov 6.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13 THE PRICE -->
+      <section class="slide paper" data-slide="13" data-notes="Early 2026, early Pi. The bathtub overflows. This is how it felt then, not how it feels now.&#10;• Review. 'Historically, writing code was slower than reviewing code.' That flipped. 'I too am the bottleneck now.' (The Final Bottleneck, February 2026.)&#10;• Slop in. Pi's tracker, the 90 days up to May 2026: 3,145 external issues and pull requests, 2,504 of them auto-closed because they came from people we hadn't approved. Only 60 of 714 auto-closed PRs, about 8%, were ever merged. Issues that are 5% human and 95% clanker, with confident wrong diagnoses that our own agents then believe.&#10;• Overflow. OpenClaw in February 2026: north of 2,500 open pull requests. 'You can't triage, you can't review, and many of the PRs cannot be merged after a certain point because they are too far out of date.'&#10;• The queueing lesson: if input grows faster than throughput, you have an accumulating failure. Backpressure and load shedding are the only things left: Pi auto-closes PRs and takes OSS vacations.">
+        <p class="kicker">The price · early 2026</p>
+        <h2>The bathtub overflows</h2>
+        <div class="body">
+          <div class="prices">
+            <div class="price">
+              <p class="tag">Review · February 2026</p>
+              <h3>I am the bottleneck</h3>
+              <p>“Historically, writing code was slower than reviewing code.” Not anymore. The queue now forms in front of me.</p>
+            </div>
+            <div class="price">
+              <p class="tag">Slop in · Pi’s tracker, 90 days</p>
+              <h3>Clankers file issues</h3>
+              <p class="num-row"><b>3,145</b>external issues and PRs</p>
+              <p class="num-row"><b>2,504</b>auto-closed</p>
+              <p class="num-row"><b>8%</b>of those PRs ever merged</p>
+            </div>
+            <div class="price">
+              <p class="tag">Overflow · OpenClaw</p>
+              <h3>A big bathtub</h3>
+              <p class="num-row"><b>2,500+</b>open pull requests</p>
+              <p>“You can’t triage, you can’t review.”</p>
+            </div>
+          </div>
+          <p class="bottom-line">If input grows faster than throughput, you have an accumulating failure.</p>
+        </div>
+      </section>
+
+      <!-- 14 THE FACTORY -->
+      <section class="slide paper" data-slide="14" data-notes="And yet. Two months after 'Why are we doing this again?', I am running a factory myself.&#10;• djs: a JavaScript and TypeScript engine in no_std Rust, built for wasm, to replace QuickJS in Pi's codemode.&#10;• First commit November 1, 1:13 in the morning. Six days later: 2,278 commits, about 178,000 lines of Rust, 38,069 of 38,109 active test262 tests passing, a 350 KB wasm module.&#10;• A coordinator agent assigns issues from a board to sub-agents, each in its own worktree, behind a merge lock and a gate.&#10;• The lines of Rust: about 125,000 of the 178,000 were there after the first 24 hours. The next five days added only about 53,000 more.&#10;• Look at the hours: most commits land between 11 at night and 3 in the morning. The factory does not sleep, and neither, apparently, do I.&#10;• What made this one work where the Astra weekend failed: an architecture document, an oracle (a QuickJS fork it has to match), test262, and a coordinator checklist 'learned the hard way'. I wrote the constraints. I did not write the engine.">
+        <p class="kicker">November 2026 · and yet it loops</p>
+        <h2>A JavaScript engine in six days</h2>
+        <div class="body">
+          <div class="factory">
+            <div class="stats">
+              <p class="stat"><b>2,278</b><span>commits since Nov 1</span></p>
+              <p class="stat"><b>178k</b><span>lines of no_std Rust</span></p>
+              <p class="stat"><b>38,069</b><span>of 38,109 test262 tests pass</span></p>
+              <p class="stat"><b>350 KB</b><span>wasm, replaces QuickJS in Pi</span></p>
+            </div>
+            <div>
+              <p class="label">djs commits by hour of day</p>
+              <svg class="chart" viewBox="-20 20 600 165" width="600" height="165" >
+                <line class="axis" x1="-10" y1="150" x2="560" y2="150" />
+                <rect class="bar night" x="0" y="55.0" width="17" height="95.0" /><rect class="bar night" x="23" y="30.0" width="17" height="120.0" /><rect class="bar night" x="46" y="46.0" width="17" height="104.0" /><rect class="bar night" x="69" y="78.1" width="17" height="71.9" /><rect class="bar night" x="92" y="102.5" width="17" height="47.5" /><rect class="bar night" x="115" y="115.3" width="17" height="34.7" />
+                <rect class="bar" x="138" y="128.8" width="17" height="21.2" /><rect class="bar" x="161" y="129.5" width="17" height="20.5" /><rect class="bar" x="184" y="86.5" width="17" height="63.5" /><rect class="bar" x="207" y="92.9" width="17" height="57.1" /><rect class="bar" x="230" y="87.7" width="17" height="62.3" /><rect class="bar" x="253" y="90.9" width="17" height="59.1" /><rect class="bar" x="276" y="101.2" width="17" height="48.8" /><rect class="bar" x="299" y="96.1" width="17" height="53.9" /><rect class="bar" x="322" y="98.7" width="17" height="51.3" /><rect class="bar" x="345" y="86.5" width="17" height="63.5" /><rect class="bar" x="368" y="108.3" width="17" height="41.7" /><rect class="bar" x="391" y="87.1" width="17" height="62.9" /><rect class="bar" x="414" y="83.9" width="17" height="66.1" /><rect class="bar" x="437" y="107.6" width="17" height="42.4" /><rect class="bar" x="460" y="101.2" width="17" height="48.8" /><rect class="bar" x="483" y="82.6" width="17" height="67.4" /><rect class="bar" x="506" y="88.4" width="17" height="61.6" />
+                <rect class="bar night" x="529" y="53.1" width="17" height="96.9" />
+                <text class="q" x="9" y="176" text-anchor="middle">0h</text><text class="q" x="146" y="176" text-anchor="middle">6h</text><text class="q" x="284" y="176" text-anchor="middle">12h</text><text class="q" x="422" y="176" text-anchor="middle">18h</text><text class="q" x="537" y="176" text-anchor="middle">23h</text>
+              </svg>
+              <p class="label chart2">Lines of Rust over time</p>
+              <svg class="chart" viewBox="-20 20 600 165" width="600" height="165">
+                <line class="axis" x1="-10" y1="150" x2="560" y2="150" />
+                <path class="loc-area" d="M0,150 L0,150 L8.4,139.6 L16.8,120.4 L25.2,118 L33.6,117 L42,108.8 L50.4,102.4 L58.8,93.3 L67.2,89.2 L75.6,84.5 L84,82 L92.4,80.2 L100.8,78.1 L109.2,76.7 L117.6,76.7 L126,76.7 L134.4,76.7 L142.8,76.4 L151.2,75.4 L159.6,75.4 L168,75.4 L176.4,75.4 L184.8,75.4 L193.2,74 L201.6,73.4 L210,72.3 L218.4,71.4 L226.8,70.9 L235.2,70.9 L243.6,70.6 L252,69.1 L260.4,68.3 L268.8,68.3 L277.2,68.2 L285.6,64.9 L294,62.1 L302.4,61.7 L310.8,61.8 L319.2,61.8 L327.6,61.8 L336,61.8 L344.4,61.4 L352.8,61.4 L361.2,61.1 L369.6,60.8 L378,59.5 L386.4,56.1 L394.8,54.4 L403.2,55.2 L411.6,53.8 L420,52.3 L428.4,50.8 L436.8,49.6 L445.2,49.4 L453.6,48.3 L462,48.1 L470.4,47.6 L478.8,47.6 L487.2,47.6 L495.6,47.6 L504,47.3 L512.4,46.1 L520.8,45.7 L529.2,45.7 L537.6,45.2 L546,45 L546,150 Z" />
+                <polyline class="loc-line" points="0,150 8.4,139.6 16.8,120.4 25.2,118 33.6,117 42,108.8 50.4,102.4 58.8,93.3 67.2,89.2 75.6,84.5 84,82 92.4,80.2 100.8,78.1 109.2,76.7 117.6,76.7 126,76.7 134.4,76.7 142.8,76.4 151.2,75.4 159.6,75.4 168,75.4 176.4,75.4 184.8,75.4 193.2,74 201.6,73.4 210,72.3 218.4,71.4 226.8,70.9 235.2,70.9 243.6,70.6 252,69.1 260.4,68.3 268.8,68.3 277.2,68.2 285.6,64.9 294,62.1 302.4,61.7 310.8,61.8 319.2,61.8 327.6,61.8 336,61.8 344.4,61.4 352.8,61.4 361.2,61.1 369.6,60.8 378,59.5 386.4,56.1 394.8,54.4 403.2,55.2 411.6,53.8 420,52.3 428.4,50.8 436.8,49.6 445.2,49.4 453.6,48.3 462,48.1 470.4,47.6 478.8,47.6 487.2,47.6 495.6,47.6 504,47.3 512.4,46.1 520.8,45.7 529.2,45.7 537.6,45.2 546,45" />
+                <circle class="loc-dot" cx="100.8" cy="78.1" r="5" /><text class="val" x="110.8" y="108.1" text-anchor="start">125k after day one</text>
+                <circle class="loc-dot" cx="546" cy="45" r="5" /><text class="val" x="542" y="31" text-anchor="end">178k</text>
+                <text class="q" x="0" y="176" text-anchor="start">Nov 1</text>
+                <text class="q" x="100.8" y="176" text-anchor="middle">Nov 2</text>
+                <text class="q" x="201.6" y="176" text-anchor="middle">Nov 3</text>
+                <text class="q" x="302.4" y="176" text-anchor="middle">Nov 4</text>
+                <text class="q" x="403.2" y="176" text-anchor="middle">Nov 5</text>
+                <text class="q" x="504" y="176" text-anchor="middle">Nov 6</text>
+                </svg>
+              <p class="source">Blue: 11 pm to 6 am, Vienna time. Rust every 2 hours.</p>
+            </div>
+          </div>
+          <p class="bottom-line">Two months after asking “why are we doing this again?”</p>
+        </div>
+      </section>
+
+      <!-- 15 THE GAME -->
+      <section class="slide paper" data-slide="15" data-notes="Not just the factory. In the same weeks, something for my kids.&#10;• The Glass Bird: a dungeon crawler for the browser, made with AI together with my kids. Floating cubes stacked into twenty depths, a town, monsters, bosses, up to four players, in English, German and Indonesian.&#10;• First commit October 11, last one November 2: 656 commits in 23 days.&#10;• About 97,000 lines of JavaScript for the game itself, plus 28,000 lines of tests.&#10;• 247 3D models, scripted in Blender (39,000 lines of Python), with Pi driving Blender through MCP.&#10;• 567 narrated lines, each in English and German, rendered with a cloned voice (Qwen3-TTS).&#10;• The lines of code, unlike djs, grow steadily: about 8,000 after the first day, then roughly 4,000 a day to 97,000.&#10;• Look at the blue bars: the weekends. 279 of the 656 commits, 43%, landed on 7 of the 23 days.&#10;• It also comes with a guide for children, about 12, that explains how the game works down to the real code.">
+        <p class="kicker">October 2026 · the game</p>
+        <h2>A dungeon crawler with my kids in three weeks</h2>
+        <div class="body">
+          <div class="factory">
+            <div class="stats">
+              <p class="stat"><b>656</b><span>commits in 23 days</span></p>
+              <p class="stat"><b>97k</b><span>lines of JavaScript, plus 28k of tests</span></p>
+              <p class="stat"><b>247</b><span>3D models, scripted in Blender</span></p>
+              <p class="stat"><b>567</b><span>narrated lines, English and German</span></p>
+            </div>
+            <div>
+              <p class="label">The Glass Bird commits per day</p>
+              <svg class="chart" viewBox="-20 20 600 165" width="600" height="165" >
+                <line class="axis" x1="-10" y1="150" x2="560" y2="150" />
+                <rect class="bar night" x="0" y="40.9" width="18" height="109.1" /><rect class="bar" x="24" y="104.5" width="18" height="45.5" /><rect class="bar" x="48" y="95.4" width="18" height="54.6" /><rect class="bar" x="72" y="148.2" width="18" height="1.8" /><rect class="bar" x="96" y="113.6" width="18" height="36.4" /><rect class="bar" x="120" y="90.0" width="18" height="60.0" /><rect class="bar night" x="144" y="91.8" width="18" height="58.2" /><rect class="bar night" x="168" y="30.0" width="18" height="120.0" /><rect class="bar" x="192" y="68.2" width="18" height="81.8" /><rect class="bar" x="216" y="90.0" width="18" height="60.0" /><rect class="bar" x="240" y="128.2" width="18" height="21.8" /><rect class="bar" x="264" y="117.3" width="18" height="32.7" /><rect class="bar" x="288" y="146.3" width="18" height="3.7" /><rect class="bar night" x="312" y="124.5" width="18" height="25.5" /><rect class="bar night" x="336" y="62.7" width="18" height="87.3" /><rect class="bar" x="360" y="99.1" width="18" height="50.9" /><rect class="bar" x="384" y="106.4" width="18" height="43.6" /><rect class="bar" x="408" y="95.4" width="18" height="54.6" /><rect class="bar" x="432" y="95.4" width="18" height="54.6" /><rect class="bar" x="456" y="70.0" width="18" height="80.0" /><rect class="bar night" x="480" y="84.6" width="18" height="65.4" /><rect class="bar night" x="504" y="108.2" width="18" height="41.8" /><rect class="bar" x="528" y="146.3" width="18" height="3.7" />
+                <text class="q" x="9" y="176" text-anchor="middle">Oct 11</text><text class="q" x="177" y="176" text-anchor="middle">Oct 18</text><text class="q" x="345" y="176" text-anchor="middle">Oct 25</text><text class="q" x="513" y="176" text-anchor="middle">Nov 1</text>
+              </svg>
+              <p class="label chart2">Lines of game JavaScript over time</p>
+              <svg class="chart" viewBox="-20 20 600 165" width="600" height="165">
+                <line class="axis" x1="-10" y1="150" x2="560" y2="150" />
+                <path class="loc-area" d="M9,150 L9,141.1 L33,136.8 L57,131.4 L81,131.3 L105,127 L129,123 L153,119.7 L177,109.9 L201,102.4 L225,97.5 L249,94 L273,90.3 L297,89.3 L321,87.1 L345,78.8 L369,73.9 L393,69.1 L417,62.2 L441,58.5 L465,52.1 L489,50 L513,45.2 L537,45 L537,150 Z" />
+                <polyline class="loc-line" points="9,141.1 33,136.8 57,131.4 81,131.3 105,127 129,123 153,119.7 177,109.9 201,102.4 225,97.5 249,94 273,90.3 297,89.3 321,87.1 345,78.8 369,73.9 393,69.1 417,62.2 441,58.5 465,52.1 489,50 513,45.2 537,45" />
+                <circle class="loc-dot" cx="537" cy="45" r="5" /><text class="val" x="533" y="31" text-anchor="end">97k</text>
+                <text class="q" x="9" y="176" text-anchor="middle">Oct 11</text>
+                <text class="q" x="177" y="176" text-anchor="middle">Oct 18</text>
+                <text class="q" x="345" y="176" text-anchor="middle">Oct 25</text>
+                <text class="q" x="513" y="176" text-anchor="middle">Nov 1</text>
+                </svg>
+              <p class="source">Blue: weekends, 43% of commits. src/ per day.</p>
+            </div>
+          </div>
+          <p class="bottom-line">Made with my kids, with a guide so they can learn how it works.</p>
+        </div>
+      </section>
+
+      <!-- 16 THE GAME, PICTURES -->
+      <section class="slide paper" data-slide="16" data-notes="What it looks like.&#10;• Left: the game itself. The town every world begins in, Gusto (the first boss) and his copies, a cube deep down with lava, and two players together in the town.&#10;• Right: some of the monsters. Each one is a Blender script in the repository, exported into the game; Pi works with Blender over MCP. Top row: Gusto, Foggery, Firecat. Then Spicy, Wolla, Squirtle. Then Umbra, Mansk, Moose.">
+        <p class="kicker">October 2026 · the game</p>
+        <h2>The Glass Bird</h2>
+        <div class="body">
+          <div class="gallery">
+            <div>
+              <p class="label">In the game</p>
+              <div class="shots">
+                <img src="assets/glassbird/screenshot-town.jpg" alt="The town where every world begins" />
+                <img src="assets/glassbird/screenshot-boss.jpg" alt="Fighting Gusto, the first boss" />
+                <img src="assets/glassbird/screenshot-depths.jpg" alt="A cube deep down, with lava" />
+                <img src="assets/glassbird/together.jpg" alt="Two players in the town" />
+              </div>
+            </div>
+            <div>
+              <p class="label">Some of its monsters, from Blender scripts</p>
+              <div class="models">
+                <img src="assets/glassbird/model-gusto.jpg" alt="Gusto" />
+                <img src="assets/glassbird/model-foggery.jpg" alt="Foggery" />
+                <img src="assets/glassbird/model-firecat.jpg" alt="Firecat" />
+                <img src="assets/glassbird/model-spicy.jpg" alt="Spicy" />
+                <img src="assets/glassbird/model-wolla.jpg" alt="Wolla" />
+                <img src="assets/glassbird/model-squirtle.jpg" alt="Squirtle" />
+                <img src="assets/glassbird/model-umbra.jpg" alt="Umbra" />
+                <img src="assets/glassbird/model-mansk.jpg" alt="Mansk" />
+                <img src="assets/glassbird/model-moose.jpg" alt="Moose" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 17 WHERE HARNESSES GO -->
+      <section class="slide paper" data-slide="17" data-notes="Now the other half of what we do at Earendil: Pi, and the harness under it.&#10;• The harness is the part that decides what the model sees, which tools it can call, and when the work is done. It used to be a thin loop around one chat.&#10;• 2025 was one person, one agent, in a terminal. You watch it, you steer it, and if it falls over you type 'continue'.&#10;• 2026 is one person and many agents: loops, sub-agents, a coordinator handing out work at three in the morning. Nobody watches every one of them.&#10;• Next is many people and many agents: a Slack channel, an email thread, a browser, all talking to and steering the same agents.&#10;• That needs three things the terminal never needed: orchestration, multiplayer, and durability. That is what Pi Durable is for.">
+        <p class="kicker">Pi and harnesses</p>
+        <h2>Where harnesses are going</h2>
+        <div class="body">
+          <div class="stages">
+            <div class="stage">
+              <svg viewBox="0 0 440 170" width="440" height="170" aria-hidden="true">
+                <line class="g-link" x1="150" y1="85" x2="290" y2="85" />
+                <circle class="g-human" cx="150" cy="85" r="20" /><circle class="g-agent" cx="290" cy="85" r="16" />
+              </svg>
+              <p class="when">2025</p>
+              <h3>One person, one agent</h3>
+              <p>In a terminal. You watch it, you steer it, you restart it.</p>
+            </div>
+            <div class="stage">
+              <svg viewBox="0 0 440 170" width="440" height="170" aria-hidden="true">
+                <g class="g-link"><line x1="110" y1="85" x2="220" y2="85" /><line x1="220" y1="85" x2="330" y2="25" /><line x1="220" y1="85" x2="345" y2="65" /><line x1="220" y1="85" x2="345" y2="105" /><line x1="220" y1="85" x2="330" y2="145" /></g>
+                <circle class="g-human" cx="110" cy="85" r="20" /><circle class="g-agent" cx="220" cy="85" r="16" />
+                <circle class="g-agent small" cx="330" cy="25" r="11" /><circle class="g-agent small" cx="345" cy="65" r="11" /><circle class="g-agent small" cx="345" cy="105" r="11" /><circle class="g-agent small" cx="330" cy="145" r="11" />
+              </svg>
+              <p class="when">2026</p>
+              <h3>One person, many agents</h3>
+              <p>Loops, sub-agents, a coordinator at 3 am. Nobody watches them all.</p>
+            </div>
+            <div class="stage">
+              <svg viewBox="0 0 440 170" width="440" height="170" aria-hidden="true">
+                <g class="g-link"><line x1="90" y1="30" x2="220" y2="85" /><line x1="75" y1="85" x2="220" y2="85" /><line x1="90" y1="140" x2="220" y2="85" /><line x1="220" y1="85" x2="340" y2="30" /><line x1="220" y1="85" x2="355" y2="85" /><line x1="220" y1="85" x2="340" y2="140" /></g>
+                <circle class="g-human" cx="90" cy="30" r="17" /><circle class="g-human" cx="75" cy="85" r="17" /><circle class="g-human" cx="90" cy="140" r="17" />
+                <rect class="g-hub" x="190" y="60" width="60" height="50" rx="4" />
+                <circle class="g-agent small" cx="340" cy="30" r="11" /><circle class="g-agent small" cx="355" cy="85" r="11" /><circle class="g-agent small" cx="340" cy="140" r="11" />
+              </svg>
+              <p class="when">Next</p>
+              <h3>Many people, many agents</h3>
+              <p>A channel, a thread, a browser, all steering the same work.</p>
+            </div>
+          </div>
+          <p class="bottom-line">That needs what the terminal never did: orchestration, multiplayer, durability.</p>
+        </div>
+      </section>
+
+      <!-- 18 MULTIPLAYER -->
+      <section class="slide paper" data-slide="18" data-notes="Multiplayer comes out of one rule: nothing is shown before it is stored.&#10;• Every screen is a window onto storage, not onto the process. So a crash loses at most the last moment, and any number of screens can look through the same window.&#10;• Join late or reconnect: you get the current view, then the changes. Nothing is replayed.&#10;• Anyone can steer a running agent. A correction is queued and placed at the next turn, so two people never talk over each other mid-sentence.&#10;• A Slack thread is a fork of the channel: it sees the channel up to the message it replies to.&#10;• This is what we showed with Pi Durable on Cloudflare: several people in one chat, one Durable Object that sleeps when nobody talks.">
+        <p class="kicker">Multiplayer</p>
+        <h2>Everyone watches the same conversation</h2>
+        <div class="body">
+          <div class="hub-layout">
+            <svg class="hub" viewBox="0 0 680 470" width="740" height="512" aria-hidden="true">
+              <defs>
+                <path id="mp1" d="M340 240 L 110 70" /><path id="mp2" d="M340 240 L 570 70" /><path id="mp3" d="M340 240 L 340 410" />
+                <path id="steer" d="M570 70 L 340 240" />
+              </defs>
+              <g class="d-line"><use href="#mp1" /><use href="#mp2" /><use href="#mp3" /></g>
+              <g class="d-moss">
+                <circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp1" /></animateMotion></circle>
+                <circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp2" /></animateMotion></circle>
+                <circle r="7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#mp3" /></animateMotion></circle>
+              </g>
+              <circle r="11" class="d-ember"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#steer" /></animateMotion></circle>
+              <rect x="230" y="180" width="220" height="120" rx="4" style="fill: var(--ink)" />
+              <text class="d-t-paper" x="340" y="234" text-anchor="middle">conversation</text>
+              <text class="d-t-paper-soft" x="340" y="264" text-anchor="middle">stored, then shown</text>
+              <rect class="d-box" x="10" y="30" width="200" height="80" rx="4" /><text class="d-t-up" x="110" y="66" text-anchor="middle">terminal</text><text class="d-t-muted" x="110" y="93" text-anchor="middle">you</text>
+              <rect class="d-box" x="470" y="30" width="200" height="80" rx="4" /><text class="d-t-up" x="570" y="66" text-anchor="middle">Slack</text><text class="d-t-muted" x="570" y="93" text-anchor="middle">ann, steering</text>
+              <rect class="d-moss-tint" x="240" y="370" width="200" height="80" rx="4" /><text class="d-t-up" x="340" y="406" text-anchor="middle">browser</text><text class="d-t-moss" x="340" y="433" text-anchor="middle">joined late</text>
+            </svg>
+            <div class="side">
+              <p class="fact"><b>Stored, then shown</b>Every screen is a window onto storage, not onto the process.</p>
+              <p class="fact"><b>Late is fine</b>Join or reconnect any time: the current view, then the changes.</p>
+              <p class="fact"><b>Anyone can steer</b>A correction waits for the next turn instead of cutting in.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 19 WHAT THIS MEANS -->
+      <section class="slide paper" data-slide="19" data-notes="So what does this mean? Software engineering like we knew it has to change, because copying, porting and rewriting got cheap.&#10;• PhotoCraft, October 2026: a clean-room Photoshop in Rust, one developer with agents, about ten days. Not decompiled: built from Adobe's public PSD spec, the ICC standards, an inventory of the installed app (shortcuts, plug-ins, strings from the binary) and 250+ PSD files rendered by the real Photoshop as a pixel oracle. It rates itself about 45% ready for real work. Word, Excel, PowerPoint, Premiere and Acrobat clones followed within days. Tools like REA make reverse engineering binaries an agent skill too.&#10;• Bun, May 2026: 535,000 lines of Zig rewritten in Rust and merged as one pull request, with zero tests skipped or deleted. At peak Claude wrote about 1,300 lines a minute.&#10;• Anthropic, 2026: from about 2,500 changes merged per day in May to over 30,000 in September.&#10;• If code is that cheap to produce and to copy, the moat is not the code, and the way we build, check and ship it can't stay the same.">
+        <p class="kicker">What this means</p>
+        <h2>Software engineering as we knew it has to change</h2>
+        <div class="body">
+          <div class="prices">
+            <div class="price">
+              <p class="tag">PhotoCraft · October 2026</p>
+              <h3>Photoshop in ten days</h3>
+              <p>A clean-room clone in Rust, from public specs and the real Photoshop’s own renders. About 45% ready, by its own count.</p>
+            </div>
+            <div class="price">
+              <p class="tag">Bun · May 2026</p>
+              <h3>A runtime, re-typed</h3>
+              <p>535,000 lines of Zig rewritten in Rust, merged as one pull request. Zero tests skipped.</p>
+            </div>
+            <div class="price">
+              <p class="tag">Anthropic · 2026</p>
+              <h3>12× the merges</h3>
+              <p>From 2,500 changes merged per day in May to more than 30,000 in September.</p>
+            </div>
+          </div>
+          <p class="bottom-line">When copying is cheap, the code is not the moat.</p>
+        </div>
+      </section>
+
+      <!-- 20 CHECKING WITHOUT READING -->
+      <section class="slide paper" data-slide="20" data-notes="If the machine writes faster than we can read, we need things that check without reading. Three places where that is already happening.&#10;• Formal verification. Martin Kleppmann predicted in December 2025 that AI will make formal verification go mainstream, because proofs are about to become vastly cheaper. In October 2026 Anthropic reported that Claude, over a few weeks, proved there are no crashes on any input up to 64 MB for 239 entry points across 123 OSS-Fuzz libraries, on compiled RISC-V binaries, and found long-hidden bugs on the way. For scale: seL4 took about two person-years to build and twenty to verify.&#10;• Deterministic, hermetic builds. The Shai-Hulud worm and its variants compromised over 1,300 npm package versions with about two billion monthly downloads through install-time scripts. A build that is a function of its declared inputs is both what agents need to be reproducible and what keeps a worm out. djs makes the same point inside a runtime: same inputs, byte-identical heaps.&#10;• Version control. Anthropic migrated its monorepo off git onto an in-house system, Scion, in five months, while daily merges grew tenfold. In their words: 'A proper merge queue doesn't make much sense at agent scale.' I wrote a year ago that I want to see the prompts and the failed attempts, not just the diff.">
+        <p class="kicker">What this means · trust</p>
+        <h2>We need things that check without reading</h2>
+        <div class="body">
+          <div class="prices">
+            <div class="price">
+              <p class="tag">Formal verification</p>
+              <h3>Proofs got cheap</h3>
+              <p class="num-row"><b>123</b>libraries proven crash-free on all inputs, in weeks</p>
+              <p>seL4 took two person-years to build and twenty to verify.</p>
+            </div>
+            <div class="price">
+              <p class="tag">Deterministic builds</p>
+              <h3>Hermetic or hijacked</h3>
+              <p class="num-row"><b>1,300+</b>npm versions hit by Shai-Hulud</p>
+              <p>A build should be a function of its declared inputs, for agents and against worms.</p>
+            </div>
+            <div class="price">
+              <p class="tag">Version control</p>
+              <h3>Git at agent scale</h3>
+              <p class="num-row"><b>5 months</b>to move Anthropic off git</p>
+              <p>“A proper merge queue doesn’t make much sense at agent scale.”</p>
+            </div>
+          </div>
+          <p class="bottom-line">The machine writes faster than we can read.</p>
+        </div>
+      </section>
+
+      <!-- 21 CHANGING LANGUAGES -->
+      <section class="slide paper" data-slide="21" data-notes="Moving from one language to another used to be a multi-year rewrite that most teams never dared. Now it is a decision you can make when it is worth it.&#10;• lineread, November 2026: GNU Readline 8.3 reimplemented in Rust, MIT/Apache instead of GPL, in one evening. 16:28 to 20:13: plan, recreated headers, a test driver and a behavioral suite recorded against the real readline. Then the readline source was deleted and only the compiled binaries kept as a black-box oracle. 20:13 to 23:21: agents wrote the Rust implementation, 171 commits, about 18,000 lines. By midnight: launcher, README, licenses. Today it passes 4,766 of 4,772 cases, and it drives CPython's readline module, the SQLite shell and the Lua REPL. The README says clearly this is an attempted clean room, not a legal one.&#10;• Bun, May 2026: Zig to Rust, because mixing garbage-collected and manually managed memory kept causing leaks and crashes. A porting guide, a mechanical port file by file, then loops until the existing test suite passed on every platform. Memory after 2,000 builds went from 6.7 GB to 609 MB.&#10;• MiniJinja, January 2026: Rust to Go, about 45 minutes of my own time, against the existing snapshot tests.&#10;• chardet, March 2026: rewritten from scratch with Claude Code in about five days from the API and the tests, and relicensed from LGPL to MIT. The original author objected; that fight is the Ship of Theseus problem.&#10;• The common thread: the test suite is the asset, the language is a choice. And the license may be a choice too, which is uncomfortable.">
+        <p class="kicker">What this means · languages</p>
+        <h2>If it’s worth it, you can change languages</h2>
+        <div class="body">
+          <ol class="moves">
+            <li><span class="from">C → Rust</span><span class="what"><b>lineread</b> · GNU Readline without the GPL, in one evening</span><span class="when">Nov 2026</span></li>
+            <li><span class="from">Zig → Rust</span><span class="what"><b>Bun</b> · 535k lines, one pull request, memory down 11×</span><span class="when">May 2026</span></li>
+            <li><span class="from">LGPL → MIT</span><span class="what"><b>chardet</b> · rewritten from its tests in five days, and a fight</span><span class="when">Mar 2026</span></li>
+            <li><span class="from">Rust → Go</span><span class="what"><b>MiniJinja</b> · 45 minutes of my time</span><span class="when">Jan 2026</span></li>
+          </ol>
+          <p class="bottom-line">The test suite is the asset. The language is a choice.</p>
+        </div>
+      </section>
+
+      <!-- 22 OWN RUNTIMES -->
+      <section class="slide paper" data-slide="22" data-notes="With a good spec and a conformance suite, building your own language runtime is suddenly realistic.&#10;• djs, November 2026: our JavaScript engine for Pi's codemode. Six days, 38,069 of 38,109 test262 tests. test262 is what made it possible: every behavior has a test.&#10;• Anthropic, February 2026: Nicholas Carlini had 16 parallel agents write a C compiler in Rust from scratch. Nearly 2,000 sessions and about 20,000 dollars of API cost for a 100,000-line compiler that builds Linux 6.9.&#10;• Basis Research, April 2026: agents wrote 59,573 lines of formalised JavaScript semantics, with zero open proof obligations, as the start of a verified compiler.&#10;• So specs and conformance suites are suddenly the most valuable documents we have. Software with a good spec can be rebuilt; software without one is locked to its implementation.">
+        <p class="kicker">What this means · runtimes</p>
+        <h2>With a good spec, you can build your own runtime</h2>
+        <div class="body">
+          <div class="runtimes">
+            <div class="runtime"><b>6 days</b><h3>djs</h3><p>A JavaScript engine for Pi, passing 38,069 of 38,109 test262 tests.</p></div>
+            <div class="runtime"><b>$20,000</b><h3>A C compiler</h3><p>16 agents, 100,000 lines of Rust, and it builds Linux.</p></div>
+            <div class="runtime"><b>59,573</b><h3>JavaScript, formalised</h3><p>Lines of proven JS semantics, as the base for a verified compiler.</p></div>
+          </div>
+          <p class="bottom-line">Specs and conformance suites are now the most valuable documents we have.</p>
+        </div>
+      </section>
+
+      <!-- 23 SECURITY -->
+      <section class="slide paper" data-slide="23" data-notes="And security is becoming a massive pain, because finding bugs got cheap for everyone, and very little software is ready for that.&#10;• NVD: about 88,700 CVEs published between January 1 and October 29, 2026, against about 39,300 in the same window of 2025. Q3 2026 alone had 36,953, more than any full year before 2024. Some of that is counting (thousands of automated Linux kernel CVEs), but not all.&#10;• Google's threat intelligence group: disclosures per month doubled in 2026, and 141 exploited vulnerabilities in the first eight months, more than the 127 in all of 2025. AI-found bugs skew towards remote code execution.&#10;• curl: within the last few months, hundreds of reports, and every single one had AI involved. Daniel Stenberg: 'Since spring 2026 the slop reports are practically gone.' They are real now, which is worse for the maintainers. curl paused its bug intake for the whole of July to breathe: the summer of bliss.&#10;• From The Coming Loop: even if you don't loop, others will loop against your software. Defenders will have to loop too, and most projects have neither the people nor the process for it.">
+        <p class="kicker">What this means · security</p>
+        <h2>Finding bugs got cheap. Fixing them didn’t.</h2>
+        <div class="body">
+          <div class="factory">
+            <div class="stats">
+              <p class="stat"><b>2.3×</b><span>CVEs published, Jan–Oct 2026 vs. 2025</span></p>
+              <p class="stat"><b>141</b><span>exploited in eight months, more than all of 2025</span></p>
+              <p class="stat"><b>100%</b><span>of curl’s recent reports involved AI</span></p>
+              <p class="stat"><b>July</b><span>curl stopped taking reports, to breathe</span></p>
+            </div>
+            <blockquote class="quote">
+              <p>“Since spring 2026 the slop reports are practically gone.”</p>
+              <cite>Daniel Stenberg · curl, October 2026</cite>
+              <p class="after">The reports are real now. That’s the problem.</p>
+            </blockquote>
+          </div>
+          <p class="bottom-line">Others will loop against your software. Little of it is ready.</p>
+        </div>
+      </section>
+
+      <!-- 24 WHAT WE BUILD -->
+      <section class="slide paper" data-slide="24" data-notes="Where this leaves us at Earendil.&#10;• We think more and more people will build their own agents: for their team, their company, their family. Not everyone, but many more than today, because the machines make it cheap to try.&#10;• For them we want useful infrastructure: Pi Durable, a library for agents that survive their process, talk to many people at once, and wake up for scheduled work. The hard parts of a harness, so you don't build them again.&#10;• And for everyone who doesn't want to build one: Pi, an agent you can use off the shelf, that extends itself. You tell it what you need and it writes its own skills and extensions.&#10;• Both come from the same belief: agency should stay with the people using these things.">
+        <p class="kicker">At Earendil</p>
+        <h2>More and more people will build their own agents</h2>
+        <div class="body">
+          <div class="offers">
+            <div class="offer">
+              <p class="label">Infrastructure, to build your own</p>
+              <h3>Pi Durable</h3>
+              <p>The hard parts of a harness: agents that survive crashes, talk to many people at once and wake up on time.</p>
+              <p class="url">earendil.com/posts/pi-durable</p>
+            </div>
+            <div class="offer">
+              <p class="label">Off the shelf, and it extends itself</p>
+              <h3>Pi</h3>
+              <p>An agent you can use today. Tell it what you need and it writes its own skills and extensions.</p>
+              <p class="url">pi.dev</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 25 Q&A -->
+      <section class="slide hero" data-slide="25" data-notes="Q&amp;A.&#10;• Thank you.">
+        <div class="stack">
+          <h1>Questions?</h1>
+        </div>
+      </section>
+
+    </div>
+
+    <script>
+      // ── the ocean of earendil.com, day theme ──
+      // afl_ext's ocean waves (MIT), as adapted for the site: wave octaves are baked into unrolled
+      // GLSL and filtered by pixel footprint, so distant waves no longer shimmer and cost nothing.
+      (() => {
+        const canvas = document.getElementById("ocean");
+        const gl = canvas.getContext("webgl", { antialias: false, depth: false, stencil: false, alpha: false });
+        if (!gl) return;
+
+        const CAMERA_PROJECTION_DEPTH = 1.5;
+        const BASE_CAMERA_TILT = 0.14;
+        const RAYMARCH_STEPS = 24;
+        const WAVE_ITER_MARCH = 8;
+        const WAVE_ITER_DETAIL = 16;
+
+        const WAVE_OCTAVES = 16;
+        const WAVE_DRAG = 0.38;
+        const WAVE_SWELL_BIAS = 0.35;
+        // Mean of exp(sin(x) - 1) over one period (I0(1) / e): filtered octaves fade towards it.
+        const WAVE_OCTAVE_MEAN = 0.4657596075936404;
+        const WAVE_FADE_START = 0.2;
+        const WAVE_FADE_END = 0.6;
+
+        const OCTAVES = (() => {
+          const swellLength = Math.hypot(-0.25, 1.0);
+          const swellX = -0.25 / swellLength, swellY = 1.0 / swellLength;
+          const octaves = [];
+          let iter = 0, frequency = 1.0, timeMultiplier = 2.0, weight = 1.0;
+          for (let i = 0; i < WAVE_OCTAVES; i++) {
+            const s = Math.sin(iter), c = Math.cos(iter);
+            let dx = s + (swellX - s) * WAVE_SWELL_BIAS;
+            let dy = c + (swellY - c) * WAVE_SWELL_BIAS;
+            const len = Math.hypot(dx, dy);
+            octaves.push({ dx: dx / len, dy: dy / len, frequency, timeMultiplier, weight });
+            weight *= 0.8; frequency *= 1.18; timeMultiplier *= 1.07;
+            iter = Math.fround(iter + Math.fround(1232.399963)); // the original accumulated in 32-bit floats
+          }
+          return octaves;
+        })();
+
+        const g = (value) => {
+          const text = String(Number(value.toPrecision(9)));
+          return /[.eE]/.test(text) ? text : text + ".0";
+        };
+
+        // `float name(vec2 p, float footprint)`: the wave height filtered for a sample covering
+        // `footprint` world units. Octaves nest, so a sample stops at the first fully filtered one.
+        function waveFunction(name, count) {
+          const octaves = OCTAVES.slice(0, count);
+          const total = octaves.reduce((sum, o) => sum + o.weight, 0);
+          let body = "", indent = "  ";
+          for (const o of octaves) {
+            const wavelength = (2 * Math.PI) / o.frequency;
+            const limit = WAVE_FADE_END * wavelength;
+            const fadeScale = 1 / ((WAVE_FADE_END - WAVE_FADE_START) * wavelength);
+            body += `${indent}if (footprint < ${g(limit)}) {\n`;
+            indent += "  ";
+            body += `${indent}f = min((${g(limit)} - footprint) * ${g(fadeScale)}, 1.0) * ${g(o.weight)};\n`;
+            body += `${indent}x = dot(p, vec2(${g(o.dx * o.frequency)}, ${g(o.dy * o.frequency)})) + t * ${g(o.timeMultiplier)} + shift;\n`;
+            body += `${indent}e = exp(sin(x) - 1.0);\n`;
+            body += `${indent}sum += (e - ${g(WAVE_OCTAVE_MEAN)}) * f;\n`;
+            body += `${indent}p -= vec2(${g(o.dx * WAVE_DRAG)}, ${g(o.dy * WAVE_DRAG)}) * (e * cos(x) * f);\n`;
+          }
+          for (let i = 0; i < octaves.length; i++) { indent = indent.slice(2); body += `${indent}}\n`; }
+          return `
+          float ${name}(vec2 p, float footprint) {
+            float t = u_waveTime;
+            float shift = length(p) * 0.1;
+            float sum = 0.0;
+            float f, x, e;
+          ${body}
+            return ${g(WAVE_OCTAVE_MEAN)} + sum * ${g(1 / total)} + swell(p);
+          }`;
+        }
+
+        const vertex = "attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }";
+        const fragment = `
+          precision highp float;
+          uniform vec2 iResolution; uniform float u_waveTime; uniform float u_grainTime; uniform float u_noiseScale;
+          #define WATER_DEPTH 1.0
+          #define WATER_TOP 0.6
+          #define WATER_BOTTOM -1.4
+          #define MAX_DISTANCE 400.0
+          #define CAMERA_HEIGHT 1.5
+          #define RAYMARCH_STEPS ${RAYMARCH_STEPS}
+
+          vec2 cameraTilt() { return vec2(cos(${g(BASE_CAMERA_TILT)}), sin(${g(BASE_CAMERA_TILT)})); }
+
+          float swell(vec2 p) {
+            vec2 swellDir = vec2(-0.242535625, 0.9701425);
+            float swellPhase = dot(p, swellDir) * 0.18 - u_waveTime * 0.08;
+            float swellFade = smoothstep(28.0, 4.0, length(p - vec2(u_waveTime * 0.2, 1.0)));
+            return sin(swellPhase) * swellFade * 0.35;
+          }
+          ${waveFunction("wavesMarch", WAVE_ITER_MARCH)}
+          ${waveFunction("wavesDetail", WAVE_ITER_DETAIL)}
+
+          float marchHeight(vec2 p, float footprint) { return wavesMarch(p, footprint) * WATER_DEPTH - WATER_DEPTH; }
+          float detailHeight(vec2 p, float footprint) { return wavesDetail(p, footprint) * WATER_DEPTH; }
+
+          // Steps follow the vertical gap but lengthen for grazing rays; the crossing is then
+          // refined with one regula falsi step.
+          float raymarchwater(vec3 origin, vec3 ray, float tNear, float tFar, float lodScale) {
+            float stepScale = 1.0 / (0.25 - ray.y);
+            float t = tNear, a = tNear, gapA = 0.0, gapB = 0.0;
+            for (int i = 0; i < RAYMARCH_STEPS; i++) {
+              vec3 p = origin + ray * t;
+              float gap = p.y - marchHeight(p.xz, t * lodScale);
+              if (gap < 0.0) { gapB = gap; break; }
+              if (gap < 0.25 * t * lodScale * -ray.y) return t;
+              a = t; gapA = gap;
+              t += gap * stepScale;
+              if (t >= tFar) return tFar;
+            }
+            if (gapB >= 0.0) return t;
+            float b = t;
+            float m = mix(a, b, gapA / (gapA - gapB));
+            vec3 p = origin + ray * m;
+            float gap = p.y - marchHeight(p.xz, m * lodScale);
+            if (gap < 0.0) { b = m; gapB = gap; } else { a = m; gapA = gap; }
+            return mix(a, b, gapA / (gapA - gapB));
+          }
+
+          vec3 normal(vec2 pos, float e, float footprint) {
+            float H = detailHeight(pos, footprint);
+            float hx = detailHeight(pos - vec2(e, 0.0), footprint);
+            float hz = detailHeight(pos + vec2(0.0, e), footprint);
+            return normalize(vec3(hx - H, e, H - hz));
+          }
+
+          vec3 getRay(vec2 fragCoord) {
+            vec2 uv = ((fragCoord.xy / iResolution.xy) * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+            vec3 proj = normalize(vec3(uv.x, uv.y, ${g(CAMERA_PROJECTION_DEPTH)}));
+            vec2 cs = cameraTilt();
+            return vec3(proj.x, cs.x * proj.y + cs.y * proj.z, cs.x * proj.z - cs.y * proj.y);
+          }
+
+          vec3 atmosphere(vec3 raydir) {
+            vec3 sundir = normalize(vec3(-0.0773502691896258, 0.6, 0.5773502691896258));
+            float t1 = 1.0 / (raydir.y + 0.1);
+            float t2 = 1.0 / (sundir.y * 11.0 + 1.0);
+            float raysundt = pow(abs(dot(sundir, raydir)), 2.0);
+            vec3 suncolor = mix(vec3(1.0), max(vec3(0.0), vec3(1.0) - vec3(5.5, 13.0, 22.4) / 22.4), t2);
+            vec3 sky = vec3(12.0, 12.0, 13.0) / 22.4 * suncolor;
+            vec3 sky2 = max(vec3(0.0), sky - vec3(12.0, 12.0, 13.0) * 0.002 * (t1 - 6.0 * sundir.y * sundir.y));
+            sky2 *= t1 * (0.24 + raysundt * 0.24);
+            return sky2 * (1.0 + pow(1.0 - raydir.y, 3.0)) * 0.5;
+          }
+
+          vec3 aces(vec3 color) {
+            mat3 m1 = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
+            mat3 m2 = mat3(1.60475, -0.10208, -0.00327, -0.53108, 1.10813, -0.07276, -0.07367, -0.00605, 1.07602);
+            vec3 v = m1 * color;
+            vec3 a = v * (v + 0.0245786) - 0.000090537;
+            vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+            return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+          }
+
+          float gaussian(float z, float u, float o) { return (1.0 / (o * sqrt(6.283))) * exp(-(((z - u) * (z - u)) / (2.0 * o * o))); }
+
+          vec3 scene(vec2 fragCoord) {
+            vec3 ray = getRay(fragCoord);
+            if (ray.y >= 0.0) return aces(atmosphere(ray) * 2.0);
+
+            vec3 origin = vec3(u_waveTime * 0.2, CAMERA_HEIGHT, 1.0);
+            float tNear = (origin.y - WATER_TOP) / -ray.y;
+            float tFar = min((origin.y - WATER_BOTTOM) / -ray.y, MAX_DISTANCE);
+
+            // World-space size of this pixel on the water, widened for grazing rays.
+            float pixelAngle = 2.0 / (${g(CAMERA_PROJECTION_DEPTH)} * iResolution.y);
+            float lodScale = pixelAngle * inversesqrt(max(-ray.y, 0.01));
+
+            float dist = tNear < tFar ? raymarchwater(origin, ray, tNear, tFar, lodScale) : tFar;
+            vec3 hit = origin + ray * dist;
+            float footprint = dist * lodScale;
+
+            float distanceBlend = min(1.0, sqrt(dist * 0.01) * 1.1);
+            vec3 N = normal(hit.xz, max(0.01, dist * pixelAngle), footprint);
+            N = normalize(mix(N, vec3(0.0, 1.0, 0.0), 0.45 * distanceBlend));
+
+            float fresnelSharp = 0.04 + 0.96 * pow(1.0 - max(0.0, dot(-N, ray)), 5.0);
+            float fresnelFlat = 0.04 + 0.96 * pow(1.0 - max(0.0, -ray.y), 5.0);
+            float fresnel = mix(fresnelSharp, fresnelFlat, 0.5 * distanceBlend);
+
+            vec3 R = reflect(ray, N); R.y = abs(R.y);
+            vec3 scattering = vec3(0.08, 0.08, 0.09) * (0.2 + (hit.y + WATER_DEPTH) / WATER_DEPTH);
+            vec3 C = fresnel * atmosphere(R) + scattering;
+            C = mix(C, vec3(0.55, 0.55, 0.58), 1.0 - exp(-dist * 0.02));
+            return aces(C * 1.4);
+          }
+
+          void main() {
+            vec3 color = scene(gl_FragCoord.xy);
+            // The site's film grain (after Martin Upitis), then mapped into its day palette.
+            float gray = dot(color, vec3(0.299, 0.587, 0.114));
+            vec2 uv = gl_FragCoord.xy * u_noiseScale / iResolution;
+            float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453 + u_grainTime * 1.5);
+            noise = gaussian(noise, 0.0, 0.5625);
+            gray = clamp(gray + noise * (1.0 - gray) * 0.4, 0.0, 1.0);
+            gl_FragColor = vec4(mix(vec3(0.62), vec3(0.97), gray), 1.0);
+          }`;
+
+        const compile = (type, source) => {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+          return shader;
+        };
+        const program = gl.createProgram();
+        gl.attachShader(program, compile(gl.VERTEX_SHADER, vertex));
+        gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment));
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(program));
+        gl.useProgram(program);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+        const position = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(position);
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        const uResolution = gl.getUniformLocation(program, "iResolution");
+        const uWave = gl.getUniformLocation(program, "u_waveTime");
+        const uGrain = gl.getUniformLocation(program, "u_grainTime");
+        const uNoise = gl.getUniformLocation(program, "u_noiseScale");
+
+        // The site's "high" quality: 0.4 of the device resolution, 0.68 on low DPI screens.
+        const dpr = window.devicePixelRatio || 1;
+        const lowDpi = dpr < 1.5;
+        const scale = lowDpi ? 0.68 : 0.4;
+        function resize() {
+          canvas.width = Math.max(1, Math.round(innerWidth * dpr * scale));
+          canvas.height = Math.max(1, Math.round(innerHeight * dpr * scale));
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        addEventListener("resize", resize);
+        resize();
+
+        // Reduced motion keeps the ocean alive as a quiet ambient surface, like the site.
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const waveSpeed = reduced ? 0.15 : 1.0;
+        const grainSpeed = reduced ? 0.75 : 1.0;
+        function frame(now) {
+          requestAnimationFrame(frame);
+          const t = now * 0.001;
+          gl.uniform2f(uResolution, canvas.width, canvas.height);
+          gl.uniform1f(uWave, t * waveSpeed);
+          gl.uniform1f(uGrain, t * grainSpeed);
+          gl.uniform1f(uNoise, lowDpi ? 1.7 : 1.0);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+        requestAnimationFrame(frame);
+      })();
+
+      // ── syntax highlighting: the site's restraint (bold keywords, muted comments), plus theme colors ──
+      const KEYWORDS = /^(const|let|await|async|return|type|as|null|true|false|new|import|from|function|if|else|for)$/;
+      const TOKEN = /(\/\/.*$)|(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*")|\b(\d+)\b|\b([A-Za-z_$][\w$]*)\b(\s*\()?/g;
+      const escape = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      function highlightLine(line) {
+        let out = "";
+        let last = 0;
+        line.replace(TOKEN, (match, comment, string, number, word, call, offset) => {
+          out += escape(line.slice(last, offset));
+          if (comment) out += `<span class="tk-c">${escape(comment)}</span>`;
+          else if (string) out += `<span class="tk-s">${escape(string)}</span>`;
+          else if (number) out += `<span class="tk-n">${number}</span>`;
+          else if (KEYWORDS.test(word)) out += `<span class="tk-k">${word}</span>${call ?? ""}`;
+          else if (call) out += `<span class="tk-f">${word}</span>${call}`;
+          else if (/^[A-Z]/.test(word)) out += `<span class="tk-t">${word}</span>`;
+          else out += word;
+          last = offset + match.length;
+          return match;
+        });
+        return out + escape(line.slice(last));
+      }
+      for (const pre of document.querySelectorAll("pre.code")) {
+        pre.innerHTML = pre.textContent.split("\n").map((line) => `<span class="ln">${highlightLine(line) || " "}</span>`).join("");
+        pre.hl = new Map(
+          (pre.dataset.hl || "").split(";").filter(Boolean).map((part) => {
+            const [step, ranges] = part.split(":");
+            const lines = new Set();
+            for (const range of ranges.split(",")) {
+              const [a, b = a] = range.split("-").map(Number);
+              for (let n = a; n <= b; n++) lines.add(n);
+            }
+            return [Number(step), lines];
+          }),
+        );
+      }
+
+      // ── the adventure map: one winding trail, seven stops, drawn into every .map ──
+      const MAP = {
+        start: [110, 670],
+        stops: [
+          { x: 260, y: 570, when: "Jan 2025", title: "An intern", label: "below", dx: 34 },
+          { x: 520, y: 400, when: "Jun 2025", title: "Hands-off", label: "above" },
+          { x: 770, y: 580, when: "Sep 2025", title: "90%", label: "below" },
+          { x: 1020, y: 390, when: "Jan 2026", title: "Porting by voice", label: "above" },
+          { x: 1260, y: 580, when: "Apr 2026", title: "Pi with Pi", label: "below" },
+          { x: 1490, y: 400, when: "Jun 2026", title: "The coming loop", label: "above" },
+          { x: 1700, y: 570, when: "Nov 2026", title: "And yet it loops", label: "below" },
+        ],
+        end: [1890, 370],
+      };
+      const mapPoints = [MAP.start, ...MAP.stops.map((s) => [s.x, s.y]), MAP.end];
+      // Catmull-Rom through every point, as cubic Béziers.
+      function trailPath(points) {
+        let d = `M${points[0][0]},${points[0][1]}`;
+        for (let i = 0; i < points.length - 1; i++) {
+          const p0 = points[Math.max(0, i - 1)], p1 = points[i], p2 = points[i + 1], p3 = points[Math.min(points.length - 1, i + 2)];
+          const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+          const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+          d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+        }
+        return d;
+      }
+      const trailD = trailPath(mapPoints);
+      // Length of the trail up to each point: index 0 is the start, 1..7 the stops, 8 the edge.
+      const trailLengths = (() => {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.style.cssText = "position:absolute;width:0;height:0;visibility:hidden";
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        svg.appendChild(path);
+        document.body.appendChild(svg);
+        const lengths = mapPoints.map((_, i) => {
+          if (i === 0) return 0;
+          path.setAttribute("d", trailPath(mapPoints.slice(0, i + 1)));
+          return path.getTotalLength();
+        });
+        // A prefix ends with a slightly different tangent than the full trail; close enough here.
+        svg.remove();
+        return lengths;
+      })();
+      const mountains = (x, y) => `<path class="deco" d="M${x - 34},${y} l20,-30 l20,30 M${x - 4},${y} l16,-22 l16,22" />`;
+      const waves = (x, y) => `<path class="deco" d="M${x - 36},${y} q9,-9 18,0 t18,0 t18,0 t18,0" />`;
+      document.querySelectorAll(".map").forEach((el, n) => {
+        const at = Number(el.dataset.at);
+        const overview = at === 0;
+        const stops = MAP.stops.map((s, i) => {
+          const k = i + 1;
+          const state = overview ? "plain" : k < at ? "visited" : k === at ? "current" : at === 8 ? "visited" : "future";
+          const ty = s.label === "above" ? s.y - 66 : s.y + 46;
+          const tx = s.x + (s.dx || 0);
+          return `<g class="stop ${state}" data-k="${k}">
+            <circle class="halo" cx="${s.x}" cy="${s.y}" r="16" />
+            <circle class="dot" cx="${s.x}" cy="${s.y}" r="${state === "current" ? 15 : 11}" />
+            <text class="when" x="${tx}" y="${ty}" text-anchor="middle">${s.when}</text>
+            <text class="title" x="${tx}" y="${ty + 34}" text-anchor="middle">${s.title}</text>
+          </g>`;
+        }).join("");
+        el.innerHTML = `<svg viewBox="0 0 1920 1080" aria-hidden="true">
+          <defs><mask id="trail-mask-${n}" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+            <path class="trail-reveal" d="${trailD}" />
+          </mask></defs>
+          ${mountains(270, 440)}${mountains(790, 450)}${mountains(1275, 450)}
+          ${waves(520, 530)}${waves(1020, 525)}${waves(1490, 530)}
+          <g class="compass" transform="translate(1770 250)">
+            <circle r="44" /><path d="M0,-38 L7,0 L0,38 L-7,0 Z" /><path d="M-38,0 L0,6 L38,0 L0,-6 Z" opacity="0.6" />
+            <text y="-52" text-anchor="middle">N</text>
+          </g>
+          <path class="trail-ahead" d="${trailD}" />
+          <path class="trail-done" d="${trailD}" mask="url(#trail-mask-${n})" />
+          <g class="start"><text x="${MAP.start[0]}" y="${MAP.start[1] + 36}" text-anchor="start">Start</text></g>
+          ${stops}
+          <g class="edge${at === 8 ? " current" : ""}"><text class="title" x="1860" y="${MAP.end[1] - 26}" text-anchor="end">here be dragons</text></g>
+        </svg>`;
+        el.reveal = el.querySelector(".trail-reveal");
+        const to = overview ? trailLengths[8] : at === 8 ? trailLengths[7] : trailLengths[at];
+        el.reveal.style.strokeDasharray = `${to} 99999`;
+      });
+      // Walk from the previous stop to this one whenever a stop slide is shown.
+      function walkMap(slide) {
+        const el = slide.querySelector(".map");
+        if (!el) return;
+        const at = Number(el.dataset.at);
+        if (at === 0 || at === 8) return;
+        const from = trailLengths[at - 1], to = trailLengths[at];
+        const current = el.querySelector(".stop.current");
+        current?.classList.remove("arrived");
+        const t0 = performance.now(), duration = 1300;
+        const tick = (now) => {
+          const t = Math.min(1, (now - t0) / duration);
+          const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+          el.reveal.style.strokeDasharray = `${from + (to - from) * eased} 99999`;
+          if (t < 1) requestAnimationFrame(tick);
+          else current?.classList.add("arrived");
+        };
+        requestAnimationFrame(tick);
+      }
+
+      // ── deck scaling and steps ──
+      const deck = document.querySelector(".deck");
+      function scaleDeck() {
+        const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+      addEventListener("resize", scaleDeck);
+      scaleDeck();
+
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const pageNo = document.getElementById("page-no");
+      const stepCount = (slide) => {
+        let max = 0;
+        for (const el of slide.querySelectorAll("[data-step]")) max = Math.max(max, Number(el.dataset.step));
+        for (const pre of slide.querySelectorAll("pre.code")) for (const step of pre.hl.keys()) max = Math.max(max, step);
+        return max;
+      };
+      let slideIndex = 0;
+      let stepIndex = 0;
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      function applySteps(slide) {
+        slide.dataset.at = String(stepIndex);
+        for (const el of slide.querySelectorAll("[data-step]")) {
+          const from = Number(el.dataset.step);
+          const until = el.dataset.until === undefined ? Infinity : Number(el.dataset.until);
+          el.classList.toggle("on", stepIndex >= from && stepIndex < until);
+          el.classList.toggle("now", stepIndex === from);
+        }
+        for (const pre of slide.querySelectorAll("pre.code")) {
+          const lines = pre.hl.get(stepIndex);
+          pre.classList.toggle("focus", Boolean(lines));
+          pre.querySelectorAll(".ln").forEach((ln, i) => ln.classList.toggle("hl", Boolean(lines?.has(i + 1))));
+        }
+      }
+
+      function show(index, { hash = true } = {}) {
+        slideIndex = clamp(index, 0, slides.length - 1);
+        slides.forEach((slide, i) => slide.classList.toggle("active", i === slideIndex));
+        deck.classList.toggle("bare", slides[slideIndex].classList.contains("bare"));
+        document.body.classList.toggle("paper", slides[slideIndex].classList.contains("paper"));
+        stepIndex = clamp(stepIndex, 0, stepCount(slides[slideIndex]));
+        applySteps(slides[slideIndex]);
+        walkMap(slides[slideIndex]);
+        pageNo.textContent = `${String(slideIndex + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+        if (hash) updateHash();
+      }
+      function updateHash() {
+        history.replaceState(null, "", `#${slides[slideIndex].dataset.slide}${stepIndex ? `.${stepIndex}` : ""}`);
+      }
+      function parseHash(raw) {
+        const [s, st] = raw.split(".");
+        const index = slides.findIndex((slide) => slide.dataset.slide === s);
+        return { index: index < 0 ? 0 : index, step: Number.parseInt(st, 10) || 0 };
+      }
+      function next() {
+        if (stepIndex < stepCount(slides[slideIndex])) {
+          stepIndex++;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex < slides.length - 1) {
+          stepIndex = 0;
+          show(slideIndex + 1);
+        }
+      }
+      function prev() {
+        if (stepIndex > 0) {
+          stepIndex--;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex > 0) {
+          stepIndex = stepCount(slides[slideIndex - 1]);
+          show(slideIndex - 1);
+        }
+      }
+      function first() { stepIndex = 0; show(0); }
+      function last() { stepIndex = 0; show(slides.length - 1); }
+      function goto(hash) {
+        const parsed = parseHash(hash.replace("#", ""));
+        stepIndex = parsed.step;
+        show(parsed.index);
+      }
+      function syncFromHash() {
+        const raw = location.hash.replace("#", "");
+        const relative = raw.match(/^(.*)~(next|prev)$/);
+        if (relative) {
+          const base = relative[1] ? parseHash(relative[1]) : { index: slideIndex, step: stepIndex };
+          stepIndex = base.step;
+          show(base.index, { hash: false });
+          relative[2] === "next" ? next() : prev();
+          return;
+        }
+        const parsed = parseHash(raw);
+        stepIndex = parsed.step;
+        show(parsed.index, { hash: false });
+      }
+
+      addEventListener("hashchange", syncFromHash);
+      addEventListener("keydown", (event) => {
+        if (["ArrowRight", " ", "PageDown", "l", "j"].includes(event.key)) { event.preventDefault(); next(); }
+        if (["ArrowLeft", "PageUp", "h", "k"].includes(event.key)) { event.preventDefault(); prev(); }
+        if (event.key === "Home") { event.preventDefault(); first(); }
+        if (event.key === "End") { event.preventDefault(); last(); }
+      });
+      document.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return; // links open, they do not advance the deck
+        event.clientX < innerWidth / 3 ? prev() : next();
+      });
+
+      window.miniPresenter = {
+        next, prev, first, last, goto,
+        getSlideList: () => slides.map((slide) => `#${slide.dataset.slide}`),
+        getCurrentSlide: () => location.hash || `#${slides[slideIndex].dataset.slide}`,
+        getNotes(slideId) {
+          const target = typeof slideId === "string" && slideId ? slideId : location.hash;
+          return slides[parseHash((target || "").replace("#", "")).index]?.dataset.notes || null;
+        },
+      };
+      syncFromHash();
+    </script>
+  </body>
+</html>
