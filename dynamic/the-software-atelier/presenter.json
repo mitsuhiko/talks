@@ -1,0 +1,11 @@
+{
+  "title": "The Software Atelier",
+  "keyboard": {
+    "next": ["ArrowRight", "Space", "PageDown", "l", "j"],
+    "prev": ["ArrowLeft", "PageUp", "h", "k"],
+    "first": ["Home"],
+    "last": ["End"]
+  },
+  "notes": { "source": "auto" },
+  "preview": { "relativeHash": true }
+}

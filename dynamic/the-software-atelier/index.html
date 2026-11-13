@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>The Software Atelier</title>
+    <script src="https://cdn.jsdelivr.net/npm/mini-presenter@0.6.0/dist/client/standalone.js"></script>
+    <style>
+      /* Fonts of Elanor (@earendil-works/elanor-fonts): Mallos Serif for text, Commit Mono for everything monospaced. */
+      @font-face { font-family: "Mallos Serif"; src: url("./assets/fonts/MallosSerif-Variable.woff2") format("woff2"); font-weight: 400 700; font-style: normal; }
+      @font-face { font-family: "Mallos Serif"; src: url("./assets/fonts/MallosSerif-Italic-Variable.woff2") format("woff2"); font-weight: 400 700; font-style: italic; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-300-Regular.woff2") format("woff2"); font-weight: 300; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-400-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+      @font-face { font-family: "Commit Mono"; src: url("./assets/fonts/CommitMono-700-Regular.woff2") format("woff2"); font-weight: 700; font-style: normal; }
+
+      /*
+       * The day theme of earendil.com, in OKLCH. Ink and paper are the site's #353431 and #faf9f6.
+       * Three quiet accents share one lightness and a low chroma, so they sit in the warm grays
+       * without shouting; every tint, rule, and wash is derived from them with relative colors.
+       */
+      :root {
+        --ink: oklch(0.335 0.005 85);
+        --paper: oklch(0.983 0.004 95);
+        --sea: oklch(0.5 0.055 240);
+        --moss: oklch(0.52 0.06 150);
+        --ember: oklch(0.58 0.095 55);
+
+        --ink-soft: oklch(from var(--ink) l c h / 0.72);
+        --ink-muted: oklch(from var(--ink) l c h / 0.58);
+        --ink-faint: oklch(from var(--ink) l c h / 0.38);
+        --rule: oklch(from var(--ink) l c h / 0.18);
+        --rule-soft: oklch(from var(--ink) l c h / 0.1);
+        --surface: oklch(from var(--paper) calc(l + 0.012) c h / 0.86);
+        --sea-tint: oklch(from var(--sea) 0.935 calc(c * 0.42) h);
+        --moss-tint: oklch(from var(--moss) 0.935 calc(c * 0.42) h);
+        --ember-tint: oklch(from var(--ember) 0.935 calc(c * 0.4) h);
+
+        --serif: "Mallos Serif", Georgia, serif;
+        --mono: "Commit Mono", "SF Mono", Menlo, monospace;
+        --frame: 100px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 100%; height: 100%; overflow: hidden;
+        background: oklch(0.78 0.003 90); touch-action: none; overscroll-behavior: none;
+      }
+      #ocean { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      .deck {
+        width: 1920px; height: 1080px; position: absolute; top: 50%; left: 50%;
+        transform-origin: center center; color: var(--ink); font-family: var(--serif);
+      }
+
+      /* Site chrome: emblem top left, a mono label top right, mono footer. */
+      .chrome { position: absolute; inset: 0; pointer-events: none; z-index: 5; font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink); transition: opacity 0.3s ease; }
+      .chrome .emblem { position: absolute; left: var(--frame); top: 70px; width: 40px; }
+      .chrome .emblem path { fill: var(--ink); opacity: 0.85; }
+      .chrome .tr { position: absolute; right: var(--frame); top: 88px; }
+      .chrome .bl { position: absolute; left: var(--frame); bottom: 82px; }
+      .chrome .br { position: absolute; right: var(--frame); bottom: 82px; color: var(--ink-muted); }
+      .deck.bare .chrome { opacity: 0; }
+
+      .slide {
+        display: none; position: absolute; inset: 0; padding: 168px 160px 170px; isolation: isolate;
+      }
+      .slide.active { display: block; }
+      /*
+       * The paper veil of the site's content pages, opening onto the ocean at the left and right.
+       * It covers the whole window, not the 16:9 deck, so a letterboxed deck shows no water above
+       * or below; it is shown whenever the active slide is a paper slide.
+       */
+      #veil {
+        position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+        background: radial-gradient(ellipse 72% 150% at 50% 50%,
+          oklch(from var(--paper) l c h / 0.985) 0%, oklch(from var(--paper) l c h / 0.985) 50%,
+          oklch(from var(--paper) l c h / 0.95) 60%, oklch(from var(--paper) l c h / 0.6) 74%,
+          oklch(from var(--paper) l c h / 0.2) 88%, oklch(from var(--paper) l c h / 0) 100%);
+      }
+      body.paper #veil { opacity: 1; }
+
+      .kicker { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 18px; }
+      h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; }
+      h2 { font-size: 64px; line-height: 1.08; font-style: italic; letter-spacing: -0.01em; text-wrap: balance; }
+      h3 { font-size: 33px; line-height: 1.2; font-weight: 550; }
+      p { margin: 0; }
+      b, strong { font-weight: 600; }
+      .u { text-decoration: underline dotted; text-decoration-thickness: 0.06em; text-underline-offset: 0.14em; }
+      .body { position: absolute; left: 160px; right: 160px; top: 340px; bottom: 150px; }
+      .mono { font-family: var(--mono); }
+
+      /* steps */
+      [data-step] { transition: opacity 0.5s ease, transform 0.5s ease, background-color 0.4s ease, border-color 0.4s ease; }
+      .fade[data-step]:not(.on) { opacity: 0; transform: translateY(12px); }
+      .swap[data-step]:not(.on) { opacity: 0; }
+      .only[data-step]:not(.on) { display: none; }
+
+      /* ── hero slides (title, closing): text above the horizon, like the home page ── */
+      .hero { text-align: center; }
+      .hero .stack { position: absolute; left: 160px; right: 160px; bottom: calc(1080px * 0.394309 + 54px); }
+      .hero h1 { font-size: 136px; line-height: 1; font-style: italic; letter-spacing: -0.015em; }
+      .hero .sub { font-size: 44px; line-height: 1.25; font-style: italic; color: var(--ink-soft); margin-top: 22px; }
+      .hero .meta { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); margin-top: 44px; }
+
+      /* ── about me ── */
+      .intro { position: absolute; left: 160px; right: 160px; top: 50%; transform: translateY(-50%); }
+      .intro h2 { font-size: 120px; line-height: 1; letter-spacing: -0.015em; }
+      .intro .role { font-size: 48px; font-style: italic; color: var(--ink-soft); margin-top: 20px; }
+      .links { margin-top: 84px; max-width: 980px; border-top: 1px solid var(--rule); }
+      .links a { display: grid; grid-template-columns: 200px 1fr auto; align-items: baseline; padding: 24px 0; border-bottom: 1px solid var(--rule-soft); color: inherit; text-decoration: none; }
+      .links .what { font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--ink-muted); }
+      .links .url { font-size: 44px; font-style: italic; }
+      .links .arrow { font-family: var(--mono); font-size: 24px; color: var(--ink-faint); }
+
+      /* ── shared: quotes, labels, fact rows, the closing line ── */
+      blockquote { margin: 0; }
+      .quote p { font-size: 54px; line-height: 1.18; font-style: italic; letter-spacing: -0.01em; text-wrap: balance; }
+      .quote.big p { font-size: 66px; line-height: 1.14; }
+      .quote cite { display: block; margin-top: 28px; font-family: var(--mono); font-size: 21px; font-style: normal; text-transform: uppercase; color: var(--ink-muted); }
+      .label { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 14px; }
+      .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; }
+      .fact { border-top: 1px solid var(--rule); padding-top: 20px; font-size: 28px; line-height: 1.4; color: var(--ink-soft); }
+      .fact b { display: block; font-style: italic; font-weight: 400; font-size: 40px; line-height: 1.15; color: var(--ink); margin-bottom: 8px; }
+      .bottom-line { position: absolute; left: 0; right: 0; bottom: 0; font-size: 34px; font-style: italic; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 24px; }
+
+      /* ── then: the intern ── */
+      .split { display: grid; grid-template-columns: 1fr 620px; gap: 90px; align-items: start; }
+      .kit-row { display: grid; grid-template-columns: 210px 1fr; align-items: baseline; padding: 16px 0; border-top: 1px solid var(--rule-soft); font-size: 27px; color: var(--ink-soft); }
+      .kit-row b { font-style: italic; font-weight: 400; font-size: 34px; color: var(--ink); }
+
+      /* ── two years in eight steps ── */
+      .steps8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 56px 52px; }
+      .st { position: relative; border-top: 1.5px solid var(--rule); padding-top: 30px; }
+      .st::before { content: ""; position: absolute; left: 0; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--sea); box-shadow: 0 0 0 5px var(--paper); }
+      .st.turn::before { background: var(--moss); }
+      .st.wild::before { background: var(--ember); }
+      .st .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); }
+      .st h3 { font-size: 40px; font-style: italic; font-weight: 400; margin-top: 8px; }
+      .st p { font-size: 25px; line-height: 1.38; color: var(--ink-soft); margin-top: 8px; }
+
+      /* ── two cases ── */
+      .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; }
+      .case { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .case h3 { font-size: 46px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .case .big { font-size: 96px; line-height: 1; font-style: italic; margin: 26px 0 16px; }
+      .case ul { margin: 22px 0 0; padding: 0; list-style: none; }
+      .case li { font-size: 27px; line-height: 1.4; color: var(--ink-soft); padding: 10px 0 10px 28px; position: relative; }
+      .case li::before { content: ""; position: absolute; left: 0; top: 29px; width: 10px; height: 1.5px; background: var(--ink-faint); }
+      .timebar { display: flex; height: 64px; margin: 30px 0 10px; border-radius: 3px; overflow: hidden; }
+      .timebar span { display: grid; place-items: center; font-family: var(--mono); font-size: 18px; text-transform: uppercase; }
+      .timebar .me { flex: 0.75; background: var(--ink); color: var(--paper); }
+      .timebar .watch { flex: 3; background: var(--sea-tint); color: var(--sea); }
+      .timebar .alone { flex: 7; background: var(--moss-tint); color: var(--moss); }
+
+      /* ── charts ── */
+      .velocity { display: grid; grid-template-columns: 980px 1fr; gap: 70px; align-items: end; }
+      svg.chart .bar { fill: var(--ink); opacity: 0.82; }
+      svg.chart .bar.now { fill: var(--ember); opacity: 1; }
+      svg.chart .bar.night { fill: var(--sea); opacity: 1; }
+      svg.chart .val { font-family: var(--mono); font-size: 17px; fill: var(--ink-muted); }
+      svg.chart .q { font-family: var(--mono); font-size: 16px; fill: var(--ink-faint); }
+      svg.chart .yr { font-family: var(--mono); font-size: 18px; fill: var(--ink-muted); text-transform: uppercase; }
+      svg.chart .note { font-family: var(--mono); font-size: 16px; fill: var(--sea); text-transform: uppercase; }
+      svg.chart .note-line { stroke: var(--sea); stroke-width: 1.5; stroke-dasharray: 4 5; }
+      svg.chart .axis { stroke: var(--rule); stroke-width: 1.5; }
+      svg.chart .loc-area { fill: var(--ember); opacity: 0.14; }
+      svg.chart .loc-line { fill: none; stroke: var(--ember); stroke-width: 3; stroke-linejoin: round; }
+      svg.chart .loc-dot { fill: var(--ember); }
+      .label.chart2 { margin-top: 30px; }
+      .side { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+      .side .fact { border-top: none; border-bottom: 1px solid var(--rule-soft); padding: 18px 0 20px; font-size: 25px; }
+      .side .fact b { font-size: 48px; }
+      .source { margin-top: 18px; font-family: var(--mono); font-size: 16px; line-height: 1.5; text-transform: uppercase; color: var(--ink-faint); }
+
+      /* ── the price ── */
+      .prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .price { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .price .tag { font-family: var(--mono); font-size: 18px; text-transform: uppercase; color: var(--ember); }
+      .price h3 { font-size: 42px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .price p { font-size: 26px; line-height: 1.4; color: var(--ink-soft); margin-top: 12px; }
+      .num-row { display: grid; grid-template-columns: 170px 1fr; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); font-size: 24px; color: var(--ink-soft); }
+      .num-row b { font-style: italic; font-weight: 400; font-size: 38px; color: var(--ink); }
+
+      /* ── the factory ── */
+      .factory { display: grid; grid-template-columns: 1fr 600px; gap: 90px; align-items: start; }
+      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+      .stat { border-top: 1px solid var(--rule); padding: 20px 0 26px; }
+      .stat b { display: block; font-size: 76px; line-height: 1; font-style: italic; font-weight: 400; }
+      .stat span { display: block; margin-top: 10px; font-size: 26px; line-height: 1.35; color: var(--ink-soft); }
+
+      /* ── the game: screenshots and models ── */
+      .gallery { display: grid; grid-template-columns: 958px 546px; gap: 96px; align-items: start; }
+      .shots { display: grid; grid-template-columns: repeat(2, 470px); gap: 18px; }
+      .models { display: grid; grid-template-columns: repeat(3, 174px); gap: 12px; }
+      .gallery img { display: block; width: 100%; object-fit: cover; border-radius: 6px; outline: 1px solid var(--rule); outline-offset: -1px; }
+      .shots img { height: 264px; }
+      .models img { height: 174px; }
+
+      /* ── now: what is left ── */
+      .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .pillar { border-top: 1px solid var(--rule); padding-top: 22px; }
+      .pillar .n { font-family: var(--mono); font-size: 19px; color: var(--sea); }
+      .pillar h3 { font-size: 46px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .pillar p { font-size: 27px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+
+      .bio { list-style: none; margin: 0; padding: 0; max-width: 1180px; border-top: 1px solid var(--rule); }
+      .bio li { display: grid; grid-template-columns: 110px 1fr; align-items: baseline; padding: 30px 0; border-bottom: 1px solid var(--rule-soft); font-size: 52px; line-height: 1.2; }
+      .bio .n { font-family: var(--mono); font-size: 20px; color: var(--ink-muted); }
+      .bio i { font-style: italic; }
+
+      /* ── Pi and harnesses (from the Pi Durable talk) ── */
+      .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .stage { border-top: 1px solid var(--rule); padding-top: 18px; }
+      .stage svg { display: block; width: 100%; height: auto; margin-bottom: 10px; }
+      .stage .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ember); }
+      .stage h3 { font-size: 42px; font-style: italic; font-weight: 400; margin-top: 6px; }
+      .stage p:not(.when) { font-size: 27px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+      .g-link line, line.g-link { stroke: var(--rule); stroke-width: 2; }
+      .g-human { fill: var(--ink); }
+      .g-agent { fill: var(--sea); }
+      .g-agent.small { fill: var(--sea-tint); stroke: var(--sea); stroke-width: 2; }
+      .g-hub { fill: var(--ink); }
+
+      .hub-layout { display: grid; grid-template-columns: 760px 1fr; gap: 80px; align-items: center; }
+      svg.hub text { font-family: var(--mono); }
+      .d-box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.5; }
+      .d-moss { fill: var(--moss); } .d-ember { fill: var(--ember); }
+      .d-moss-tint { fill: var(--moss-tint); stroke: var(--moss); stroke-width: 1.5; }
+      .d-line { stroke: var(--rule); stroke-width: 2; fill: none; }
+      .d-t-up { fill: var(--ink); font-size: 20px; text-transform: uppercase; }
+      .d-t-muted { fill: var(--ink-muted); font-size: 18px; text-transform: uppercase; }
+      .d-t-paper { fill: var(--paper); font-size: 22px; text-transform: uppercase; }
+      .d-t-paper-soft { fill: oklch(from var(--paper) l c h / 0.75); font-size: 18px; }
+      .d-t-moss { fill: var(--moss); font-size: 18px; text-transform: uppercase; }
+
+      .offers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 90px; }
+      .offer { border-top: 1px solid var(--rule); padding-top: 24px; }
+      .offer h3 { font-size: 88px; line-height: 1; font-style: italic; font-weight: 400; margin-top: 10px; }
+      .offer p:not(.label):not(.url) { font-size: 32px; line-height: 1.4; color: var(--ink-soft); margin-top: 22px; max-width: 700px; }
+      .offer .url { margin-top: 26px; font-family: var(--mono); font-size: 21px; text-transform: uppercase; color: var(--sea); }
+
+      /* ── what this means ── */
+      .moves { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+      .moves li { display: grid; grid-template-columns: 340px 1fr auto; align-items: baseline; gap: 40px; padding: 30px 0; border-bottom: 1px solid var(--rule-soft); }
+      .moves .from { font-family: var(--mono); font-size: 26px; text-transform: uppercase; color: var(--sea); }
+      .moves .what { font-size: 36px; color: var(--ink-soft); }
+      .moves .what b { font-style: italic; font-weight: 400; color: var(--ink); font-size: 46px; }
+      .moves .when { font-family: var(--mono); font-size: 19px; text-transform: uppercase; color: var(--ink-muted); }
+      .runtimes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+      .runtime { border-top: 1px solid var(--rule); padding-top: 24px; }
+      .runtime b { display: block; font-size: 84px; line-height: 1; font-style: italic; font-weight: 400; }
+      .runtime h3 { font-family: var(--mono); font-size: 20px; font-weight: 400; text-transform: uppercase; color: var(--ember); margin-top: 22px; }
+      .runtime p { font-size: 29px; line-height: 1.4; color: var(--ink-soft); margin-top: 10px; }
+      .factory .quote p { font-size: 50px; }
+      .factory .quote p.after { margin-top: 34px; font-size: 32px; line-height: 1.4; font-style: normal; color: var(--ink-soft); }
+
+      /* ── code: the site's code blocks, rules above and below, no box ── */
+      pre.code {
+        margin: 0; font-family: var(--mono); font-size: 24px; line-height: 1.6; color: var(--ink);
+        border-block: 1px solid var(--rule); padding: 22px 0; white-space: pre;
+      }
+      pre.code.small { font-size: 20px; line-height: 1.55; }
+      pre.code .ln { display: block; padding: 0 22px; transition: opacity 0.35s ease, background-color 0.35s ease; }
+      pre.code.focus .ln { opacity: 0.3; }
+      pre.code.focus .ln.hl { opacity: 1; background: var(--sea-tint); box-shadow: inset 3px 0 0 var(--sea); }
+      .tk-k { font-weight: 700; }
+      .tk-s { color: var(--moss); }
+      .tk-c { color: var(--ink-muted); }
+      .tk-n { color: var(--ember); }
+      .tk-f { color: var(--sea); }
+      .tk-t { font-weight: 700; }
+
+      /* ── charts of this talk ── */
+      svg.chart .grid { stroke: var(--rule-soft); stroke-width: 1.5; }
+      svg.chart .bar.faint { fill: var(--ink); opacity: 0.08; }
+      svg.chart .era { fill: var(--sea-tint); }
+      svg.chart .era-t { font-family: var(--mono); font-size: 16px; text-transform: uppercase; fill: var(--sea); }
+      svg.chart .ln-sea, svg.chart .ln-ember { fill: none; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+      svg.chart .ln-sea { stroke: var(--sea); }
+      svg.chart .ln-ember { stroke: var(--ember); }
+      svg.chart .ln-sea-dot { fill: var(--sea); }
+      svg.chart .ln-ember-dot { fill: var(--ember); }
+      svg.chart .lbl-sea, svg.chart .lbl-ember, svg.chart .lbl-ink { font-family: var(--mono); font-size: 18px; text-transform: uppercase; }
+      svg.chart .lbl-sea { fill: var(--sea); }
+      svg.chart .lbl-ember { fill: var(--ember); }
+      svg.chart .lbl-ink { fill: var(--ink-muted); }
+      .side-quote { padding: 20px 0 26px; border-bottom: 1px solid var(--rule-soft); }
+      .side-quote p { font-size: 40px; line-height: 1.2; }
+      .side-quote cite { margin-top: 16px; font-size: 18px; }
+      .factory .stats { align-self: start; }
+      .practice { list-style: none; margin: 16px 0 0; padding: 0; }
+      .practice li { font-size: 28px; line-height: 1.35; color: var(--ink-soft); padding: 12px 0 12px 28px; position: relative; border-top: 1px solid var(--rule-soft); }
+      .practice li:first-child { border-top: none; }
+      .practice li::before { content: ""; position: absolute; left: 0; top: 31px; width: 10px; height: 1.5px; background: var(--ink-faint); }
+      .hero .sub + .meta { margin-top: 44px; }
+
+      svg.chart.wide { display: block; width: 100%; height: auto; }
+      svg.chart .val.big, svg.chart .q.big { font-size: 21px; }
+      svg.chart .val.sea { fill: var(--sea); font-size: 19px; }
+      svg.chart .hlabel { font-family: var(--serif); font-style: italic; font-size: 34px; fill: var(--ink); }
+      svg.chart .bar.agent { fill: var(--sea); opacity: 0.85; }
+      svg.chart .switch { stroke: var(--ink-faint); stroke-width: 2; stroke-dasharray: 6 7; }
+      svg.chart .switch-t { font-family: var(--mono); font-size: 18px; text-transform: uppercase; fill: var(--ink-muted); }
+      svg.chart .ln-sea.thin, svg.chart .ln-ember.thin { stroke-width: 3; }
+      svg.chart .raw-ember { fill: var(--ember); opacity: 0.25; }
+      svg.chart .raw-sea { fill: var(--sea); opacity: 0.25; }
+      svg.chart .tick { stroke: var(--rule); stroke-width: 1.5; }
+      svg.chart .val.ember { fill: var(--ember); font-size: 19px; }
+      svg.chart .night { fill: var(--ink); opacity: 0.05; }
+      svg.chart .legend { font-family: var(--mono); font-size: 18px; fill: var(--ink-muted); }
+      svg.chart .seg { font-family: var(--mono); font-size: 19px; fill: var(--paper); }
+      svg.chart .tm-read { fill: var(--sea); }
+      svg.chart .tm-edit { fill: oklch(from var(--sea) calc(l + 0.14) c h); }
+      svg.chart .tm-write { fill: oklch(from var(--sea) calc(l + 0.26) calc(c * 0.7) h); }
+      svg.chart .tm-look { fill: var(--ember); }
+      svg.chart .tm-script { fill: oklch(from var(--ember) calc(l + 0.12) c h); }
+      svg.chart .tm-git { fill: var(--moss); }
+      svg.chart .tm-other { fill: var(--ink); opacity: 0.55; }
+      svg.chart .tm-misc { fill: var(--ink); opacity: 0.25; }
+      svg.chart .tm-code { fill: oklch(0.5 0.075 320); }
+      .points { list-style: none; margin: 0; padding: 0; max-width: 1400px; }
+      .points li { display: grid; grid-template-columns: 110px 1fr; align-items: baseline; padding: 26px 0; font-size: 54px; line-height: 1.2; }
+      .points .n { font-family: var(--mono); font-size: 20px; color: var(--ink-muted); }
+      .points i { font-style: italic; }
+    </style>
+  </head>
+  <body>
+    <canvas id="ocean" aria-hidden="true"></canvas>
+    <div id="veil" aria-hidden="true"></div>
+    <div class="deck">
+      <div class="chrome" aria-hidden="true">
+        <svg class="emblem" viewBox="120 21 84 153"><path d="M202.89,123.89c.4,29.74-40.27,26.97-40.8,48.11h-.05c-.52-21.14-41.19-18.38-40.8-48.11,27.99,0,40.09-46.29,40.82-101.27.74,54.98,12.83,101.27,40.82,101.27h0Z" /></svg>
+        <span class="tr">The Software Atelier</span>
+        <span class="bl">Earendil Inc.</span>
+        <span class="br" id="page-no"></span>
+      </div>
+
+
+      <!-- 1 -->
+      <section class="slide hero" data-slide="1" data-notes="The Software Atelier.&#10;• Armin Ronacher, Earendil. A year of building Pi, a harness, and building with it.&#10;• The thesis up front: before we aim for the software factory, we need a good atelier that uses modern tools well. I care much more about excellent software that aims higher than about mass-produced slop.">
+        <div class="stack">
+          <h1>The Software Atelier</h1>
+          <p class="sub">A year of harnesses, models and machines</p>
+          <p class="meta">Armin Ronacher · Earendil</p>
+        </div>
+      </section>
+
+      <!-- 2 -->
+      <section class="slide paper" data-slide="2" data-notes="When I say &quot;we&quot; today, I mean our industry, not Earendil.&#10;• The thesis up front, so the data that follows reads as an argument.&#10;• We need a good atelier using modern tools before we should aim for the factory.">
+        <p class="kicker">The thesis</p>
+        <h2>Before the factory, the atelier</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Everyone is trying to build <i>software factories</i></span></li>
+              <li><span class="n">02</span><span>Most of us, me included, have not learned to use these tools well in the <i>workshop</i></span></li>
+              <li><span class="n">03</span><span>I care about <i>excellent software</i> that aims higher, not <i>mass-produced slop</i></span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 3 -->
+      <section class="slide paper" data-slide="3" data-notes="Act I: the power tools are real, and most of the gain came from the models, not from the harness around them.">
+        <p class="kicker">I · Stable harness</p>
+        <h2>The machine got better</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Most prompting ideas were replaced by <i>better models</i></span></li>
+              <li><span class="n">02</span><span>Basic Pi did <i>not change</i></span></li>
+              <li><span class="n">03</span><span>Yet I am <i>much more capable</i> today</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 4 -->
+      <section class="slide paper" data-slide="4" data-notes="I step in less with every model.&#10;• Two things I do when the model goes wrong: correct it (no, that is not what I meant), or hit Esc to stop it.&#10;• Corrections per 100 prompts: GPT-5.3 Codex 8.5, GPT-5.5 7.2, GPT-5.6 5.3, Opus 5.5 3.9.&#10;• Esc aborts per 100 prompts: 13.1, 12.0, 10.6, 7.2.&#10;• Both go down at every switch, and the harness did not change. The improvement came from the model.&#10;• Caveats: corrections are a keyword heuristic, a signal, not a measurement. Model and time are mixed together, my tasks changed too. Opus 4.6 left out, too few prompts (about 570).">
+        <p class="kicker">I · Stable harness</p>
+        <h2>I step in less with every model</h2>
+        <div class="body" data-chart="models"><svg class="chart wide" viewBox="0 0 1600 560" aria-hidden="true"><text class="lbl-ink" x="300.0" y="36">Corrections per 100 prompts</text><text class="hlabel" x="276" y="123.0" text-anchor="end">GPT-5.3 Codex</text><rect class="bar" x="300.0" y="85.5" width="463.2" height="55.0" /><text class="val big" x="777.2" y="121.0">8.5</text><text class="hlabel" x="276" y="209.0" text-anchor="end">GPT-5.5</text><rect class="bar" x="300.0" y="171.5" width="392.4" height="55.0" /><text class="val big" x="706.4" y="207.0">7.2</text><text class="hlabel" x="276" y="295.0" text-anchor="end">GPT-5.6</text><rect class="bar" x="300.0" y="257.5" width="288.9" height="55.0" /><text class="val big" x="602.9" y="293.0">5.3</text><text class="hlabel" x="276" y="381.0" text-anchor="end">Opus 5.5</text><rect class="bar" x="300.0" y="343.5" width="212.6" height="55.0" /><text class="val big" x="526.5" y="379.0">3.9</text><text class="lbl-sea" x="995.0" y="36">Esc aborts per 100 prompts</text><rect class="bar agent" x="995.0" y="85.5" width="476.0" height="55.0" /><text class="val big" x="1485.0" y="121.0">13.1</text><rect class="bar agent" x="995.0" y="171.5" width="436.0" height="55.0" /><text class="val big" x="1445.0" y="207.0">12.0</text><rect class="bar agent" x="995.0" y="257.5" width="385.1" height="55.0" /><text class="val big" x="1394.1" y="293.0">10.6</text><rect class="bar agent" x="995.0" y="343.5" width="261.6" height="55.0" /><text class="val big" x="1270.6" y="379.0">7.2</text><text class="q big" x="300" y="444">Sessions grouped by the model that made most calls, in the order I switched</text></svg><p class="source">My Pi sessions outside temp folders, March to November 2026 · corrections: keyword heuristic · aborts: I pressed Esc</p></div>
+      </section>
+
+      <!-- 5 -->
+      <section class="slide paper" data-slide="5" data-notes="Basic Pi did not change, yet one prompt carries much further.&#10;• Left: minutes of agent work after a prompt. Right: tool calls after a prompt. Both the 90th percentile, grouped by the model that made most calls in that run.&#10;• Say it: these are proxies. Working time also grows because newer models are slower per step (about 6 to 8 seconds per step for the older models, 11 to 12 for GPT-5.6 and Opus 5.5) and because my tasks changed. Tool calls are less sensitive to speed.">
+        <p class="kicker">I · Stable harness</p>
+        <h2>How far one prompt carries, by model</h2>
+        <div class="body" data-chart="leash_dual"><svg class="chart wide" viewBox="0 0 1600 560" aria-hidden="true"><text class="lbl-ink" x="300.0" y="36">Minutes of agent work per prompt</text><text class="hlabel" x="276" y="123.0" text-anchor="end">Opus 4.6</text><rect class="bar" x="300.0" y="85.5" width="81.8" height="55.0" /><text class="val big" x="395.8" y="121.0">2.4 min</text><text class="hlabel" x="276" y="209.0" text-anchor="end">GPT-5.3 Codex</text><rect class="bar" x="300.0" y="171.5" width="183.9" height="55.0" /><text class="val big" x="497.9" y="207.0">5.4 min</text><text class="hlabel" x="276" y="295.0" text-anchor="end">GPT-5.5</text><rect class="bar" x="300.0" y="257.5" width="190.8" height="55.0" /><text class="val big" x="504.8" y="293.0">5.6 min</text><text class="hlabel" x="276" y="381.0" text-anchor="end">GPT-5.6</text><rect class="bar" x="300.0" y="343.5" width="289.5" height="55.0" /><text class="val big" x="603.5" y="379.0">8.5 min</text><text class="hlabel" x="276" y="467.0" text-anchor="end">Opus 5.5</text><rect class="bar" x="300.0" y="429.5" width="476.9" height="55.0" /><text class="val big" x="790.9" y="465.0">14 min</text><text class="lbl-sea" x="995.0" y="36">Tool calls per prompt</text><rect class="bar agent" x="995.0" y="85.5" width="172.6" height="55.0" /><text class="val big" x="1181.6" y="121.0">19</text><rect class="bar agent" x="995.0" y="171.5" width="263.4" height="55.0" /><text class="val big" x="1272.4" y="207.0">29</text><rect class="bar agent" x="995.0" y="257.5" width="336.1" height="55.0" /><text class="val big" x="1345.1" y="293.0">37</text><rect class="bar agent" x="995.0" y="343.5" width="490.5" height="55.0" /><text class="val big" x="1499.5" y="379.0">54</text><rect class="bar agent" x="995.0" y="429.5" width="399.7" height="55.0" /><text class="val big" x="1408.7" y="465.0">44</text><text class="q big" x="300" y="530">90th percentile per prompt, grouped by the model that made most calls in the run</text></svg><p class="source">My Pi sessions, March to November 2026 · run = from my prompt to the last agent event before my next prompt</p></div>
+      </section>
+
+      <!-- 6 -->
+      <section class="slide paper" data-slide="6" data-notes="Same harness, same tools. What the models call differs.&#10;• The GPT models use the read and edit tools we built. Opus 5.5 does about 80% of its work through bash: sed, cat and grep to look, Python scripts to edit.&#10;• Pi did not change between these models. The model decides how the harness gets used.&#10;• Codemode*: for Opus 5.5 this is codemode plus the other harness tools it drives: subagents, teams, status updates (about 3% of its calls). The GPT models never had the chance: codemode was not yet in Pi before the Opus 5.5 sessions. More on codemode at the end.&#10;• Left out: the GPT models' other tools (to-dos, web search, project extensions), under 1% each. ffgrep, a grep wrapper, counts as bash: other.&#10;• Bash calls classified by the first word of the command only.">
+        <p class="kicker">I · Stable harness</p>
+        <h2>Tool use by model, same harness</h2>
+        <div class="body" data-chart="tool_mix"><svg class="chart wide" viewBox="0 0 1600 560" aria-hidden="true"><rect class="tm-read" x="300.0" y="14" width="22" height="22" rx="3" /><text class="legend" x="332.0" y="32">read tool</text><rect class="tm-edit" x="625.0" y="14" width="22" height="22" rx="3" /><text class="legend" x="657.0" y="32">edit tool</text><rect class="tm-write" x="950.0" y="14" width="22" height="22" rx="3" /><text class="legend" x="982.0" y="32">write tool</text><rect class="tm-code" x="1275.0" y="14" width="22" height="22" rx="3" /><text class="legend" x="1307.0" y="32">codemode*</text><rect class="tm-look" x="300.0" y="50" width="22" height="22" rx="3" /><text class="legend" x="332.0" y="68">bash: sed, cat, grep, rg</text><rect class="tm-script" x="625.0" y="50" width="22" height="22" rx="3" /><text class="legend" x="657.0" y="68">bash: python, node</text><rect class="tm-git" x="950.0" y="50" width="22" height="22" rx="3" /><text class="legend" x="982.0" y="68">bash: git</text><rect class="tm-other" x="1275.0" y="50" width="22" height="22" rx="3" /><text class="legend" x="1307.0" y="68">bash: other</text><text class="hlabel" x="276" y="173.0" text-anchor="end">GPT-5.3 Codex</text><rect class="tm-read" x="300.0" y="133.8" width="448.0" height="58.5" /><text class="seg" x="524.0" y="171.0" text-anchor="middle">36%</text><rect class="tm-edit" x="748.0" y="133.8" width="159.1" height="58.5" /><text class="seg" x="827.5" y="171.0" text-anchor="middle">13%</text><rect class="tm-write" x="907.1" y="133.8" width="19.1" height="58.5" /><rect class="tm-look" x="926.2" y="133.8" width="255.8" height="58.5" /><text class="seg" x="1054.1" y="171.0" text-anchor="middle">20%</text><rect class="tm-script" x="1182.0" y="133.8" width="63.6" height="58.5" /><text class="seg" x="1213.8" y="171.0" text-anchor="middle">5%</text><rect class="tm-git" x="1245.6" y="133.8" width="129.8" height="58.5" /><text class="seg" x="1310.5" y="171.0" text-anchor="middle">10%</text><rect class="tm-other" x="1375.5" y="133.8" width="184.5" height="58.5" /><text class="seg" x="1467.7" y="171.0" text-anchor="middle">15%</text><text class="hlabel" x="276" y="259.0" text-anchor="end">GPT-5.5</text><rect class="tm-read" x="300.0" y="219.8" width="482.0" height="58.5" /><text class="seg" x="541.0" y="257.0" text-anchor="middle">38%</text><rect class="tm-edit" x="782.0" y="219.8" width="146.7" height="58.5" /><text class="seg" x="855.4" y="257.0" text-anchor="middle">12%</text><rect class="tm-write" x="928.7" y="219.8" width="21.5" height="58.5" /><rect class="tm-look" x="950.2" y="219.8" width="192.3" height="58.5" /><text class="seg" x="1046.4" y="257.0" text-anchor="middle">15%</text><rect class="tm-script" x="1142.5" y="219.8" width="69.6" height="58.5" /><text class="seg" x="1177.3" y="257.0" text-anchor="middle">6%</text><rect class="tm-git" x="1212.1" y="219.8" width="164.5" height="58.5" /><text class="seg" x="1294.3" y="257.0" text-anchor="middle">13%</text><rect class="tm-other" x="1376.6" y="219.8" width="183.4" height="58.5" /><text class="seg" x="1468.3" y="257.0" text-anchor="middle">15%</text><text class="hlabel" x="276" y="345.0" text-anchor="end">GPT-5.6</text><rect class="tm-read" x="300.0" y="305.8" width="378.0" height="58.5" /><text class="seg" x="489.0" y="343.0" text-anchor="middle">30%</text><rect class="tm-edit" x="678.0" y="305.8" width="192.2" height="58.5" /><text class="seg" x="774.1" y="343.0" text-anchor="middle">15%</text><rect class="tm-write" x="870.2" y="305.8" width="24.2" height="58.5" /><rect class="tm-look" x="894.4" y="305.8" width="202.4" height="58.5" /><text class="seg" x="995.5" y="343.0" text-anchor="middle">16%</text><rect class="tm-script" x="1096.7" y="305.8" width="67.5" height="58.5" /><text class="seg" x="1130.5" y="343.0" text-anchor="middle">5%</text><rect class="tm-git" x="1164.2" y="305.8" width="166.7" height="58.5" /><text class="seg" x="1247.5" y="343.0" text-anchor="middle">13%</text><rect class="tm-other" x="1330.9" y="305.8" width="229.1" height="58.5" /><text class="seg" x="1445.5" y="343.0" text-anchor="middle">18%</text><text class="hlabel" x="276" y="431.0" text-anchor="end">Opus 5.5</text><rect class="tm-read" x="300.0" y="391.8" width="81.9" height="58.5" /><text class="seg" x="340.9" y="429.0" text-anchor="middle">6%</text><rect class="tm-edit" x="381.9" y="391.8" width="39.1" height="58.5" /><rect class="tm-write" x="421.0" y="391.8" width="34.0" height="58.5" /><rect class="tm-code" x="455.0" y="391.8" width="40.3" height="58.5" /><rect class="tm-look" x="495.3" y="391.8" width="538.0" height="58.5" /><text class="seg" x="764.3" y="429.0" text-anchor="middle">43%</text><rect class="tm-script" x="1033.3" y="391.8" width="197.8" height="58.5" /><text class="seg" x="1132.2" y="429.0" text-anchor="middle">16%</text><rect class="tm-git" x="1231.1" y="391.8" width="95.8" height="58.5" /><text class="seg" x="1279.0" y="429.0" text-anchor="middle">8%</text><rect class="tm-other" x="1326.9" y="391.8" width="233.1" height="58.5" /><text class="seg" x="1443.5" y="429.0" text-anchor="middle">18%</text><text class="q big" x="300" y="494">* Codemode was not yet in Pi before the Opus 5.5 sessions</text></svg></div>
+      </section>
+
+      <!-- 7 -->
+      <section class="slide paper" data-slide="7" data-notes="Act II: a factory scales output, not attention, finishing or care. At scale that produces slop, and the cost lands on shared systems.">
+        <p class="kicker">II · What the factory scales</p>
+        <h2>The human did not</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Human <i>attention</i> is limited, and we do not have <i>more humans</i></span></li>
+              <li><span class="n">02</span><span>Starting got fast, <i>finishing</i> and <i>maintaining</i> did not</span></li>
+              <li><span class="n">03</span><span>We tax systems that were never taxed: <i>GitHub</i>, <i>npm</i>, random <i>third-party websites</i>, …</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 8 -->
+      <section class="slide paper" data-slide="8" data-notes="Human attention is limited, and we don&#x27;t have more humans.&#10;• My prompts per day stay between about 100 and 190. Agent-hours per day go from about 6 to 14, and 44 in the first nine days of November (the djs factory).&#10;• The machine side scales. The human side does not.">
+        <p class="kicker">II · What the factory scales</p>
+        <h2>Agent-hours per day and my prompts per day</h2>
+        <div class="body" data-chart="concurrency"><svg class="chart wide" viewBox="0 0 1600 560" aria-hidden="true"><text class="lbl-sea" x="90" y="28">My prompts per day</text><line class="grid" x1="90" y1="180" x2="1510" y2="180" /><path class="ln-sea" d="M168.9,114.5 L326.7,103.0 L484.4,126.4 L642.2,119.2 L800.0,108.8 L957.8,119.2 L1115.6,85.4 L1273.3,81.2 L1431.1,117.6" /><circle class="ln-sea-dot" cx="168.9" cy="114.5" r="6" /><circle class="ln-sea-dot" cx="326.7" cy="103.0" r="6" /><circle class="ln-sea-dot" cx="484.4" cy="126.4" r="6" /><circle class="ln-sea-dot" cx="642.2" cy="119.2" r="6" /><circle class="ln-sea-dot" cx="800.0" cy="108.8" r="6" /><circle class="ln-sea-dot" cx="957.8" cy="119.2" r="6" /><circle class="ln-sea-dot" cx="1115.6" cy="85.4" r="6" /><circle class="ln-sea-dot" cx="1273.3" cy="81.2" r="6" /><circle class="ln-sea-dot" cx="1431.1" cy="117.6" r="6" /><text class="val sea" x="168.9" y="98.5" text-anchor="middle">126</text><text class="val sea" x="326.7" y="87.0" text-anchor="middle">148</text><text class="val sea" x="484.4" y="110.4" text-anchor="middle">103</text><text class="val sea" x="642.2" y="103.2" text-anchor="middle">117</text><text class="val sea" x="800.0" y="92.8" text-anchor="middle">137</text><text class="val sea" x="957.8" y="103.2" text-anchor="middle">117</text><text class="val sea" x="1115.6" y="69.4" text-anchor="middle">182</text><text class="val sea" x="1273.3" y="65.2" text-anchor="middle">190</text><text class="val sea" x="1431.1" y="101.6" text-anchor="middle">120</text><text class="lbl-ink" x="90" y="228">Agent-hours per day (parallel agents counted separately)</text><line class="axis" x1="90" y1="490" x2="1510" y2="490" /><rect class="bar" x="124.7" y="460.0" width="88.4" height="30.0" /><text class="val big" x="168.9" y="448.0" text-anchor="middle">6 h</text><text class="q big" x="168.9" y="524" text-anchor="middle">Mar</text><rect class="bar" x="282.5" y="460.0" width="88.4" height="30.0" /><text class="val big" x="326.7" y="448.0" text-anchor="middle">6 h</text><text class="q big" x="326.7" y="524" text-anchor="middle">Apr</text><rect class="bar" x="440.3" y="466.0" width="88.4" height="24.0" /><text class="val big" x="484.4" y="454.0" text-anchor="middle">4.8 h</text><text class="q big" x="484.4" y="524" text-anchor="middle">May</text><rect class="bar" x="598.0" y="464.0" width="88.4" height="26.0" /><text class="val big" x="642.2" y="452.0" text-anchor="middle">5.2 h</text><text class="q big" x="642.2" y="524" text-anchor="middle">Jun</text><rect class="bar" x="755.8" y="459.5" width="88.4" height="30.5" /><text class="val big" x="800.0" y="447.5" text-anchor="middle">6.1 h</text><text class="q big" x="800.0" y="524" text-anchor="middle">Jul</text><rect class="bar" x="913.6" y="450.5" width="88.4" height="39.5" /><text class="val big" x="957.8" y="438.5" text-anchor="middle">7.9 h</text><text class="q big" x="957.8" y="524" text-anchor="middle">Aug</text><rect class="bar" x="1071.4" y="432.5" width="88.4" height="57.5" /><text class="val big" x="1115.6" y="420.5" text-anchor="middle">11.5 h</text><text class="q big" x="1115.6" y="524" text-anchor="middle">Sep</text><rect class="bar" x="1229.2" y="418.0" width="88.4" height="72.0" /><text class="val big" x="1273.3" y="406.0" text-anchor="middle">14.4 h</text><text class="q big" x="1273.3" y="524" text-anchor="middle">Oct</text><rect class="bar now" x="1386.9" y="271.5" width="88.4" height="218.5" /><text class="seg" x="1431.1" y="301.5" text-anchor="middle">43.7 h</text><text class="q big" x="1431.1" y="524" text-anchor="middle">Nov 1 to 9</text></svg><p class="source">My Pi sessions · agent-hours: minutes with agent activity per session, gaps under 3 min filled, summed across parallel sessions, per active day</p></div>
+      </section>
+
+      <!-- 9 -->
+      <section class="slide paper" data-slide="9" data-notes="We can start new projects much faster. The ability to finish them and keep using them did not increase.&#10;• Cumulative projects started: 24 to 141 between March and October.&#10;• Projects I worked on for five or more days in a month: flat, between 6 and 13.&#10;• Of the 95 projects started April to September, 45 saw only a single day of work, 63 at most two.&#10;• And we tax systems that never had to carry this: GitHub, npm, random third-party websites.">
+        <p class="kicker">II · What the factory scales</p>
+        <h2>Projects started and projects I keep working on</h2>
+        <div class="body" data-chart="projects"><svg class="chart wide" viewBox="0 0 1600 560" aria-hidden="true"><line class="axis" x1="90" y1="490" x2="1510" y2="490" /><rect class="bar" x="134.4" y="474.2" width="88.8" height="15.8" /><text class="val big" x="178.8" y="462.2" text-anchor="middle">6</text><text class="q big" x="178.8" y="524" text-anchor="middle">Mar</text><rect class="bar" x="311.9" y="455.9" width="88.8" height="34.1" /><text class="val big" x="356.2" y="443.9" text-anchor="middle">13</text><text class="q big" x="356.2" y="524" text-anchor="middle">Apr</text><rect class="bar" x="489.4" y="466.4" width="88.8" height="23.6" /><text class="val big" x="533.8" y="454.4" text-anchor="middle">9</text><text class="q big" x="533.8" y="524" text-anchor="middle">May</text><rect class="bar" x="666.9" y="471.6" width="88.8" height="18.4" /><text class="val big" x="711.2" y="459.6" text-anchor="middle">7</text><text class="q big" x="711.2" y="524" text-anchor="middle">Jun</text><rect class="bar" x="844.4" y="466.4" width="88.8" height="23.6" /><text class="val big" x="888.8" y="454.4" text-anchor="middle">9</text><text class="q big" x="888.8" y="524" text-anchor="middle">Jul</text><rect class="bar" x="1021.9" y="461.1" width="88.8" height="28.9" /><text class="val big" x="1066.2" y="449.1" text-anchor="middle">11</text><text class="q big" x="1066.2" y="524" text-anchor="middle">Aug</text><rect class="bar" x="1199.4" y="463.8" width="88.8" height="26.2" /><text class="val big" x="1243.8" y="451.8" text-anchor="middle">10</text><text class="q big" x="1243.8" y="524" text-anchor="middle">Sep</text><rect class="bar" x="1376.9" y="461.1" width="88.8" height="28.9" /><text class="val big" x="1421.2" y="449.1" text-anchor="middle">11</text><text class="q big" x="1421.2" y="524" text-anchor="middle">Oct</text><path class="ln-ember" d="M178.8,427.0 L356.2,366.6 L533.8,329.9 L711.2,308.9 L888.8,269.5 L1066.2,224.9 L1243.8,177.6 L1421.2,119.9" /><circle class="ln-ember-dot" cx="178.8" cy="427.0" r="6" /><circle class="ln-ember-dot" cx="356.2" cy="366.6" r="6" /><circle class="ln-ember-dot" cx="533.8" cy="329.9" r="6" /><circle class="ln-ember-dot" cx="711.2" cy="308.9" r="6" /><circle class="ln-ember-dot" cx="888.8" cy="269.5" r="6" /><circle class="ln-ember-dot" cx="1066.2" cy="224.9" r="6" /><circle class="ln-ember-dot" cx="1243.8" cy="177.6" r="6" /><circle class="ln-ember-dot" cx="1421.2" cy="119.9" r="6" /><text class="val ember" x="164.8" y="409.0" text-anchor="middle">24</text><text class="val ember" x="342.2" y="348.6" text-anchor="middle">47</text><text class="val ember" x="519.8" y="311.9" text-anchor="middle">61</text><text class="val ember" x="697.2" y="290.9" text-anchor="middle">69</text><text class="val ember" x="874.8" y="251.5" text-anchor="middle">84</text><text class="val ember" x="1052.2" y="206.9" text-anchor="middle">101</text><text class="val ember" x="1229.8" y="159.6" text-anchor="middle">119</text><text class="val ember" x="1407.2" y="101.9" text-anchor="middle">141</text><text class="lbl-ember" x="90" y="42">Projects started, cumulative</text><text class="lbl-ink" x="1510" y="42" text-anchor="end">Projects I worked on for 5+ days that month</text></svg></div>
+      </section>
+
+      <!-- 10 -->
+      <section class="slide paper" data-slide="10" data-notes="Act III: the skills of the atelier. Mostly talk.">
+        <p class="kicker">III · The atelier</p>
+        <h2>What the workshop needs</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Being able to say <i>“not like this”</i></span></li>
+              <li><span class="n">02</span><span><i>True skill</i> vs. <i>agent skill</i></span></li>
+              <li><span class="n">03</span><span>Moderating <i>speed</i> by one’s <i>understanding</i></span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 11 -->
+      <section class="slide paper" data-slide="11" data-notes="Resist the temptation: just because you can build your own does not mean you should.&#10;• With agents, building your own is cheap: an SDK generator, a protocol, a file format, a fork. For the ecosystem that is often bad.&#10;• Wildwuchs, uncontrolled growth: every tool with its own slightly different format and protocol, and nothing works with anything else.&#10;• Open protocols, specifications and file formats are what lets tools, harnesses and people work together. Our own example: Pi said no to MCP, and then embraced it, because the best way to influence something is to take part in it.&#10;• But collaboration runs at human speed. Agreeing on a spec takes weeks or months, not an afternoon with an agent. That is the cost, and it is worth paying.">
+        <p class="kicker">III · The atelier</p>
+        <h2>Resist the temptation</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Sometimes building your own is <i>bad for the ecosystem</i></span></li>
+              <li><span class="n">02</span><span><i>“Wildwuchs”</i> harms <i>interoperability</i></span></li>
+              <li><span class="n">03</span><span><i>Open</i> protocols, specifications and file formats are useful</span></li>
+              <li><span class="n">04</span><span>But collaboration is <i>human slow</i>!</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 12 -->
+      <section class="slide paper" data-slide="12" data-notes="Where the extra capacity should go: aim higher, not wider.">
+        <p class="kicker">III · The atelier</p>
+        <h2>Spend the power on excellence</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>More software that is <i>verified</i></span></li>
+              <li><span class="n">02</span><span>More software that is <i>faster</i></span></li>
+              <li><span class="n">03</span><span>More software in <i>memory-safe</i> languages</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 13 -->
+      <section class="slide paper" data-slide="13" data-notes="Act IV: where the harness can evolve. Harness change one: durability. Useful for the workshop and the factory alike.&#10;• Why: in a terminal, the human is the recovery mechanism. The process dies, you look, you type continue. Once agents leave the terminal (Slack bots, GitHub triage, CI, Durable Objects) nobody watches the process.&#10;• Runs got long: 14 minutes per prompt at the 90th percentile with Opus 5.5 (slide 5). Laptops sleep, containers get redeployed in the middle of a tool call.&#10;• The human is the slowest part of the loop. Approvals wait for hours, and keeping a machine running while an agent waits is expensive. The agent has to be able to hibernate and wake up again.&#10;• Once an agent can suspend, it no longer has to run right now. Every model request and tool call is a task with a checkpoint, so a scheduler can decide when and where it runs: release the machine while waiting (Durable Objects hibernate and wake on an alarm), use cheaper async or batch inference instead of the fast lane, and spread load instead of everything running at peak.&#10;• Durability cannot make side effects happen exactly once. It can tell you which effect is in doubt: a tool that only reads reruns, anything else is reported to the model as interrupted.&#10;• Earlier: Absurd (durable workflows on Postgres), The Coming Loop (durable sessions will matter more and more), Pi Durable (October).">
+        <p class="kicker">IV · Where the harness can evolve</p>
+        <h2>Durability: suspend and come back</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Runs now outlive the <i>process</i> and the <i>attention</i> of the human</span></li>
+              <li><span class="n">02</span><span>Humans answer in <i>hours</i>, so waiting has to be <i>durable</i></span></li>
+              <li><span class="n">03</span><span>Intelligently <i>schedule</i> inference and compute</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 14 -->
+      <section class="slide paper" data-slide="14" data-notes="Harness change two: codemode. Expressiveness inside the tool call itself.&#10;• We said code is all you need and leaned on bash, and we still do. But bash can only compose programs that run in the execution environment. Reading an image, spawning subagents, calling an image or classifier model, MCP: those are harness tools, and bash cannot reach them.&#10;• Codemode is a small JavaScript sandbox (QuickJS in WASM: no network, no file system, no timers) that runs on the harness side. The only thing it can do is call more tools.&#10;• Why it matters: the agent can loop, run things concurrently and filter, without every intermediate result going through the context. The pattern we see: probe 5 to 10 items, then write a script for the rest.&#10;• It also stores state in the transcript, not on the file system, so a later call can pick it up. That is why it ties back to durability.&#10;• Open question: durability with codemode is trickier. We may need to snapshot invocations like durable workflow engines, or use a deterministic language like Starlark.&#10;• Sources: What is Codemode (October), You Said No MCP (Pi 1.0).">
+        <p class="kicker">IV · Where the harness can evolve</p>
+        <h2>Codemode: expressiveness in the tool call</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Bash composes <i>programs</i>, not the harness’s own tools</span></li>
+              <li><span class="n">02</span><span>Loops and concurrency <i>without going through the context</i></span></li>
+              <li><span class="n">03</span><span>Runs on the <i>harness side</i>, state lives in the <i>transcript</i></span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 15 -->
+      <section class="slide paper" data-slide="15" data-notes="Harness change three: classifier models. Jev and Clef, also known as system 1 or decision models.&#10;• Why: a lot of real work is squishy human judgement at volume. Is this issue a bug or a feature request? Is this commenter frustrated? Is the agent done planning? An LLM can answer each of those, but it is slow and expensive, and it answers in prose.&#10;• A classifier gets the state and a set of questions, and returns a choice or a score with probabilities, fast and cheap. That makes it something you can call hundreds of times.&#10;• Example: rating the tone of every one of the 167 open Pi issues. 156 neutral, 11 mildly frustrated, none highly. Another: a 30-step loop where Jev decides the next move while an agent debugs a game.&#10;• Example: a virtual model in Pi 1.0 that plans with Opus and implements with GPT, with Jev deciding when to switch.&#10;• They do not fit as regular tools; they would just waste context. They live in codemode, inside loops, which is why they come after codemode.">
+        <p class="kicker">IV · Where the harness can evolve</p>
+        <h2>Classifier models (Jev, Clef, …)</h2>
+        <div class="body">
+          <ol class="points">
+              <li><span class="n">01</span><span>Crunch through large numbers of <i>squishy human</i> tasks</span></li>
+              <li><span class="n">02</span><span>Ask <i>questions</i>, get <i>choices and scores</i> back, not prose</span></li>
+              <li><span class="n">03</span><span>Called from <i>codemode</i> and loops, not through the context</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 16 -->
+      <section class="slide hero" data-slide="16" data-notes="Closing.&#10;• We can build anything, but should we?">
+        <div class="stack">
+          <h1>We can build anything,<br />but should we?</h1>
+        </div>
+      </section>
+
+    </div>
+
+    <script>
+      // ── the ocean of earendil.com, day theme ──
+      // afl_ext's ocean waves (MIT), as adapted for the site: wave octaves are baked into unrolled
+      // GLSL and filtered by pixel footprint, so distant waves no longer shimmer and cost nothing.
+      (() => {
+        const canvas = document.getElementById("ocean");
+        const gl = canvas.getContext("webgl", { antialias: false, depth: false, stencil: false, alpha: false });
+        if (!gl) return;
+
+        const CAMERA_PROJECTION_DEPTH = 1.5;
+        const BASE_CAMERA_TILT = 0.14;
+        const RAYMARCH_STEPS = 24;
+        const WAVE_ITER_MARCH = 8;
+        const WAVE_ITER_DETAIL = 16;
+
+        const WAVE_OCTAVES = 16;
+        const WAVE_DRAG = 0.38;
+        const WAVE_SWELL_BIAS = 0.35;
+        // Mean of exp(sin(x) - 1) over one period (I0(1) / e): filtered octaves fade towards it.
+        const WAVE_OCTAVE_MEAN = 0.4657596075936404;
+        const WAVE_FADE_START = 0.2;
+        const WAVE_FADE_END = 0.6;
+
+        const OCTAVES = (() => {
+          const swellLength = Math.hypot(-0.25, 1.0);
+          const swellX = -0.25 / swellLength, swellY = 1.0 / swellLength;
+          const octaves = [];
+          let iter = 0, frequency = 1.0, timeMultiplier = 2.0, weight = 1.0;
+          for (let i = 0; i < WAVE_OCTAVES; i++) {
+            const s = Math.sin(iter), c = Math.cos(iter);
+            let dx = s + (swellX - s) * WAVE_SWELL_BIAS;
+            let dy = c + (swellY - c) * WAVE_SWELL_BIAS;
+            const len = Math.hypot(dx, dy);
+            octaves.push({ dx: dx / len, dy: dy / len, frequency, timeMultiplier, weight });
+            weight *= 0.8; frequency *= 1.18; timeMultiplier *= 1.07;
+            iter = Math.fround(iter + Math.fround(1232.399963)); // the original accumulated in 32-bit floats
+          }
+          return octaves;
+        })();
+
+        const g = (value) => {
+          const text = String(Number(value.toPrecision(9)));
+          return /[.eE]/.test(text) ? text : text + ".0";
+        };
+
+        // `float name(vec2 p, float footprint)`: the wave height filtered for a sample covering
+        // `footprint` world units. Octaves nest, so a sample stops at the first fully filtered one.
+        function waveFunction(name, count) {
+          const octaves = OCTAVES.slice(0, count);
+          const total = octaves.reduce((sum, o) => sum + o.weight, 0);
+          let body = "", indent = "  ";
+          for (const o of octaves) {
+            const wavelength = (2 * Math.PI) / o.frequency;
+            const limit = WAVE_FADE_END * wavelength;
+            const fadeScale = 1 / ((WAVE_FADE_END - WAVE_FADE_START) * wavelength);
+            body += `${indent}if (footprint < ${g(limit)}) {\n`;
+            indent += "  ";
+            body += `${indent}f = min((${g(limit)} - footprint) * ${g(fadeScale)}, 1.0) * ${g(o.weight)};\n`;
+            body += `${indent}x = dot(p, vec2(${g(o.dx * o.frequency)}, ${g(o.dy * o.frequency)})) + t * ${g(o.timeMultiplier)} + shift;\n`;
+            body += `${indent}e = exp(sin(x) - 1.0);\n`;
+            body += `${indent}sum += (e - ${g(WAVE_OCTAVE_MEAN)}) * f;\n`;
+            body += `${indent}p -= vec2(${g(o.dx * WAVE_DRAG)}, ${g(o.dy * WAVE_DRAG)}) * (e * cos(x) * f);\n`;
+          }
+          for (let i = 0; i < octaves.length; i++) { indent = indent.slice(2); body += `${indent}}\n`; }
+          return `
+          float ${name}(vec2 p, float footprint) {
+            float t = u_waveTime;
+            float shift = length(p) * 0.1;
+            float sum = 0.0;
+            float f, x, e;
+          ${body}
+            return ${g(WAVE_OCTAVE_MEAN)} + sum * ${g(1 / total)} + swell(p);
+          }`;
+        }
+
+        const vertex = "attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }";
+        const fragment = `
+          precision highp float;
+          uniform vec2 iResolution; uniform float u_waveTime; uniform float u_grainTime; uniform float u_noiseScale;
+          #define WATER_DEPTH 1.0
+          #define WATER_TOP 0.6
+          #define WATER_BOTTOM -1.4
+          #define MAX_DISTANCE 400.0
+          #define CAMERA_HEIGHT 1.5
+          #define RAYMARCH_STEPS ${RAYMARCH_STEPS}
+
+          vec2 cameraTilt() { return vec2(cos(${g(BASE_CAMERA_TILT)}), sin(${g(BASE_CAMERA_TILT)})); }
+
+          float swell(vec2 p) {
+            vec2 swellDir = vec2(-0.242535625, 0.9701425);
+            float swellPhase = dot(p, swellDir) * 0.18 - u_waveTime * 0.08;
+            float swellFade = smoothstep(28.0, 4.0, length(p - vec2(u_waveTime * 0.2, 1.0)));
+            return sin(swellPhase) * swellFade * 0.35;
+          }
+          ${waveFunction("wavesMarch", WAVE_ITER_MARCH)}
+          ${waveFunction("wavesDetail", WAVE_ITER_DETAIL)}
+
+          float marchHeight(vec2 p, float footprint) { return wavesMarch(p, footprint) * WATER_DEPTH - WATER_DEPTH; }
+          float detailHeight(vec2 p, float footprint) { return wavesDetail(p, footprint) * WATER_DEPTH; }
+
+          // Steps follow the vertical gap but lengthen for grazing rays; the crossing is then
+          // refined with one regula falsi step.
+          float raymarchwater(vec3 origin, vec3 ray, float tNear, float tFar, float lodScale) {
+            float stepScale = 1.0 / (0.25 - ray.y);
+            float t = tNear, a = tNear, gapA = 0.0, gapB = 0.0;
+            for (int i = 0; i < RAYMARCH_STEPS; i++) {
+              vec3 p = origin + ray * t;
+              float gap = p.y - marchHeight(p.xz, t * lodScale);
+              if (gap < 0.0) { gapB = gap; break; }
+              if (gap < 0.25 * t * lodScale * -ray.y) return t;
+              a = t; gapA = gap;
+              t += gap * stepScale;
+              if (t >= tFar) return tFar;
+            }
+            if (gapB >= 0.0) return t;
+            float b = t;
+            float m = mix(a, b, gapA / (gapA - gapB));
+            vec3 p = origin + ray * m;
+            float gap = p.y - marchHeight(p.xz, m * lodScale);
+            if (gap < 0.0) { b = m; gapB = gap; } else { a = m; gapA = gap; }
+            return mix(a, b, gapA / (gapA - gapB));
+          }
+
+          vec3 normal(vec2 pos, float e, float footprint) {
+            float H = detailHeight(pos, footprint);
+            float hx = detailHeight(pos - vec2(e, 0.0), footprint);
+            float hz = detailHeight(pos + vec2(0.0, e), footprint);
+            return normalize(vec3(hx - H, e, H - hz));
+          }
+
+          vec3 getRay(vec2 fragCoord) {
+            vec2 uv = ((fragCoord.xy / iResolution.xy) * 2.0 - 1.0) * vec2(iResolution.x / iResolution.y, 1.0);
+            vec3 proj = normalize(vec3(uv.x, uv.y, ${g(CAMERA_PROJECTION_DEPTH)}));
+            vec2 cs = cameraTilt();
+            return vec3(proj.x, cs.x * proj.y + cs.y * proj.z, cs.x * proj.z - cs.y * proj.y);
+          }
+
+          vec3 atmosphere(vec3 raydir) {
+            vec3 sundir = normalize(vec3(-0.0773502691896258, 0.6, 0.5773502691896258));
+            float t1 = 1.0 / (raydir.y + 0.1);
+            float t2 = 1.0 / (sundir.y * 11.0 + 1.0);
+            float raysundt = pow(abs(dot(sundir, raydir)), 2.0);
+            vec3 suncolor = mix(vec3(1.0), max(vec3(0.0), vec3(1.0) - vec3(5.5, 13.0, 22.4) / 22.4), t2);
+            vec3 sky = vec3(12.0, 12.0, 13.0) / 22.4 * suncolor;
+            vec3 sky2 = max(vec3(0.0), sky - vec3(12.0, 12.0, 13.0) * 0.002 * (t1 - 6.0 * sundir.y * sundir.y));
+            sky2 *= t1 * (0.24 + raysundt * 0.24);
+            return sky2 * (1.0 + pow(1.0 - raydir.y, 3.0)) * 0.5;
+          }
+
+          vec3 aces(vec3 color) {
+            mat3 m1 = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
+            mat3 m2 = mat3(1.60475, -0.10208, -0.00327, -0.53108, 1.10813, -0.07276, -0.07367, -0.00605, 1.07602);
+            vec3 v = m1 * color;
+            vec3 a = v * (v + 0.0245786) - 0.000090537;
+            vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+            return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+          }
+
+          float gaussian(float z, float u, float o) { return (1.0 / (o * sqrt(6.283))) * exp(-(((z - u) * (z - u)) / (2.0 * o * o))); }
+
+          vec3 scene(vec2 fragCoord) {
+            vec3 ray = getRay(fragCoord);
+            if (ray.y >= 0.0) return aces(atmosphere(ray) * 2.0);
+
+            vec3 origin = vec3(u_waveTime * 0.2, CAMERA_HEIGHT, 1.0);
+            float tNear = (origin.y - WATER_TOP) / -ray.y;
+            float tFar = min((origin.y - WATER_BOTTOM) / -ray.y, MAX_DISTANCE);
+
+            // World-space size of this pixel on the water, widened for grazing rays.
+            float pixelAngle = 2.0 / (${g(CAMERA_PROJECTION_DEPTH)} * iResolution.y);
+            float lodScale = pixelAngle * inversesqrt(max(-ray.y, 0.01));
+
+            float dist = tNear < tFar ? raymarchwater(origin, ray, tNear, tFar, lodScale) : tFar;
+            vec3 hit = origin + ray * dist;
+            float footprint = dist * lodScale;
+
+            float distanceBlend = min(1.0, sqrt(dist * 0.01) * 1.1);
+            vec3 N = normal(hit.xz, max(0.01, dist * pixelAngle), footprint);
+            N = normalize(mix(N, vec3(0.0, 1.0, 0.0), 0.45 * distanceBlend));
+
+            float fresnelSharp = 0.04 + 0.96 * pow(1.0 - max(0.0, dot(-N, ray)), 5.0);
+            float fresnelFlat = 0.04 + 0.96 * pow(1.0 - max(0.0, -ray.y), 5.0);
+            float fresnel = mix(fresnelSharp, fresnelFlat, 0.5 * distanceBlend);
+
+            vec3 R = reflect(ray, N); R.y = abs(R.y);
+            vec3 scattering = vec3(0.08, 0.08, 0.09) * (0.2 + (hit.y + WATER_DEPTH) / WATER_DEPTH);
+            vec3 C = fresnel * atmosphere(R) + scattering;
+            C = mix(C, vec3(0.55, 0.55, 0.58), 1.0 - exp(-dist * 0.02));
+            return aces(C * 1.4);
+          }
+
+          void main() {
+            vec3 color = scene(gl_FragCoord.xy);
+            // The site's film grain (after Martin Upitis), then mapped into its day palette.
+            float gray = dot(color, vec3(0.299, 0.587, 0.114));
+            vec2 uv = gl_FragCoord.xy * u_noiseScale / iResolution;
+            float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453 + u_grainTime * 1.5);
+            noise = gaussian(noise, 0.0, 0.5625);
+            gray = clamp(gray + noise * (1.0 - gray) * 0.4, 0.0, 1.0);
+            gl_FragColor = vec4(mix(vec3(0.62), vec3(0.97), gray), 1.0);
+          }`;
+
+        const compile = (type, source) => {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+          return shader;
+        };
+        const program = gl.createProgram();
+        gl.attachShader(program, compile(gl.VERTEX_SHADER, vertex));
+        gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment));
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(program));
+        gl.useProgram(program);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+        const position = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(position);
+        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        const uResolution = gl.getUniformLocation(program, "iResolution");
+        const uWave = gl.getUniformLocation(program, "u_waveTime");
+        const uGrain = gl.getUniformLocation(program, "u_grainTime");
+        const uNoise = gl.getUniformLocation(program, "u_noiseScale");
+
+        // The site's "high" quality: 0.4 of the device resolution, 0.68 on low DPI screens.
+        const dpr = window.devicePixelRatio || 1;
+        const lowDpi = dpr < 1.5;
+        const scale = lowDpi ? 0.68 : 0.4;
+        function resize() {
+          canvas.width = Math.max(1, Math.round(innerWidth * dpr * scale));
+          canvas.height = Math.max(1, Math.round(innerHeight * dpr * scale));
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        addEventListener("resize", resize);
+        resize();
+
+        // Reduced motion keeps the ocean alive as a quiet ambient surface, like the site.
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const waveSpeed = reduced ? 0.15 : 1.0;
+        const grainSpeed = reduced ? 0.75 : 1.0;
+        function frame(now) {
+          requestAnimationFrame(frame);
+          const t = now * 0.001;
+          gl.uniform2f(uResolution, canvas.width, canvas.height);
+          gl.uniform1f(uWave, t * waveSpeed);
+          gl.uniform1f(uGrain, t * grainSpeed);
+          gl.uniform1f(uNoise, lowDpi ? 1.7 : 1.0);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+        requestAnimationFrame(frame);
+      })();
+
+      // ── syntax highlighting: the site's restraint (bold keywords, muted comments), plus theme colors ──
+      const KEYWORDS = /^(const|let|await|async|return|type|as|null|true|false|new|import|from|function|if|else|for)$/;
+      const TOKEN = /(\/\/.*$)|(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*")|\b(\d+)\b|\b([A-Za-z_$][\w$]*)\b(\s*\()?/g;
+      const escape = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      function highlightLine(line) {
+        let out = "";
+        let last = 0;
+        line.replace(TOKEN, (match, comment, string, number, word, call, offset) => {
+          out += escape(line.slice(last, offset));
+          if (comment) out += `<span class="tk-c">${escape(comment)}</span>`;
+          else if (string) out += `<span class="tk-s">${escape(string)}</span>`;
+          else if (number) out += `<span class="tk-n">${number}</span>`;
+          else if (KEYWORDS.test(word)) out += `<span class="tk-k">${word}</span>${call ?? ""}`;
+          else if (call) out += `<span class="tk-f">${word}</span>${call}`;
+          else if (/^[A-Z]/.test(word)) out += `<span class="tk-t">${word}</span>`;
+          else out += word;
+          last = offset + match.length;
+          return match;
+        });
+        return out + escape(line.slice(last));
+      }
+      for (const pre of document.querySelectorAll("pre.code")) {
+        pre.innerHTML = pre.textContent.split("\n").map((line) => `<span class="ln">${highlightLine(line) || " "}</span>`).join("");
+        pre.hl = new Map(
+          (pre.dataset.hl || "").split(";").filter(Boolean).map((part) => {
+            const [step, ranges] = part.split(":");
+            const lines = new Set();
+            for (const range of ranges.split(",")) {
+              const [a, b = a] = range.split("-").map(Number);
+              for (let n = a; n <= b; n++) lines.add(n);
+            }
+            return [Number(step), lines];
+          }),
+        );
+      }
+
+      // ── deck scaling and steps ──
+      const deck = document.querySelector(".deck");
+      function scaleDeck() {
+        const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+        deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      }
+      addEventListener("resize", scaleDeck);
+      scaleDeck();
+
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const pageNo = document.getElementById("page-no");
+      const stepCount = (slide) => {
+        let max = 0;
+        for (const el of slide.querySelectorAll("[data-step]")) max = Math.max(max, Number(el.dataset.step));
+        for (const pre of slide.querySelectorAll("pre.code")) for (const step of pre.hl.keys()) max = Math.max(max, step);
+        return max;
+      };
+      let slideIndex = 0;
+      let stepIndex = 0;
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      function applySteps(slide) {
+        slide.dataset.at = String(stepIndex);
+        for (const el of slide.querySelectorAll("[data-step]")) {
+          const from = Number(el.dataset.step);
+          const until = el.dataset.until === undefined ? Infinity : Number(el.dataset.until);
+          el.classList.toggle("on", stepIndex >= from && stepIndex < until);
+          el.classList.toggle("now", stepIndex === from);
+        }
+        for (const pre of slide.querySelectorAll("pre.code")) {
+          const lines = pre.hl.get(stepIndex);
+          pre.classList.toggle("focus", Boolean(lines));
+          pre.querySelectorAll(".ln").forEach((ln, i) => ln.classList.toggle("hl", Boolean(lines?.has(i + 1))));
+        }
+      }
+
+      function show(index, { hash = true } = {}) {
+        slideIndex = clamp(index, 0, slides.length - 1);
+        slides.forEach((slide, i) => slide.classList.toggle("active", i === slideIndex));
+        deck.classList.toggle("bare", slides[slideIndex].classList.contains("bare"));
+        document.body.classList.toggle("paper", slides[slideIndex].classList.contains("paper"));
+        stepIndex = clamp(stepIndex, 0, stepCount(slides[slideIndex]));
+        applySteps(slides[slideIndex]);
+        pageNo.textContent = `${String(slideIndex + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+        if (hash) updateHash();
+      }
+      function updateHash() {
+        history.replaceState(null, "", `#${slides[slideIndex].dataset.slide}${stepIndex ? `.${stepIndex}` : ""}`);
+      }
+      function parseHash(raw) {
+        const [s, st] = raw.split(".");
+        const index = slides.findIndex((slide) => slide.dataset.slide === s);
+        return { index: index < 0 ? 0 : index, step: Number.parseInt(st, 10) || 0 };
+      }
+      function next() {
+        if (stepIndex < stepCount(slides[slideIndex])) {
+          stepIndex++;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex < slides.length - 1) {
+          stepIndex = 0;
+          show(slideIndex + 1);
+        }
+      }
+      function prev() {
+        if (stepIndex > 0) {
+          stepIndex--;
+          applySteps(slides[slideIndex]);
+          updateHash();
+        } else if (slideIndex > 0) {
+          stepIndex = stepCount(slides[slideIndex - 1]);
+          show(slideIndex - 1);
+        }
+      }
+      function first() { stepIndex = 0; show(0); }
+      function last() { stepIndex = 0; show(slides.length - 1); }
+      function goto(hash) {
+        const parsed = parseHash(hash.replace("#", ""));
+        stepIndex = parsed.step;
+        show(parsed.index);
+      }
+      function syncFromHash() {
+        const raw = location.hash.replace("#", "");
+        const relative = raw.match(/^(.*)~(next|prev)$/);
+        if (relative) {
+          const base = relative[1] ? parseHash(relative[1]) : { index: slideIndex, step: stepIndex };
+          stepIndex = base.step;
+          show(base.index, { hash: false });
+          relative[2] === "next" ? next() : prev();
+          return;
+        }
+        const parsed = parseHash(raw);
+        stepIndex = parsed.step;
+        show(parsed.index, { hash: false });
+      }
+
+      addEventListener("hashchange", syncFromHash);
+      addEventListener("keydown", (event) => {
+        // Leave browser and OS shortcuts (Cmd+L, Ctrl+R, ...) alone.
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        if (["ArrowRight", " ", "PageDown", "l", "j"].includes(event.key)) { event.preventDefault(); next(); }
+        if (["ArrowLeft", "PageUp", "h", "k"].includes(event.key)) { event.preventDefault(); prev(); }
+        if (event.key === "Home") { event.preventDefault(); first(); }
+        if (event.key === "End") { event.preventDefault(); last(); }
+      });
+      document.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return; // links open, they do not advance the deck
+        event.clientX < innerWidth / 3 ? prev() : next();
+      });
+
+      window.miniPresenter = {
+        next, prev, first, last, goto,
+        getSlideList: () => slides.map((slide) => `#${slide.dataset.slide}`),
+        getCurrentSlide: () => location.hash || `#${slides[slideIndex].dataset.slide}`,
+        getNotes(slideId) {
+          const target = typeof slideId === "string" && slideId ? slideId : location.hash;
+          return slides[parseHash((target || "").replace("#", "")).index]?.dataset.notes || null;
+        },
+      };
+      syncFromHash();
+    </script>
+  </body>
+</html>
